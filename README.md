@@ -14,14 +14,16 @@ git clone https://github.com/ibkuroyagi/Rainforest-Connection-Species-Audio-Dete
 cd Rainforest-Connection-Species-Audio-Detection/tools
 make
 ```
-<details><summary>ヒアドキュメントを使用する場合</summary><div>
+<details><summary>slurm用にヒアドキュメントを使用する場合</summary><div>
+
 ```
 cd Rainforest-Connection-Species-Audio-Detection/tools
-sbatch -c 4 << EOF
+sbatch -c 4 -w million2 << EOF
 #!/bin/bash
 make
 EOF
 ```
+
 </div></details>
 
 <details><summary>kaggle日記</summary><div>
