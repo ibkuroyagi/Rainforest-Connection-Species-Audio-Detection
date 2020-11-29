@@ -11,8 +11,10 @@ virtualenv:
 	. venv/bin/activate; pip install torch==$(PYTORCH_VERSION) \
 		-f https://download.pytorch.org/whl/cu$(subst $(DOT),,$(CUDA_VERSION))/torch_stable.html
 	. venv/bin/activate; cd ../; pip install -r requirements.txt
-	. venv/bin/activate; cd ../input/; kaggle competitions download -c rfcx-species-audio-detection
-	cd ../input/; unzip rfcx-species-audio-detection.zip; rm rfcx-species-audio-detection.zip
+	. venv/bin/activate; mkdir ../input/; cd ../input/; kaggle competitions download \
+		-c rfcx-species-audio-detection
+	cd ../input/; unzip rfcx-species-audio-detection.zip -d rfcx-species-audio-detection; \
+		rm rfcx-species-audio-detection.zip
 
 clean:
 	rm -fr venv

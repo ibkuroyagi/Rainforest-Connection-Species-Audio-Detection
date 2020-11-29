@@ -26,10 +26,7 @@ coverage.xml*
 *.pkl
 *.job
 # input dataset
-input/lish-moa/
-input/iterative-stratification-master/
-input/models/
-input/
+input/rfcx-species-audio-detection/
 # venv
 tools/venv/
 tools/*.out
