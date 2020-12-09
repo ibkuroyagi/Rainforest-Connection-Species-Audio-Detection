@@ -8,40 +8,40 @@ log() {
     echo -e "$(date '+%Y-%m-%dT%H:%M:%S') (${fname}:${BASH_LINENO[0]}:${FUNCNAME[1]}) $*"
 }
 
-. ./path.sh || exit 1;
-. ./cmd.sh || exit 1;
+. ./path.sh || exit 1
+. ./cmd.sh || exit 1
 
 # basic setting
 stage=0        # stage to start
 stop_stage=100 # stage to stop
 n_gpus=1       # number of gpus for training
 n_jobs=8       # number of parallel jobs in feature extraction
-
-conf=conf/node.yaml
-verbose=1      # verbosity level, higher is more logging
+type=bin
+conf=conf/ResNet38.yaml
+verbose=1 # verbosity level, higher is more logging
 
 # directory related
+dumpdir=dump
 expdir=exp          # directory to save experiments
-tag="node/base"    # tag for manangement of the naming of experiments
-dpgmmdir="../input/dpgmm"
+tag="ResNet38/base" # tag for manangement of the naming of experiments
 # evaluation related
-checkpoint="best_loss"          # path of checkpoint to be used for evaluation
+checkpoint="best_loss" # path of checkpoint to be used for evaluation
 step="best"
 
-. utils/parse_options.sh || exit 1;
+. utils/parse_options.sh || exit 1
 
 set -euo pipefail
 
 if [ "${stage}" -le 0 ] && [ "${stop_stage}" -ge 0 ]; then
-    log "Stage 1: Calculate dpgmm."
+    log "Stage 0: Feature extraction."
     outdir=${expdir}/${tag}
-    log "Calculate dpgmm. See the progress via ${outdir}/calculate_dpgmm.log"
+    log "Feature extraction. See the progress via ${outdir}/preprocess.log"
     # shellcheck disable=SC2086
-    ${train_cmd} --num_threads "${n_jobs}" "${outdir}/calculate_dpgmm.log" \
-        python calculate_dpgmm.py \
-            --outdir "${dpgmmdir}" \
-            --config "${conf}" \
-            --verbose "${verbose}"
+    ${train_cmd} --num_threads "${n_jobs}" "${outdir}/preprocess.log" \
+        python preprocess.py \
+        --outdir "${dpgmmdir}" \
+        --config "${conf}" \
+        --verbose "${verbose}"
     log "Successfully calculate dpgmm."
 fi
 
@@ -52,10 +52,10 @@ if [ "${stage}" -le 1 ] && [ "${stop_stage}" -ge 1 ]; then
     # shellcheck disable=SC2086
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/train.log" \
         python node_train.py \
-            --outdir "${outdir}" \
-            --config "${conf}" \
-            --dpgmmdir "${dpgmmdir}" \
-            --verbose "${verbose}"
+        --outdir "${outdir}" \
+        --config "${conf}" \
+        --dpgmmdir "${dpgmmdir}" \
+        --verbose "${verbose}"
     log "Successfully finished the training."
 fi
 if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
@@ -69,10 +69,10 @@ if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
     # shellcheck disable=SC2086
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/inference.log" \
         python node_inference.py \
-            --outdir "${outdir}" \
-            --config "${conf}" \
-            --checkpoints ${checkpoints} \
-            --dpgmmdir "${dpgmmdir}" \
-            --verbose "${verbose}"
+        --outdir "${outdir}" \
+        --config "${conf}" \
+        --checkpoints ${checkpoints} \
+        --dpgmmdir "${dpgmmdir}" \
+        --verbose "${verbose}"
     log "Successfully finished the inference."
 fi

@@ -23,7 +23,20 @@ sbatch -c 4 -w million2 << EOF
 make
 EOF
 ```
+## コンペの主題は何?
+少量のデータセットかつ外部ノイズの多い音からAudio-taggingをする
+ただし、複数の種類が存在する可能性がある
+- noisy-labelの活用
+- ダイアライゼーションを使用
+- augmentationによるnoise対策
+- 特徴抽出部分を事前学習
 
+## アイデア
+- segment-wise predoction
+- wav2vec
+- SpecAug
+- ダイアライゼーションの出力を代入
+- 無音区間予測で精度改善?
 </div></details>
 
 <details><summary>kaggle日記</summary><div>
@@ -33,5 +46,9 @@ EOF
         * リポジトリ作成&コンペの理解
     - 次回やること
         * 手元環境でのEDAとstage1の作成
-
+- 12/9(水)
+    - 今日やったこと
+        * 手元環境でのEDAとstage1の作成
+    - 次回やること
+        * 手元環境でのEDAとstage1の作成
 </div></details>
