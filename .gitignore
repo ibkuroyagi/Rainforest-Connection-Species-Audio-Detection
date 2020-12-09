@@ -22,6 +22,7 @@ coverage.xml*
 .nfs*
 .python-version
 .worktree
+.ipynb_checkpoints
 *.log
 *.pkl
 *.job

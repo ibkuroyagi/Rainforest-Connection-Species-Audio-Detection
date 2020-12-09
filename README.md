@@ -32,10 +32,10 @@ EOF
 - 特徴抽出部分を事前学習
 
 ## アイデア
-- segment-wise predoction
+- segment-wise predoction(種によって鳴いている時間の長さが異なる)
 - wav2vec
 - SpecAug
-- ダイアライゼーションの出力を代入
+- ダイアライゼーションの出力を代入(ラベルがオーバーラップしている)
 - 無音区間予測で精度改善?
 </div></details>
 
