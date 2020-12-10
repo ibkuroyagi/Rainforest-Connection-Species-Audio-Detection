@@ -1,0 +1,77 @@
+###########################################################
+#                      GLOBAL SETTING                     #
+###########################################################
+seed: 1
+###########################################################
+#                    PREPROCESS SETTING                   #
+###########################################################
+sr: 48000
+fft_size: 2048
+hop_size: 512
+window: hann
+num_mels: 128
+fmin: 50
+fmax: 16000
+format: hdf5
+###########################################################
+#                     NETWORK SETTING                     #
+###########################################################
+model_type: "Cnn14_DecisionLevelAtt" # pretrained model's type.
+fc_audioset:
+  in_features: 2048
+  out_features: 25
+  bias: True
+model_params:
+  sample_rate: 16000
+  window_size: 1024
+  hop_size: 256
+  mel_bins: 64
+  fmin: 50
+  fmax: 8000
+  classes_num: 527
+  require_prep: False
+  is_spec_augmenter: True
+###########################################################
+#                    TRAINING SETTING                     #
+###########################################################
+n_fold: 5
+accum_grads: 1
+batch_size: 64 # Batch size.
+batch_max_steps: 2000 # Length of each audio in batch. Make sure dividable by hop_size.
+pin_memory: False # Whether to pin memory in Pytorch DataLoader.
+num_workers: 2 # Number of workers in Pytorch DataLoader.
+allow_cache: True # Whether to allow cache in dataset. If true, it requires cpu memory.
+is_normalize: True
+###########################################################
+#                       LOSS SETTING                      #
+###########################################################
+loss_type: BCELoss
+loss_params:
+  reduction: sum
+
+###########################################################
+#              OPTIMIZER & SCHEDULER SETTING              #
+###########################################################
+optimizer_type: "Adam"
+optimizer_params:
+  conv_lr: 0.0001 # convolution layer's learning rate.
+  fc_lr: 0.001 # full connection layer's learning rate.
+scheduler_type: "StepLR"
+scheduler_params:
+  step_size: 1000 # scheduler step size.
+  gamma:
+    0.5 # scheduler gamma.
+    # At each step size, lr will be multiplied by this parameter.
+###########################################################
+#                    INTERVAL SETTING                     #
+###########################################################
+train_max_steps: 2000 # Number of training steps.
+save_interval_steps: 1000 # Interval steps to save checkpoint.
+eval_interval_steps: 1000 # Interval steps to evaluate the network.
+log_interval_steps: 50 # Interval steps to record the training log.
+
+###########################################################
+#                     OTHER SETTING                       #
+###########################################################
+max_frames: 512
+n_eval_split: 3

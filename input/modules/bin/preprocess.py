@@ -5,7 +5,6 @@
 #  MIT License (https://opensource.org/licenses/MIT)
 
 """Perform preprocessing and raw feature extraction."""
-
 import argparse
 import logging
 import os
@@ -17,8 +16,9 @@ import yaml
 import gc
 from tqdm import tqdm
 
-sys.path.append("../utils")
-from utils import write_hdf5
+sys.path.append("../../")
+sys.path.append("../input/modules")
+from utils.utils import write_hdf5
 
 
 def logmelfilterbank(
@@ -77,6 +77,7 @@ def main():
     )
     parser.add_argument(
         "--datadir",
+        required=True,
         type=str,
         help="directory including flac files.",
     )
@@ -123,11 +124,15 @@ def main():
     with open(args.config) as f:
         config = yaml.load(f, Loader=yaml.Loader)
     config.update(vars(args))
-    sr = 48000
+    for key, value in config.items():
+        logging.info(f"{key} = {value}")
+    sr = config["sr"]
     train_dir = os.path.join(args.datadir, "train")
-    train_path_list = train_dir + "/" + os.listdir(train_dir)
+    train_path_list = [
+        os.path.join(train_dir, fname) for fname in os.listdir(train_dir)
+    ]
     test_dir = os.path.join(args.datadir, "test")
-    test_path_list = test_dir + "/" + os.listdir(test_dir)
+    test_path_list = [os.path.join(test_dir, fname) for fname in os.listdir(test_dir)]
     all_path_list = train_path_list + test_path_list
     # get dataset
     if (args.datadir is not None) and args.cal_type == 1:
@@ -136,7 +141,7 @@ def main():
             tmp[i], _ = librosa.load(path, sr=sr)
         statistic = {}
         statistic["mean"] = tmp.mean()
-        statistic["mean"] = tmp.std()
+        statistic["std"] = tmp.std()
         with open(args.statistic_path, "wb") as f:
             pickle.dump(statistic, f)
             logging.info(f"Successfully saved statistic to {args.statistic_path}.")
@@ -165,13 +170,11 @@ def main():
                 sampling_rate=sr,
                 hop_size=config["hop_size"],
                 fft_size=config["fft_size"],
-                win_length=config["win_length"],
                 window=config["window"],
                 num_mels=config["num_mels"],
                 fmin=config["fmin"],
                 fmax=config["fmax"],
             )
-            mel = mel[:, :128]
             wave_id = path.split("/")[-1][:-5]
             # save
             if config["format"] == "hdf5":

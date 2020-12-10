@@ -17,15 +17,15 @@ stop_stage=100 # stage to stop
 n_gpus=1       # number of gpus for training
 n_jobs=8       # number of parallel jobs in feature extraction
 type=wave      # preprocess type.
-cal_type=1     # if 1 -> statistic, else -> load cache pkl.
-conf=conf/ResNet38.yaml
+cal_type=0     # if 1 -> statistic, else -> load cache pkl.
+conf=conf/Cnn14_DecisionLevelAtt.yaml
 verbose=1 # verbosity level, higher is more logging
 
 # directory related
 datadir=../input/rfcx-species-audio-detection
 dumpdir=dump
-expdir=exp          # directory to save experiments
-tag="ResNet38/base" # tag for manangement of the naming of experiments
+expdir=exp                        # directory to save experiments
+tag="Cnn14_DecisionLevelAtt/base" # tag for manangement of the naming of experiments
 # evaluation related
 checkpoint="best_loss" # path of checkpoint to be used for evaluation
 step="best"
@@ -58,10 +58,9 @@ if [ "${stage}" -le 1 ] && [ "${stop_stage}" -ge 1 ]; then
     log "Training start. See the progress via ${outdir}/train.log"
     # shellcheck disable=SC2086
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/train.log" \
-        python node_train.py \
+        python ../input/modules/bin/train.py \
         --outdir "${outdir}" \
         --config "${conf}" \
-        --dpgmmdir "${dpgmmdir}" \
         --verbose "${verbose}"
     log "Successfully finished the training."
 fi

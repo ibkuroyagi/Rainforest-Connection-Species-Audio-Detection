@@ -16,3 +16,4 @@ black
 flake8
 tensorflow
 librosa
+torchlibrosa
