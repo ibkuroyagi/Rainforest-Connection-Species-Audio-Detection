@@ -16,11 +16,13 @@ stage=0        # stage to start
 stop_stage=100 # stage to stop
 n_gpus=1       # number of gpus for training
 n_jobs=8       # number of parallel jobs in feature extraction
-type=bin
+type=wave      # preprocess type.
+cal_type=1     # if 1 -> statistic, else -> load cache pkl.
 conf=conf/ResNet38.yaml
 verbose=1 # verbosity level, higher is more logging
 
 # directory related
+datadir=../input/rfcx-species-audio-detection
 dumpdir=dump
 expdir=exp          # directory to save experiments
 tag="ResNet38/base" # tag for manangement of the naming of experiments
@@ -34,15 +36,20 @@ set -euo pipefail
 
 if [ "${stage}" -le 0 ] && [ "${stop_stage}" -ge 0 ]; then
     log "Stage 0: Feature extraction."
-    outdir=${expdir}/${tag}
-    log "Feature extraction. See the progress via ${outdir}/preprocess.log"
+    statistic_path="${dumpdir}/cache/${type}.pkl"
+    [ ! -e "${dumpdir}/cache" ] && mkdir -p "${dumpdir}/cache"
+    log "Feature extraction. See the progress via ${dumpdir}/preprocess.log"
     # shellcheck disable=SC2086
-    ${train_cmd} --num_threads "${n_jobs}" "${outdir}/preprocess.log" \
-        python preprocess.py \
-        --outdir "${dpgmmdir}" \
+    ${train_cmd} --num_threads "${n_jobs}" "${dumpdir}/preprocess.log" \
+        python ../input/modules/bin/preprocess.py \
+        --datadir "${datadir}" \
+        --dumpdir "${dumpdir}" \
         --config "${conf}" \
+        --statistic_path "${statistic_path}" \
+        --cal_type "${cal_type}" \
+        --type "${type}" \
         --verbose "${verbose}"
-    log "Successfully calculate dpgmm."
+    log "Successfully calculate logmel spectrogram."
 fi
 
 if [ "${stage}" -le 1 ] && [ "${stop_stage}" -ge 1 ]; then

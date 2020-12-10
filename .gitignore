@@ -32,6 +32,7 @@ input/rfcx-species-audio-detection/
 tools/venv/
 tools/*.out
 # results
+working/dump*/
 working/exp*/
 working/*.pt
 working/*.csv

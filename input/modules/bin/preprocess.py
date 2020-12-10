@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# Copyright 2020 Ibuki Kuroyanai
+#  MIT License (https://opensource.org/licenses/MIT)
+
+"""Perform preprocessing and raw feature extraction."""
+
+import argparse
+import logging
+import os
+import pickle
+import sys
+import librosa
+import numpy as np
+import yaml
+import gc
+from tqdm import tqdm
+
+sys.path.append("../utils")
+from utils import write_hdf5
+
+
+def logmelfilterbank(
+    audio,
+    sampling_rate,
+    fft_size=1024,
+    hop_size=256,
+    win_length=None,
+    window="hann",
+    num_mels=80,
+    fmin=None,
+    fmax=None,
+    eps=1e-10,
+):
+    """Compute log-Mel filterbank feature.
+
+    Args:
+        audio (ndarray): Audio signal (T,).
+        sampling_rate (int): Sampling rate.
+        fft_size (int): FFT size.
+        hop_size (int): Hop size.
+        win_length (int): Window length. If set to None, it will be the same as fft_size.
+        window (str): Window function type.
+        num_mels (int): Number of mel basis.
+        fmin (int): Minimum frequency in mel basis calculation.
+        fmax (int): Maximum frequency in mel basis calculation.
+        eps (float): Epsilon value to avoid inf in log calculation.
+
+    Returns:
+        ndarray: Log Mel filterbank feature (#frames, num_mels).
+
+    """
+    # get amplitude spectrogram
+    x_stft = librosa.stft(
+        audio,
+        n_fft=fft_size,
+        hop_length=hop_size,
+        win_length=win_length,
+        window=window,
+        pad_mode="reflect",
+    )
+    spc = np.abs(x_stft).T  # (#frames, #bins)
+
+    # get mel basis
+    fmin = 0 if fmin is None else fmin
+    fmax = sampling_rate / 2 if fmax is None else fmax
+    mel_basis = librosa.filters.mel(sampling_rate, fft_size, num_mels, fmin, fmax)
+
+    return np.log10(np.maximum(eps, np.dot(spc, mel_basis.T)))
+
+
+def main():
+    """Run preprocessing process."""
+    parser = argparse.ArgumentParser(
+        description="Preprocess audio and then extract features (See detail in parallel_wavegan/bin/preprocess.py)."
+    )
+    parser.add_argument(
+        "--datadir",
+        type=str,
+        help="directory including flac files.",
+    )
+    parser.add_argument(
+        "--dumpdir", type=str, required=True, help="directory to dump feature files."
+    )
+    parser.add_argument(
+        "--config", type=str, required=True, help="yaml format configuration file."
+    )
+    parser.add_argument(
+        "--statistic_path", type=str, default="", help="wave statistic in pkl file."
+    )
+    parser.add_argument(
+        "--cal_type", type=int, default=1, help="whether calculate statistics."
+    )
+    parser.add_argument("--type", type=str, default="wave", help="Type of preprocess.")
+    parser.add_argument(
+        "--verbose",
+        type=int,
+        default=1,
+        help="logging level. higher is more logging. (default=1)",
+    )
+    args = parser.parse_args()
+
+    # set logger
+    if args.verbose > 1:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s (%(module)s:%(lineno)d) %(levelname)s: %(message)s",
+        )
+    elif args.verbose > 0:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s (%(module)s:%(lineno)d) %(levelname)s: %(message)s",
+        )
+    else:
+        logging.basicConfig(
+            level=logging.WARN,
+            format="%(asctime)s (%(module)s:%(lineno)d) %(levelname)s: %(message)s",
+        )
+        logging.warning("Skip DEBUG/INFO messages")
+
+    # load config
+    with open(args.config) as f:
+        config = yaml.load(f, Loader=yaml.Loader)
+    config.update(vars(args))
+    sr = 48000
+    train_dir = os.path.join(args.datadir, "train")
+    train_path_list = train_dir + "/" + os.listdir(train_dir)
+    test_dir = os.path.join(args.datadir, "test")
+    test_path_list = test_dir + "/" + os.listdir(test_dir)
+    all_path_list = train_path_list + test_path_list
+    # get dataset
+    if (args.datadir is not None) and args.cal_type == 1:
+        tmp = np.zeros((len(all_path_list), 2880000))
+        for i, path in enumerate(tqdm(all_path_list)):
+            tmp[i], _ = librosa.load(path, sr=sr)
+        statistic = {}
+        statistic["mean"] = tmp.mean()
+        statistic["mean"] = tmp.std()
+        with open(args.statistic_path, "wb") as f:
+            pickle.dump(statistic, f)
+            logging.info(f"Successfully saved statistic to {args.statistic_path}.")
+        del tmp
+        gc.collect()
+    else:
+        with open(args.statistic_path, "rb") as f:
+            statistic = pickle.load(f)
+            logging.info(f"Successfully loaded statistic from {args.statistic_path}.")
+    logging.info(
+        f"Statistic mean: {statistic['mean']:.4f}, std: {statistic['std']:.4f}"
+    )
+    # process each data
+    modes = ["train", "test"]
+    for i, path_list in enumerate([train_path_list, test_path_list]):
+        # check directly existence
+        outdir = os.path.join(args.dumpdir, args.type, modes[i])
+        if not os.path.exists(outdir):
+            os.makedirs(outdir, exist_ok=True)
+        for path in tqdm(path_list):
+            x, _ = librosa.load(path=path, sr=sr)
+            x = (x - statistic["mean"]) / statistic["std"]
+            # extract feature
+            mel = logmelfilterbank(
+                x,
+                sampling_rate=sr,
+                hop_size=config["hop_size"],
+                fft_size=config["fft_size"],
+                win_length=config["win_length"],
+                window=config["window"],
+                num_mels=config["num_mels"],
+                fmin=config["fmin"],
+                fmax=config["fmax"],
+            )
+            mel = mel[:, :128]
+            wave_id = path.split("/")[-1][:-5]
+            # save
+            if config["format"] == "hdf5":
+                write_hdf5(
+                    os.path.join(outdir, f"{wave_id}.h5"),
+                    "wave",
+                    x.astype(np.float32),
+                )
+                write_hdf5(
+                    os.path.join(outdir, f"{wave_id}.h5"),
+                    "feats",
+                    mel.astype(np.float32),
+                )
+            elif config["format"] == "npy":
+                np.save(
+                    os.path.join(outdir, f"{wave_id}-wave.npy"),
+                    x.astype(np.float32),
+                    allow_pickle=False,
+                )
+                np.save(
+                    os.path.join(outdir, f"{wave_id}-feats.npy"),
+                    mel.astype(np.float32),
+                    allow_pickle=False,
+                )
+            else:
+                raise ValueError("support only hdf5 or npy format.")
+
+
+if __name__ == "__main__":
+    main()
