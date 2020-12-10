@@ -2,6 +2,7 @@
 #                      GLOBAL SETTING                     #
 ###########################################################
 seed: 1
+n_class: 24
 ###########################################################
 #                    PREPROCESS SETTING                   #
 ###########################################################
@@ -12,14 +13,13 @@ window: hann
 num_mels: 128
 fmin: 50
 fmax: 16000
-format: hdf5
 ###########################################################
 #                     NETWORK SETTING                     #
 ###########################################################
 model_type: "Cnn14_DecisionLevelAtt" # pretrained model's type.
 fc_audioset:
   in_features: 2048
-  out_features: 25
+  out_features: 24
   bias: True
 model_params:
   sample_rate: 16000
@@ -45,7 +45,7 @@ is_normalize: True
 ###########################################################
 #                       LOSS SETTING                      #
 ###########################################################
-loss_type: BCELoss
+loss_type: BCEWithLogitsLoss
 loss_params:
   reduction: sum
 
@@ -74,4 +74,4 @@ log_interval_steps: 50 # Interval steps to record the training log.
 #                     OTHER SETTING                       #
 ###########################################################
 max_frames: 512
-n_eval_split: 3
+n_eval_split: 11

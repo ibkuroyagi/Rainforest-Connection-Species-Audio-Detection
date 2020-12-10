@@ -22,12 +22,14 @@ coverage.xml*
 .nfs*
 .python-version
 .worktree
+@eaDir/
 .ipynb_checkpoints
 *.log
 *.pkl
 *.job
 # input dataset
 input/rfcx-species-audio-detection/
+input/pretrained/
 # venv
 tools/venv/
 tools/*.out

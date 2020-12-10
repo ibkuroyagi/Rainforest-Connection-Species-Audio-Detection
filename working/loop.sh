@@ -4,4 +4,5 @@
 # Created by Ibuki Kuroyanagi
 sbatch -c 4 ./run.sh \
     --tag "base" \
-    --stop_stage "0"
+    --stop_stage "0" \
+    --cal_type "0"

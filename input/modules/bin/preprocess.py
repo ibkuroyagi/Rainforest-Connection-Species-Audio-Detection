@@ -12,6 +12,7 @@ import pickle
 import sys
 import librosa
 import numpy as np
+import pandas as pd
 import yaml
 import gc
 from tqdm import tqdm
@@ -68,6 +69,27 @@ def logmelfilterbank(
     mel_basis = librosa.filters.mel(sampling_rate, fft_size, num_mels, fmin, fmax)
 
     return np.log10(np.maximum(eps, np.dot(spc, mel_basis.T)))
+
+
+def make_utt_matrix(train_df, recording_id: str, l_spec=5626, n_class=24):
+    """Make ground truth matrix.
+
+    Args:
+        train_df (DataFrame): train_tp or train_fp
+        recording_id (str): recording_id
+        l_spec (int, optional): Length of mel-spectrogram. Defaults to 5626.
+        n_class (int, optional): The number of class. Defaults to 24.
+
+    Returns:
+        matrix (ndarray): Ground truth matrix. (l_spec, n_class)
+    """
+    matrix = np.zeros((l_spec, n_class))
+    tmp = train_df[train_df["recording_id"] == recording_id].reset_index(drop=True)
+    for i in range(len(tmp)):
+        t_start = int(l_spec * (tmp.loc[i, "t_min"] / 60.0))
+        t_end = int(l_spec * (tmp.loc[i, "t_max"] / 60.0))
+        matrix[t_start:t_end, tmp.loc[i, "species_id"]] = 1.0
+    return matrix
 
 
 def main():
@@ -134,6 +156,10 @@ def main():
     test_dir = os.path.join(args.datadir, "test")
     test_path_list = [os.path.join(test_dir, fname) for fname in os.listdir(test_dir)]
     all_path_list = train_path_list + test_path_list
+    train_tp = pd.read_csv(os.path.join(args.datadir, "train_tp.csv"))
+    tp_list = train_tp["recording_id"].unique()
+    train_fp = pd.read_csv(os.path.join(args.datadir, "train_fp.csv"))
+    fp_list = train_fp["recording_id"].unique()
     # get dataset
     if (args.datadir is not None) and args.cal_type == 1:
         tmp = np.zeros((len(all_path_list), 2880000))
@@ -177,30 +203,34 @@ def main():
             )
             wave_id = path.split("/")[-1][:-5]
             # save
-            if config["format"] == "hdf5":
-                write_hdf5(
-                    os.path.join(outdir, f"{wave_id}.h5"),
-                    "wave",
-                    x.astype(np.float32),
+            if (wave_id in tp_list) and (i == 0):
+                matrix_tp = make_utt_matrix(
+                    train_tp, wave_id, l_spec=len(mel), n_class=config["n_class"]
                 )
                 write_hdf5(
                     os.path.join(outdir, f"{wave_id}.h5"),
-                    "feats",
-                    mel.astype(np.float32),
+                    "matrix_tp",
+                    matrix_tp.astype(np.float32),
                 )
-            elif config["format"] == "npy":
-                np.save(
-                    os.path.join(outdir, f"{wave_id}-wave.npy"),
-                    x.astype(np.float32),
-                    allow_pickle=False,
+            if (wave_id in fp_list) and (i == 0):
+                matrix_fp = make_utt_matrix(
+                    train_fp, wave_id, l_spec=len(mel), n_class=config["n_class"]
                 )
-                np.save(
-                    os.path.join(outdir, f"{wave_id}-feats.npy"),
-                    mel.astype(np.float32),
-                    allow_pickle=False,
+                write_hdf5(
+                    os.path.join(outdir, f"{wave_id}.h5"),
+                    "matrix_fp",
+                    matrix_fp.astype(np.float32),
                 )
-            else:
-                raise ValueError("support only hdf5 or npy format.")
+            write_hdf5(
+                os.path.join(outdir, f"{wave_id}.h5"),
+                "wave",
+                x.astype(np.float32),
+            )
+            write_hdf5(
+                os.path.join(outdir, f"{wave_id}.h5"),
+                "feats",
+                mel.astype(np.float32),
+            )
 
 
 if __name__ == "__main__":
