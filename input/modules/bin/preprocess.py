@@ -210,7 +210,7 @@ def main():
                 write_hdf5(
                     os.path.join(outdir, f"{wave_id}.h5"),
                     "matrix_tp",
-                    matrix_tp.astype(np.float32),
+                    matrix_tp.astype(np.int64),
                 )
             if (wave_id in fp_list) and (i == 0):
                 matrix_fp = make_utt_matrix(
@@ -219,7 +219,7 @@ def main():
                 write_hdf5(
                     os.path.join(outdir, f"{wave_id}.h5"),
                     "matrix_fp",
-                    matrix_fp.astype(np.float32),
+                    matrix_fp.astype(np.int64),
                 )
             write_hdf5(
                 os.path.join(outdir, f"{wave_id}.h5"),
