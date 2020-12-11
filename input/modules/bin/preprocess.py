@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
-from utils.utils import write_hdf5
+from utils import write_hdf5
 
 
 def logmelfilterbank(

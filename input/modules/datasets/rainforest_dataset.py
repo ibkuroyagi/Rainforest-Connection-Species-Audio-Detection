@@ -43,26 +43,45 @@ class RainForestDataset(Dataset):
         files = sorted(find_files(root_dir, "*.h5"))
         use_file_keys = []
         use_file_list = []
+        use_time_list = []
         if mode == "tp":
             for file in files:
-                if file.split("/")[-1].split(".")[0] in tp_list:
+                recording_id = file.split("/")[-1].split(".")[0]
+                if recording_id in tp_list:
                     use_file_keys.append(keys + ["matrix_tp"])
                     use_file_list.append(file)
+                    use_time_list.append(
+                        train_tp[train_tp["recording_id"] == recording_id]
+                        .loc[:, ["species_id", "t_min", "t_max"]]
+                        .values
+                    )
         elif mode == "all":
             fp_list = train_fp["recording_id"].unique()
             for file in files:
-                if file.split("/")[-1].split(".")[0] in tp_list:
+                recording_id = file.split("/")[-1].split(".")[0]
+                if recording_id in tp_list:
                     use_file_keys.append(keys + ["matrix_tp"])
                     use_file_list.append(file)
-                if file.split("/")[-1].split(".")[0] in fp_list:
+                    use_time_list.append(
+                        train_tp[train_tp["recording_id"] == recording_id]
+                        .loc[:, ["species_id", "t_min", "t_max"]]
+                        .values
+                    )
+                if recording_id in fp_list:
                     use_file_keys.append(keys + ["matrix_fp"])
                     use_file_list.append(file)
+                    use_time_list.append(
+                        train_fp[train_fp["recording_id"] == recording_id]
+                        .loc[:, ["species_id", "t_min", "t_max"]]
+                        .values
+                    )
         elif mode == "test":
             for file in files:
                 use_file_keys.append(keys)
                 use_file_list.append(file)
         self.use_file_keys = use_file_keys
         self.use_file_list = use_file_list
+        self.use_time_list = use_time_list
         self.mode = mode
         self.allow_cache = allow_cache
         self.is_noamalize = is_normalize
@@ -82,9 +101,8 @@ class RainForestDataset(Dataset):
             items: Dict
                 wave: (ndarray) Wave (T, ).
                 feats: (ndarray) Feature (T', C).
-                machine: (str) Name of machine.
-                machine_id: (int) Number of machine id.
-                is_normal: (int) Whether normal or not. (if normal == 1)
+                matrix_tp: (ndrray) Matrix of ground truth.
+                time_list: (ndrray) (n_recoding_id, t_max, t_min).
         """
         if self.allow_cache and len(self.caches[idx]) != 0:
             return self.caches[idx]
@@ -100,7 +118,8 @@ class RainForestDataset(Dataset):
             ) / items["feats"].std(axis=0, keepdims=True)
         if self.is_normalize and "wave" in self.keys:
             items["wave"] = (items["wave"] - items["wave"].mean()) / items["wave"].std()
-
+        if (self.mode == "all") or (self.mode == "tp"):
+            items["time_list"] = self.use_time_list[idx]
         if self.allow_cache:
             self.caches[idx] = items
         return items
@@ -110,6 +129,5 @@ class RainForestDataset(Dataset):
 
         Returns:
             int: The length of dataset.
-
         """
         return len(self.use_file_list)

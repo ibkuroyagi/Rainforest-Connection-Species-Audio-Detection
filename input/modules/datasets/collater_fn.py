@@ -1,17 +1,18 @@
-import logging
-import os
-import sys
-from collections import defaultdict
+# -*- coding: utf-8 -*-
+
+# Copyright 2020 Ibuki Kuroyanagi
+#  MIT License (https://opensource.org/licenses/MIT)
+
+"""Collater function modules."""
 
 import numpy as np
-import pandas as pd
 import torch
 
 
 class FeatTrainCollater(object):
     """Customized collater for Pytorch DataLoader for feat form data in training."""
 
-    def __init__(self, max_frames=256, pos_machine="fan"):
+    def __init__(self, max_frames=512, pos_machine="fan"):
         """Initialize customized collater for PyTorch DataLoader.
 
         Args:
@@ -33,29 +34,38 @@ class FeatTrainCollater(object):
             Tensor: Machine label (B, T, n_class).
 
         """
-
         logmels = [b["feats"] for b in batch]
-        matrix_tp = [b["matrix_tp"] for b in batch]
-
-        # make batch with random cut
-        frame_lengths = [logmel.shape[0] for logmel in logmels]
-        start_frames = np.array(
-            [np.random.randint(fl - self.max_frames) for fl in frame_lengths]
-        )
-        end_frames = start_frames + self.max_frames
-        logmel_batch = [
-            logmel[start:end]
-            for logmel, start, end in zip(logmels, start_frames, end_frames)
-        ]
-        machine_batch = [
-            np.int64(str(machine, "utf-8") == self.pos_machine) for machine in machines
-        ]
+        matrix_tp_list = [b["matrix_tp"] for b in batch]
+        all_time_list = [b["time_list"] for b in batch]
+        logmel_batch = []
+        frame_batch = []
+        clip_batch = []
+        # select start point
+        for logmel, matrix_tp, time_list in zip(logmels, matrix_tp_list, all_time_list):
+            l_spec = len(logmel)
+            idx = np.random.randint(len(time_list))
+            time_start = int(l_spec * time_list[idx][1] / 60.0)
+            time_end = int(l_spec * time_list[idx][2] / 60.0)
+            center = np.round((time_start + time_end) / 2)
+            beginning = center - self.max_frames / 2
+            if beginning < 0:
+                beginning = 0
+            beginning = np.random.randint(beginning, center)
+            ending = beginning + self.max_frames
+            if ending > l_spec:
+                ending = l_spec
+            beginning = ending - self.max_frames
+            logmel_batch.append(logmel[beginning:ending].astype(np.float32))
+            frame_batch.append(matrix_tp[beginning:ending].astype(np.float32))
+            clip_batch.append(
+                matrix_tp[beginning:ending].any(axis=0).astype(np.float32)
+            )
 
         # convert each batch to tensor, assume that each item in batch has the same length
-        logmel_batch = torch.tensor(logmel_batch, dtype=torch.float).transpose(
-            2, 1
-        )  # (B, mel, max_frames)
-        machine_batch = torch.tensor(machine_batch, dtype=torch.float).unsqueeze(
-            1
-        )  # (B, 1)
-        return {"X": logmel_batch, "y": machine_batch}
+        # (B, mel, max_frames)
+        logmel_batch = torch.tensor(logmel_batch, dtype=torch.float).transpose(2, 1)
+        # (B, max_frame, n_class)
+        frame_batch = torch.tensor(frame_batch, dtype=torch.float)
+        # (B, n_class)
+        clip_batch = torch.tensor(clip_batch, dtype=torch.float)
+        return {"X": logmel_batch, "y_frame": frame_batch, "y_clip": clip_batch}
