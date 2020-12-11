@@ -18,12 +18,11 @@ class RainForestDataset(Dataset):
     def __init__(
         self,
         root_dir,
-        tp_list=[],
-        fp_list=[],
+        train_tp,
+        train_fp=None,
         keys=["feats"],
         mode="tp",
         is_normalize=False,
-        statistic={}
         allow_cache=False,
         seed=None,
     ):
@@ -39,6 +38,7 @@ class RainForestDataset(Dataset):
         if seed is not None:
             self.seed = seed
             np.random.seed(seed)
+        tp_list = train_tp["recording_id"].unique()
         # find all of the mel files
         files = sorted(find_files(root_dir, "*.h5"))
         use_file_keys = []
@@ -49,6 +49,7 @@ class RainForestDataset(Dataset):
                     use_file_keys.append(keys + ["matrix_tp"])
                     use_file_list.append(file)
         elif mode == "all":
+            fp_list = train_fp["recording_id"].unique()
             for file in files:
                 if file.split("/")[-1].split(".")[0] in tp_list:
                     use_file_keys.append(keys + ["matrix_tp"])
@@ -64,7 +65,7 @@ class RainForestDataset(Dataset):
         self.use_file_list = use_file_list
         self.mode = mode
         self.allow_cache = allow_cache
-        self.is_noamalize = is_noamalize
+        self.is_noamalize = is_normalize
         if allow_cache:
             # NOTE(ibuki): Manager is need to share memory in dataloader with num_workers > 0
             self.manager = Manager()
