@@ -1,5 +1,6 @@
 import logging
 import os
+from shutil import register_unpack_format
 import sys
 from tqdm import tqdm
 from collections import defaultdict
@@ -8,18 +9,13 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import torch
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import roc_curve
 from sklearn.manifold import TSNE
 from tensorboardX import SummaryWriter
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
-from losses import FrameClipLoss
 from losses import CenterLoss
+from utils import lwlrap
 
 
 class GreedyOECTrainer(object):
@@ -38,6 +34,7 @@ class GreedyOECTrainer(object):
         device=torch.device("cpu"),
         train=False,
         use_center_loss=False,
+        l_spec=5626,
     ):
         """Initialize trainer.
 
@@ -65,6 +62,7 @@ class GreedyOECTrainer(object):
         self.config = config
         self.device = device
         self.train = train
+        self.l_spec = l_spec
         if train:
             self.writer = SummaryWriter(config["outdir"])
         self.use_center_loss = use_center_loss
@@ -146,7 +144,6 @@ class GreedyOECTrainer(object):
 
     def _train_step(self, batch):
         """Train model one step."""
-        # parse batch
         x = batch["X"].to(self.device)
         y_frame = batch["y_frame"].to(self.device)
         y_clip = batch["y_clip"].to(self.device)
@@ -218,18 +215,8 @@ class GreedyOECTrainer(object):
             if self.finish_train:
                 return
         try:
-            self.epoch_train_loss["train/epoch_auc"] = roc_auc_score(
+            self.epoch_train_loss["train/epoch_lwlrap"] = lwlrap(
                 y_true=self.train_y_epoch, y_score=self.train_pred_epoch
-            )
-            preds = self.train_pred_epoch > 0.5
-            self.epoch_train_loss["train/epoch_acc"] = accuracy_score(
-                self.train_y_epoch, preds
-            )
-            self.epoch_train_loss["train/epoch_recall"] = recall_score(
-                self.train_y_epoch, preds
-            )
-            self.epoch_train_loss["train/epoch_precision"] = precision_score(
-                self.train_y_epoch, preds, zero_division=0
             )
         except ValueError:
             logging.warning("Raise ValueError: May be contain NaN in y_pred.")
@@ -254,60 +241,42 @@ class GreedyOECTrainer(object):
         # reset
         self.train_y_epoch = np.empty((0, 1))
         self.train_pred_epoch = np.empty((0, 1))
-        self.train_embedding_epoch = np.empty(
-            (0, self.config["center_loss_params"]["feat_dim"])
-        )
-        self.train_label_epoch = np.empty((0, 1))
         self.epoch_train_loss = defaultdict(float)
+        if self.use_center_loss:
+            self.train_embedding_epoch = np.empty(
+                (0, self.config["center_loss_params"]["feat_dim"])
+            )
+            self.train_label_epoch = np.empty((0, 1))
 
     @torch.no_grad()
     def _eval_step(self, batch):
         """Evaluate model one step."""
-        # parse batch
         x = batch["X"].to(self.device)
-        y = batch["y"].to(self.device)
-        label = batch["label"]
+        y_frame = batch["y_frame"].to(self.device)
+        y_clip = batch["y_clip"].to(self.device)
         batch_size = x.size(0)
         y_ = self.model(x)
-        if self.config["loss_type"] == "BCELoss":
-            loss = self.criterion(torch.sigmoid(y_["outliter"]), y)
-        elif self.config["loss_type"] == "GreedyLoss":
-            loss = self.criterion(y_["outliter"], y_["anomaly"], y, label)
-        else:
-            loss = self.criterion(y_["outliter"], y)
+        if self.config["loss_type"] == "FrameClipLoss":
+            loss = self.criterion(y_["y_frame"], y_frame, y_["y_clip"], y_clip)
         if self.use_center_loss:
-            center_loss_label = torch.zeros(len(label))
-            center_loss_label[label == "normal"] = 1
+            center_loss_label = batch["label"]
             loss += (
                 self.center_loss(y_["embedding"], center_loss_label)
                 * self.config["center_loss_alpha"]
             )
         # add to total eval loss
         self.total_eval_loss["dev/loss"] += loss.item() / batch_size
-        if self.config["loss_type"] == "GreedyLoss":
-            outliter_idx, anomaly_idx = get_greedy_idx(
-                label=label, mode=self.config.get("greedy_mode", "all")
-            )
-            pred_outliter = (
-                torch.sigmoid(y_["outliter"][outliter_idx]).detach().cpu().numpy()
-            )
-            pred_anomaly = (
-                torch.sigmoid(y_["anomaly"][anomaly_idx]).detach().cpu().numpy()
-            )
+        if self.config["loss_type"] == "FrameClipLoss":
             self.dev_pred_epoch = np.concatenate(
-                [self.dev_pred_epoch, pred_outliter, pred_anomaly], axis=0
+                [self.dev_pred_epoch, y_["y_clip"].detach().cpu().numpy()], axis=0
             )
-            y = y.detach().cpu().numpy()
             self.dev_y_epoch = np.concatenate(
-                [self.dev_y_epoch, y[outliter_idx], y[anomaly_idx]], axis=0
+                [self.dev_y_epoch, y_clip.detach().cpu().numpy()], axis=0
             )
-        else:
-            y_ = torch.sigmoid(y_["outliter"]).cpu().numpy()
-            self.dev_pred_epoch = np.concatenate([self.dev_pred_epoch, y_], axis=0)
-            y = y.cpu().numpy()
-            self.dev_y_epoch = np.concatenate([self.dev_y_epoch, y], axis=0)
         if self.use_center_loss:
-            self.dev_label_epoch = np.concatenate([self.dev_label_epoch, label], axis=0)
+            self.dev_label_epoch = np.concatenate(
+                [self.dev_label_epoch, center_loss_label], axis=0
+            )
             self.dev_embedding_epoch = np.concatenate(
                 [self.dev_embedding_epoch, y_["embedding"].detach().cpu().numpy()]
             )
@@ -325,18 +294,8 @@ class GreedyOECTrainer(object):
             # eval one step
             self._eval_step(batch)
         try:
-            self.epoch_eval_loss["dev/epoch_auc"] = roc_auc_score(
+            self.epoch_dev_loss["dev/epoch_lwlrap"] = lwlrap(
                 y_true=self.dev_y_epoch, y_score=self.dev_pred_epoch
-            )
-            preds = self.dev_pred_epoch > 0.5
-            self.epoch_eval_loss["dev/epoch_acc"] = accuracy_score(
-                self.dev_y_epoch, preds
-            )
-            self.epoch_eval_loss["dev/epoch_recall"] = recall_score(
-                self.dev_y_epoch, preds
-            )
-            self.epoch_eval_loss["dev/epoch_precision"] = precision_score(
-                self.dev_y_epoch, preds, zero_division=0
             )
         except ValueError:
             logging.warning("Raise ValueError: May be contain NaN in y_pred.")
@@ -357,10 +316,19 @@ class GreedyOECTrainer(object):
                 f"(Steps: {self.steps}) {key} = {self.total_eval_loss[key]:.4f}."
             )
         logging.info(f"(Steps: {self.steps}) Start eval data's evaluation.")
+        if self.epochs % self.config["eval_interval_epochs"] == 0:
+            items = self.inference(mode="valid")
+            logging.info(
+                f"Inference (Epochs: {self.epochs}) lwlrap: {items['score']:.6f}"
+            )
+            self._write_to_tensorboard(self.eval_metric)
+            self.eval_metric = defaultdict(float)
         # record
         self._write_to_tensorboard(self.total_eval_loss)
         self._write_to_tensorboard(self.epoch_eval_loss)
-        if self.use_center_loss and (self.epochs % 20 == 0):
+        if self.use_center_loss and (
+            self.epochs % self.config["eval_interval_epochs"] == 0
+        ):
             self.plot_embedding(
                 self.dev_embedding_epoch, self.dev_label_epoch, name="dev"
             )
@@ -370,204 +338,47 @@ class GreedyOECTrainer(object):
         self.epoch_eval_loss = defaultdict(float)
         self.dev_pred_epoch = np.empty((0, 1))
         self.dev_y_epoch = np.empty((0, 1))
-        self.dev_embedding_epoch = np.empty(
-            (0, self.config["center_loss_params"]["feat_dim"])
-        )
-        self.dev_label_epoch = np.empty((0, 1))
+        if self.use_center_loss:
+            self.dev_embedding_epoch = np.empty(
+                (0, self.config["center_loss_params"]["feat_dim"])
+            )
+            self.dev_label_epoch = np.empty((0, 1))
         # restore mode
         self.model.train()
 
-    def eval_score(self, save_csv="", alpha=0.5):
+    def inference(self, mode="test"):
         """Evaluate and save intermediate result."""
         # evaluate
         keys_list = [f"X{i}" for i in range(self.n_eval_split)]
-        if self.config["loss_type"] == "GreedyLoss":
-            y_outliter_preds = [
-                torch.empty((0, 1)).to(self.device) for _ in range(self.n_eval_split)
-            ]
-            y_anomaly_preds = [
-                torch.empty((0, 1)).to(self.device) for _ in range(self.n_eval_split)
-            ]
-        else:
-            y_preds = [
-                torch.empty((0, 1)).to(self.device) for _ in range(self.n_eval_split)
-            ]
-        is_normal = torch.empty((0, 1))
+        y_clip = [
+            torch.empty((0, self.config["n_class"])).to(self.device)
+            for _ in range(self.n_eval_split)
+        ]
+        y_frame = [
+            torch.empty((0, self.l_spec, self.config["n_class"])).to(self.device)
+            for _ in range(self.n_eval_split)
+        ]
+        y_clip_true = torch.empty((0, self.config["n_class"]))
         self.model.eval()
         with torch.no_grad():
             for batch in tqdm(self.data_loader["eval"]):
-                is_normal = torch.cat([is_normal, batch["is_normal"]], dim=0)
+                if mode == "valid":
+                    y_clip_true = torch.cat([y_clip_true, batch["y_clip"]], dim=0)
                 x_batchs = [batch[key].to(self.device) for key in keys_list]
                 for i in range(self.n_eval_split):
                     y_batch_ = self.model(x_batchs[i])
-                    if self.config["loss_type"] == "GreedyLoss":
-                        y_outliter_preds[i] = torch.cat(
-                            [y_outliter_preds[i], y_batch_["outliter"]], dim=0
-                        )
-                        y_anomaly_preds[i] = torch.cat(
-                            [y_anomaly_preds[i], y_batch_["anomaly"]], dim=0
-                        )
-                    else:
-                        y_preds[i] = torch.cat(
-                            [y_preds[i], y_batch_["outliter"]], dim=0
-                        )
-        y_true = torch.ones_like(is_normal).to(self.device)
-
-        eval_size = y_true.shape[0]
-        for i in range(self.n_eval_split):
-            if self.config["loss_type"] == "GreedyLoss":
-                y_outliter_preds[i] = torch.sigmoid(y_outliter_preds[i])
-                self.eval_metric[f"eval_metric/acc_outliter{i}"] = (
-                    (y_outliter_preds[i] > 0.5).int() == y_true
-                ).float().sum() / eval_size
-                y_anomaly_preds[i] = torch.sigmoid(y_anomaly_preds[i])
-                self.eval_metric[f"eval_metric/acc_anomaly{i}"] = (
-                    (y_anomaly_preds[i] > 0.5).int() == y_true
-                ).float().sum() / eval_size
-            else:
-                if self.config["loss_type"] == "BCELoss":
-                    loss = self.criterion(torch.sigmoid(y_preds[i]), y_true)
-                else:
-                    loss = self.criterion(y_preds[i], y_true)
-                y_preds[i] = torch.sigmoid(y_preds[i])
-                self.eval_metric[f"eval_metric/loss{i}"] = loss.item() / eval_size
-                self.eval_metric[f"eval_metric/acc{i}"] = (
-                    (y_preds[i] > 0.5).int() == y_true
-                ).float().sum() / eval_size
-        is_normal = is_normal.detach().cpu().numpy()  # (T, 1)
-        if self.config["loss_type"] == "GreedyLoss":
-            # (T, n_eval_split)
-            y_outliter_preds = torch.cat(y_outliter_preds, dim=1).detach().cpu().numpy()
-            # (T, n_eval_split)
-            y_anomaly_preds = torch.cat(y_anomaly_preds, dim=1).detach().cpu().numpy()
-            y_preds = alpha * y_outliter_preds + (1 - alpha) * y_anomaly_preds
-            # check directory
-            if len(save_csv) == 0:
-                dirname = os.path.join(
-                    self.config["outdir"], f"predictions/{self.steps}steps"
-                )
-                if not os.path.exists(dirname):
-                    os.makedirs(dirname)
-                df = pd.DataFrame(y_outliter_preds, columns=keys_list)
-                df.to_csv(
-                    os.path.join(dirname, f"preds_outliter_{self.steps}.csv"),
-                    index=False,
-                )
-                df = pd.DataFrame(y_anomaly_preds, columns=keys_list)
-                df.to_csv(
-                    os.path.join(dirname, f"preds_anomaly_{self.steps}.csv"),
-                    index=False,
-                )
-        else:
-            y_preds = (
-                torch.cat(y_preds, dim=1).detach().cpu().numpy()
-            )  # (T, n_eval_split)
-            # check directory
-            if len(save_csv) == 0:
-                dirname = os.path.join(
-                    self.config["outdir"], f"predictions/{self.steps}steps"
-                )
-                if not os.path.exists(dirname):
-                    os.makedirs(dirname)
-        if (len(save_csv) != 0) and (
-            save_csv
-            in [
-                "dev",
-                "eval",
-                "00",
-                "01",
-                "02",
-                "03",
-                "04",
-                "05",
-                "06",
-                "07",
-            ]
-        ):
-            dirname = os.path.join(
-                self.config["outdir"],
-                f"split{self.config['n_eval_split']}frame{self.config['max_frames']}",
-            )
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        df = pd.DataFrame(y_preds, columns=keys_list)
-        df.to_csv(os.path.join(dirname, f"preds_{self.steps}.csv"), index=False)
-        self.eval_asd(
-            is_normal=is_normal,
-            y_preds=y_preds,
-            dirname=dirname,
-            recode=self.train,
-        )
-        # restore mode
-        self.model.train()
-
-    def eval_asd(self, is_normal, y_preds, dirname, recode=True):
-        df = pd.DataFrame(np.array(is_normal), columns=["is_normal"])
-        df.to_csv(os.path.join(dirname, "is_normal.csv"), index=False)
-
-        columns = ["min", "max", "median", "mean", "median_mean"]
-        n_cut = max(self.n_eval_split // 5, 1)
-        y_scores = [
-            y_preds.min(axis=1),
-            y_preds.max(axis=1),
-            y_preds.mean(axis=1),
-            np.median(y_preds, axis=1),
-            np.sort(y_preds, axis=1)[:, n_cut:-n_cut].mean(axis=1),
-        ]
-        df = pd.DataFrame(np.array(y_scores).T, columns=columns)
-        df.to_csv(os.path.join(dirname, "scores.csv"), index=False)
-        results = []
-        df_columns = []
-        plt.figure()
-        best_col = ""
-        best_AUC = 0
-        best_pAUC = 0
-        for i, column in enumerate(columns):
-            y_score = y_scores[i]
-            # calculate roc curve
-            try:
-                self.eval_metric[f"eval_metric/AUC_{column}"] = roc_auc_score(
-                    y_true=is_normal, y_score=y_score
-                )
-                self.eval_metric[f"eval_metric/pAUC_{column}"] = roc_auc_score(
-                    y_true=is_normal, y_score=y_score, max_fpr=0.1
-                )
-                fpr, tpr, thresholds = roc_curve(y_true=is_normal, y_score=y_score)
-                if recode:
-                    # recode
-                    self._write_to_tensorboard(self.eval_metric)
-                plt.plot(fpr, tpr, label=column)
-            except ValueError:
-                logging.warning("Raise ValueError: May be contain NaN in y_pred.")
-                pass
-
-            df_columns.append("AUC_" + column)
-            df_columns.append("pAUC_" + column)
-            results.append(self.eval_metric[f"eval_metric/AUC_{column}"])
-            results.append(self.eval_metric[f"eval_metric/pAUC_{column}"])
-            if best_AUC < self.eval_metric[f"eval_metric/AUC_{column}"]:
-                best_AUC = self.eval_metric[f"eval_metric/AUC_{column}"]
-                best_col = column
-            if best_pAUC < self.eval_metric[f"eval_metric/pAUC_{column}"]:
-                best_pAUC = self.eval_metric[f"eval_metric/pAUC_{column}"]
-        plt.xlabel("FPR: False positive rate")
-        plt.ylabel("TPR: True positive rate")
-        plt.grid()
-        plt.title(
-            f"ROC curve @ {self.steps} steps\n"
-            + f"{best_col} AUC:{best_AUC:.4f}, pAUC:{best_pAUC:.4f}"
-        )
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(os.path.join(dirname, f"roc_curve_{self.steps}.png"))
-        plt.close()
-
-        df = pd.DataFrame([results], columns=df_columns)
-        df.to_csv(os.path.join(dirname, "results.csv"), index=False)
-        for key in self.eval_metric.keys():
-            logging.info(f"(Steps: {self.steps}) {key} = {self.eval_metric[key]:.4f}.")
-        # reset
-        self.eval_metric = defaultdict(float)
+                    y_clip[i] = torch.cat([y_clip[i], y_batch_["y_clip"]], dim=0)
+                    y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
+        # (B, n_eval_split, n_class)
+        y_clip = torch.cat(y_clip, dim=1).detach().cpu().numpy()
+        # (B, n_eval_split, T, n_class)
+        y_frame = torch.cat(y_frame, dim=1).detach().cpu().numpy()
+        if mode == "valid":
+            y_clip_true = y_clip_true.numpy()
+            score = lwlrap(y_clip_true, y_clip.max(axis=1))
+            self.eval_metric["eval_metric/lwlrap"] = score
+            return {"y_clip": y_clip, "y_frame": y_frame, "score": score}
+        return {"y_clip": y_clip, "y_frame": y_frame}
 
     def plot_embedding(self, embedding, label, name="", dirname=""):
         """Plot distribution of embedding layer.
@@ -603,7 +414,6 @@ class GreedyOECTrainer(object):
             self.save_checkpoint(
                 os.path.join(self.config["outdir"], f"checkpoint-{self.steps}steps.pkl")
             )
-            self.eval_score(save_csv="")
             logging.info(f"Successfully saved checkpoint @ {self.steps} steps.")
 
     def _check_log_interval(self):

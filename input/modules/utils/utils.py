@@ -133,6 +133,16 @@ def _one_sample_positive_class_precisions(scores, truth):
 
 
 def lwlrap(truth, scores):
+    """Calculate LWLRAP
+
+    Args:
+        truth (ndarray): Ground truth.(B, n_class)
+        scores (ndarray): Predicted score.(B, n_class)
+
+    Returns:
+        per_class_lwlrap (ndarray): (n_class)
+        weight_per_class (ndarray): (n_class)
+    """
     assert truth.shape == scores.shape
     num_samples, num_classes = scores.shape
     precisions_for_samples_by_classes = np.zeros((num_samples, num_classes))

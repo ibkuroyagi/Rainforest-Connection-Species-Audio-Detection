@@ -30,9 +30,9 @@ class FeatTrainCollater(object):
             batch (list): list of dict of melspectrogram and features.
 
         Returns:
-            Tensor: Feat batch (B, T, bin).
-            Tensor: Machine label (B, T, n_class).
-
+            Tensor: logmel batch (B, bin, T).
+            Tensor: frame label (B, T, n_class).
+            Tensor: clip label (B, n_class).
         """
         logmels = [b["feats"] for b in batch]
         matrix_tp_list = [b["matrix_tp"] for b in batch]
@@ -69,3 +69,63 @@ class FeatTrainCollater(object):
         # (B, n_class)
         clip_batch = torch.tensor(clip_batch, dtype=torch.float)
         return {"X": logmel_batch, "y_frame": frame_batch, "y_clip": clip_batch}
+
+
+class FeatEvalCollater(object):
+    """Customized collater for Pytorch DataLoader for feat form data in evaluation."""
+
+    def __init__(self, max_frames=512, n_split=20, is_label=False):
+        """Initialize customized collater for PyTorch DataLoader.
+
+        Args:
+            max_frames (int): The max size of melspectrograms frame.
+            n_split (int): The number of split eval data to apply the model.
+
+        """
+        self.max_frames = max_frames
+        self.n_split = n_split
+        self.is_label = is_label
+
+    def __call__(self, batch):
+        """Convert into batch tensors.
+
+        Args:
+            batch (list): list of dict of melspectrogram and features.
+
+        Returns:
+            Tensor: Feat batch (B, bin, max_frames).
+            Tensor: clip label (B, n_class).
+        """
+        logmels = [b["feats"] for b in batch]
+        frame_lengths = np.array([logmel.shape[0] for logmel in logmels])
+        hop_size = np.array(
+            [
+                max((frame_length - self.max_frames) // (self.n_split - 1), 1)
+                for frame_length in frame_lengths
+            ]
+        )
+        start_frames = np.array(
+            [(hop_size * i).astype(np.int64) for i in range(self.n_split - 1)]
+            + [frame_lengths - self.max_frames]
+        )
+        end_frames = start_frames + self.max_frames
+        items = {}
+        for i, (start_frame, end_frame) in enumerate(zip(start_frames, end_frames)):
+            logmel_batch = [
+                logmel[start_frame[j] : end_frame[j]]
+                for j, logmel in enumerate(logmels)
+            ]
+            items[f"X{i}"] = torch.tensor(logmel_batch, dtype=torch.float).transpose(
+                2, 1
+            )  # (B, mel, max_frames)
+
+        if self.is_label:
+            matrix_tp_list = [b["matrix_tp"] for b in batch]
+            items["y_clip"] = torch.tensor(
+                [
+                    matrix_tp.any(axis=0).astype(np.float32)
+                    for matrix_tp in matrix_tp_list
+                ],
+                dtype=torch.float,
+            )
+        return items
