@@ -29,6 +29,7 @@ coverage.xml*
 *.job
 # input dataset
 input/rfcx-species-audio-detection/
+input/iterative-stratification-master/
 input/pretrained/
 # venv
 tools/venv/

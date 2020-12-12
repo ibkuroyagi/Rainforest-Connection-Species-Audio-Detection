@@ -15,6 +15,10 @@ virtualenv:
 		-c rfcx-species-audio-detection
 	cd ../input/; unzip rfcx-species-audio-detection.zip -d rfcx-species-audio-detection; \
 		rm rfcx-species-audio-detection.zip
+	. venv/bin/activate; mkdir ../input/; cd ../input/; kaggle datasets download \
+		-d yasufuminakama/iterative-stratification
+	cd ../input/; unzip iterative-stratification.zip; rm iterative-stratification.zip
+		
 
 clean:
 	rm -fr venv

@@ -32,12 +32,19 @@ EOF
 - 特徴抽出部分を事前学習
 ## 注意すること
 - スペクトログラムのスケールでlogを取ると高周波成分が失われるので注意
+- CVの切り方をtestと同じ分布にする
+
 ## アイデア
 - segment-wise predoction(種によって鳴いている時間の長さが異なる)
 - wav2vec
 - SpecAug
 - ダイアライゼーションの出力を代入(ラベルがオーバーラップしている)
 - 無音区間予測で精度改善?
+
+## 決定事項
+- 初手のCVの切り方は
+
+
 </div></details>
 
 <details><summary>kaggle日記</summary><div>
@@ -52,4 +59,20 @@ EOF
         * 手元環境でのEDAとstage1の作成
     - 次回やること
         * 手元環境でのEDAとstage1の作成
+- 12/10(木)
+    - 今日やったこと
+        * preprocess完成
+    - 次回やること
+        * models, datasets, lossesの作成
+- 12/11(金)
+    - 今日やったこと
+        * models, datasets, lossesの作成
+    - 次回やること
+        * trainer, bin/sed_trainの作成
+- 12/12(土)
+    - 今日やったこと
+        * trainer, bin/sed_trainの作成
+    - 次回やること
+        * 手元環境でのEDAとstage1の作成
+
 </div></details>
