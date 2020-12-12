@@ -207,9 +207,8 @@ class GreedyOECTrainer(object):
             self._train_step(batch)
 
             # check interval
-            if self.config["rank"] == 0:
-                self._check_log_interval()
-                self._check_save_interval()
+            self._check_log_interval()
+            self._check_save_interval()
 
             # check whether training is finished
             if self.finish_train:

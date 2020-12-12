@@ -30,10 +30,13 @@ class RainForestDataset(Dataset):
 
         Args:
             root_dir (str): Root directory for dumped files.
+            train_tp (DataFrame): train_tp
+            train_fp (DataFrame): train_fp (default: None)
+            keys: (list): List of key of dataset.
             mode (list): Mode of dataset. [tp, all, test]
             is_normalize(bool): flag of normalize
             allow_cache (bool): Whether to allow cache of the loaded files.
-
+            seed (int): seed
         """
         if seed is not None:
             self.seed = seed
