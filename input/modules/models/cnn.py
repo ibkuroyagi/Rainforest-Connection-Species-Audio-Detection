@@ -11,11 +11,11 @@ from torchlibrosa.stft import Spectrogram
 sys.path.append("../../")
 sys.path.append("../input/modules")
 
-from models.utils import do_mixup
-from models.utils import init_bn
-from models.utils import init_layer
-from models.utils import interpolate
-from models.utils import pad_framewise_output
+from models.utils import do_mixup  # noqa: E402
+from models.utils import init_bn  # noqa: E402
+from models.utils import init_layer  # noqa: E402
+from models.utils import interpolate  # noqa: E402
+from models.utils import pad_framewise_output  # noqa: E402
 
 
 class ConvBlock(nn.Module):
@@ -494,7 +494,7 @@ class Cnn14(nn.Module):
 
 class AttBlock(nn.Module):
     def __init__(self, n_in, n_out, activation="linear", temperature=1.0):
-        super(AttBlock, self).__init__()
+        super(self.__class__, self).__init__()
 
         self.activation = activation
         self.temperature = temperature
@@ -525,7 +525,7 @@ class AttBlock(nn.Module):
 
     def forward(self, x):
         # x: (n_samples, n_in, n_time)
-        norm_att = torch.softmax(torch.clamp(self.att(x), -10, 10), dim=-1)
+        norm_att = torch.softmax(torch.tanh(self.att(x)), dim=-1)
         cla = self.nonlinear_transform(self.cla(x))
         x = torch.sum(norm_att * cla, dim=2)
         return x, norm_att, cla
@@ -553,7 +553,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         mixup_lambda=None,
     ):
 
-        super(Cnn14_DecisionLevelAtt, self).__init__()
+        super(self.__class__, self).__init__()
 
         window = "hann"
         center = True
@@ -652,9 +652,9 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         x = F.dropout(x, p=0.2, training=self.training)
         x = self.conv_block6(x, pool_size=(1, 1), pool_type="avg")
         x = F.dropout(x, p=0.2, training=self.training)
-        print(f"feature_map:{x.shape}")
+        # print(f"feature_map:{x.shape}")
         x = torch.mean(x, dim=3)
-        print(f"feature_map: mean-dim3{x.shape}")
+        # print(f"feature_map: mean-dim3{x.shape}")
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
         x = x1 + x2
@@ -663,7 +663,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         x = F.relu_(self.fc1(x))
         x = x.transpose(1, 2)
         x = F.dropout(x, p=0.5, training=self.training)
-        print(f"pool1d_map: mean-dim3{x.shape}")
+        # print(f"pool1d_map: mean-dim3{x.shape}")
         (clipwise_output, _, segmentwise_output) = self.att_block(x)
         segmentwise_output = segmentwise_output.transpose(1, 2)
 

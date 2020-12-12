@@ -1,15 +1,18 @@
-import logging
-import random
+# -*- coding: utf-8 -*-
+
+# Copyright 2020 Ibuki Kuroyanagi
+
 import sys
 import h5py
 import numpy as np
 from multiprocessing import Manager
-from torch.utils.data.sampler import BatchSampler
+
+# from torch.utils.data.sampler import BatchSampler
 from torch.utils.data import Dataset
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
-from utils.utils import find_files
+from utils.utils import find_files  # noqa: E402
 
 
 class RainForestDataset(Dataset):
@@ -17,8 +20,9 @@ class RainForestDataset(Dataset):
 
     def __init__(
         self,
-        root_dir,
-        train_tp,
+        root_dir="",
+        files=None,
+        train_tp=None,
         train_fp=None,
         keys=["feats"],
         mode="tp",
@@ -30,7 +34,7 @@ class RainForestDataset(Dataset):
 
         Args:
             root_dir (str): Root directory for dumped files.
-            train_tp (DataFrame): train_tp
+            train_tp (DataFrame): train_tp (default: None)
             train_fp (DataFrame): train_fp (default: None)
             keys: (list): List of key of dataset.
             mode (list): Mode of dataset. [tp, all, test]
@@ -41,13 +45,14 @@ class RainForestDataset(Dataset):
         if seed is not None:
             self.seed = seed
             np.random.seed(seed)
-        tp_list = train_tp["recording_id"].unique()
         # find all of the mel files
-        files = sorted(find_files(root_dir, "*.h5"))
+        if (files is None) and len(root_dir) != 0:
+            files = sorted(find_files(root_dir, "*.h5"))
         use_file_keys = []
         use_file_list = []
         use_time_list = []
         if mode == "tp":
+            tp_list = train_tp["recording_id"].unique()
             for file in files:
                 recording_id = file.split("/")[-1].split(".")[0]
                 if recording_id in tp_list:
@@ -59,6 +64,7 @@ class RainForestDataset(Dataset):
                         .values
                     )
         elif mode == "all":
+            tp_list = train_tp["recording_id"].unique()
             fp_list = train_fp["recording_id"].unique()
             for file in files:
                 recording_id = file.split("/")[-1].split(".")[0]

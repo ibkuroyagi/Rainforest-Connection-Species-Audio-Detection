@@ -3,7 +3,7 @@
 
 # Copyright 2020 Ibuki Kuroyanagi
 
-"""Train Anomary Sound Detection model."""
+"""Train Sound Event Detection model."""
 
 import argparse
 import logging
@@ -11,6 +11,7 @@ import os
 import sys
 
 import matplotlib
+import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -20,14 +21,13 @@ from torch.utils.data import DataLoader
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
-from losses import CenterLoss
-from utils import lwlrap
-import parallel_wavegan
-import parallel_wavegan.models
-import parallel_wavegan.optimizers
-import parallel_wavegan.losses
-from datasets import RainForestDataset
+import losses  # noqa: E402
+import models  # noqa: E402
+import optimizers  # noqa: E402
+from datasets import RainForestDataset  # noqa: E402
 
+sys.path.append("../input/iterative-stratification-master")
+from iterstrat.ml_stratifiers import MultilabelStratifiedKFold  # noqa: E402
 
 # set to avoid matplotlib error in CLI environment
 matplotlib.use("Agg")
@@ -42,7 +42,13 @@ def main():
         "--datadir",
         default=None,
         type=str,
-        help="root directory.",
+        help="root data directory.",
+    )
+    parser.add_argument(
+        "--dumpdir",
+        default=None,
+        type=str,
+        help="root dump directory.",
     )
     parser.add_argument(
         "--outdir", type=str, required=True, help="directory to save checkpoints."
@@ -57,9 +63,6 @@ def main():
         "--config", type=str, required=True, help="yaml format configuration file."
     )
     parser.add_argument("--seed", type=int, default=1, help="seed.")
-    parser.add_argument(
-        "--n_anomaly", type=int, default=1, help="The number of max anomaly file."
-    )
     parser.add_argument(
         "--resume",
         default="",
@@ -125,242 +128,203 @@ def main():
     else:
         train_fp = None
     # get dataset
-    train_dataset = RainForestDataset(
-        root_dir=os.path.join(args.datadir, "train"),
-        train_tp=train_tp,
-        train_fp=train_fp,
-        keys=train_keys,
-        mode=config.get("train_dataset_mode", "tp"),
-        is_normalize=config.get("is_normalize", False),
-        allow_cache=config.get("allow_cache", False),  # keep compatibility
-        seed=None,
+    tp_list = train_tp["recording_id"].unique()
+    columns = ["recording_id"] + [f"s{i}" for i in range(24)]
+    ground_truth = pd.DataFrame(np.zeros((len(tp_list), 25)), columns=columns)
+    ground_truth["recording_id"] = tp_list
+    for i, recording_id in enumerate(train_tp["recording_id"].values):
+        ground_truth.iloc[
+            ground_truth["recording_id"] == recording_id,
+            train_tp.loc[i, "species_id"] + 1,
+        ] = 1.0
+    kfold = MultilabelStratifiedKFold(
+        n_splits=config["n_fold"], shuffle=True, random_state=config["seed"]
     )
-    logging.info(f"The number of training files = {len(train_dataset)}.")
-    dev_dataset = MelASDDataset(
-        pos_root_dir=args.eval_dumpdir,
-        neg_root_dirs=[],
-        keys=train_keys,
-        machine_id=args.pos_machine_id,
-        mode="train",
-        seed=args.seed,
-        max_anomaly=64,
-        is_normalize=config.get("is_normalize", False),
-        allow_cache=config.get("allow_cache", False),  # keep compatibility
-    )
-    logging.info(f"The number of development files = {len(dev_dataset)}.")
-    eval_dataset = MelASDDataset(
-        pos_root_dir=args.eval_dumpdir,
-        neg_root_dirs=[],
-        keys=eval_keys,
-        machine_id=args.pos_machine_id,
-        mode="test",
-        seed=args.seed,
-        max_anomaly=64,
-        is_normalize=config.get("is_normalize", False),
-        allow_cache=config.get("allow_cache", False),  # keep compatibility
-    )
-    logging.info(f"The number of evaluation files = {len(eval_dataset)}.")
-    if (
-        config.get("batch_sampler_type", "OECBalancedBatchSampler")
-        == "OECBalancedBatchSampler"
-    ):
-        from parallel_wavegan.datasets import OECBalancedBatchSampler
-
-        train_balanced_batch_sampler = OECBalancedBatchSampler(
-            train_dataset, batch_size=config["batch_size"], shuffle=True, drop_last=True
+    y = ground_truth.iloc[:, 1:].values
+    for i, (train_idx, valid_idx) in enumerate(kfold.split(y, y)):
+        # train_y = ground_truth.iloc[train_idx]
+        valid_y = ground_truth.iloc[valid_idx]
+        train_tp["use_train"] = train_tp["recording_id"].map(
+            lambda x: x not in valid_y["recording_id"].values
         )
-    elif (
-        config.get("batch_sampler_type", "OECBalancedBatchSampler")
-        == "OECBalancedWithAnomalyBatchSampler"
-    ):
-        from parallel_wavegan.datasets import OECBalancedWithAnomalyBatchSampler
-
-        train_balanced_batch_sampler = OECBalancedWithAnomalyBatchSampler(
-            train_dataset,
-            batch_size=config["batch_size"],
-            n_anomaly=min(config["n_anomaly_in_batch"], args.n_anomaly),
-            shuffle=True,
-            drop_last=True,
+        train_dataset = RainForestDataset(
+            root_dir=os.path.join(args.dumpdir, "train"),
+            train_tp=train_tp[train_tp["use_train"]],
+            train_fp=train_fp,
+            keys=train_keys,
+            mode=config.get("train_dataset_mode", "tp"),
+            is_normalize=config.get("is_normalize", False),
+            allow_cache=config.get("allow_cache", False),  # keep compatibility
+            seed=None,
         )
-
-    # get data loader
-    if config["model_params"].get("require_prep", True):
-        from parallel_wavegan.trainer import WaveEvalCollater
-
-        eval_collater = WaveEvalCollater(
-            sf=config["sampling_rate"],
-            sec=config.get("sec", 4),
-            n_split=config.get("n_eval_split", 3),
+        logging.info(f"The number of training files = {len(train_dataset)}.")
+        dev_dataset = RainForestDataset(
+            root_dir=os.path.join(args.dumpdir, "train"),
+            train_tp=train_tp[~train_tp["use_train"]],
+            train_fp=train_fp,
+            keys=train_keys,
+            mode=config.get("train_dataset_mode", "tp"),
+            is_normalize=config.get("is_normalize", False),
+            allow_cache=config.get("allow_cache", False),  # keep compatibility
+            seed=None,
         )
-        if args.pos_machine_id is None:
-            from parallel_wavegan.trainer import WaveTrainCollater
+        logging.info(f"The number of development files = {len(dev_dataset)}.")
+        eval_dataset = RainForestDataset(
+            files=[
+                os.path.join(args.dumpdir, "train", f"{recording_id}.h5")
+                for recording_id in tp_list[valid_idx]
+            ],
+            keys=eval_keys,
+            mode="test",
+            is_normalize=config.get("is_normalize", False),
+            allow_cache=config.get("allow_cache", False),  # keep compatibility
+            seed=None,
+        )
+        logging.info(f"The number of evaluation files = {len(eval_dataset)}.")
 
-            train_collater = WaveTrainCollater(
-                sf=config["sampling_rate"],
-                sec=config.get("sec", 4),
-                pos_machine=args.pos_machine,
-            )
+        # get data loader
+        if config["model_params"].get("require_prep", True):
+            # from datasets import WaveEvalCollater
+
+            # eval_collater = WaveEvalCollater(
+            #     sf=config["sampling_rate"],
+            #     sec=config.get("sec", 10),
+            #     n_split=config.get("n_eval_split", 3),
+            # )
+            # from datasets import WaveTrainCollater
+
+            # train_collater = WaveTrainCollater(
+            #     sf=config["sampling_rate"],
+            #     sec=config.get("sec", 10),
+            # )
+            pass
         else:
-            from parallel_wavegan.trainer import WaveMachineIdTrainCollater
+            from datasets import FeatEvalCollater
 
-            train_collater = WaveMachineIdTrainCollater(
-                sf=config["sampling_rate"],
-                sec=config.get("sec", 4),
-                pos_machine=args.pos_machine,
-                pos_machine_id=args.pos_machine_id,
-                use_anomaly=args.n_anomaly >= 1,
+            eval_collater = FeatEvalCollater(
+                max_frames=config.get("max_frames", 512),
+                n_split=config.get("n_eval_split", 20),
+                is_label=False,
             )
-
-    else:
-        from parallel_wavegan.trainer import FeatEvalCollater
-
-        eval_collater = FeatEvalCollater(
-            max_frames=config.get("max_frames", 256),
-            n_split=config.get("n_eval_split", 3),
-        )
-        if args.pos_machine_id is None:
-            from parallel_wavegan.trainer import FeatTrainCollater
+            from datasets import FeatTrainCollater
 
             train_collater = FeatTrainCollater(
-                max_frames=config.get("max_frames", 256), pos_machine=args.pos_machine
+                max_frames=config.get("max_frames", 512),
             )
+        data_loader = {
+            "train": DataLoader(
+                dataset=train_dataset,
+                collate_fn=train_collater,
+                num_workers=config["num_workers"],
+                pin_memory=config["pin_memory"],
+            ),
+            "dev": DataLoader(
+                dataset=dev_dataset,
+                collate_fn=train_collater,
+                num_workers=config["num_workers"],
+                pin_memory=config["pin_memory"],
+            ),
+            "eval": DataLoader(
+                eval_dataset,
+                batch_size=config["batch_size"],
+                shuffle=False,
+                collate_fn=eval_collater,
+                num_workers=config["num_workers"],
+                pin_memory=config["pin_memory"],
+            ),
+        }
+        # from IPython import embed
+
+        # embed()
+        # define models and optimizers
+        model_class = getattr(
+            models,
+            # keep compatibility
+            config.get("model_type", "Cnn14_DecisionLevelAtt"),
+        )
+        model = model_class(training=True, **config["model_params"]).to(device)
+        if len(args.cache_path) != 0:
+            weights = torch.load(args.cache_path)
+            model.load_state_dict(weights["model"])
+            logging.info(f"Successfully load weight from {args.cache_path}")
+        if config.get("model_type", "Cnn14_DecisionLevelAtt") in [
+            "ResNet38Double",
+            "ResNet38Att",
+        ]:
+            conv_params = []
+            fc_param = []
+            for name, param in model.named_parameters():
+                if "conv_layer" in name:
+                    conv_params.append(param)
+                else:
+                    fc_param.append(param)
         else:
-            from parallel_wavegan.trainer import FeatMachineIdTrainCollater
+            from models import AttBlock
 
-            train_collater = FeatMachineIdTrainCollater(
-                max_frames=config.get("max_frames", 256),
-                pos_machine=args.pos_machine,
-                pos_machine_id=args.pos_machine_id,
-                use_anomaly=args.n_anomaly >= 1,
-                is_label=config.get("is_label", False),
+            model.bn0 = nn.BatchNorm2d(config["num_mels"])
+            model.att_block = AttBlock(**config["att_block"])
+            nn.init.xavier_uniform_(model.att_block.att.weight)
+            nn.init.xavier_uniform_(model.att_block.cla.weight)
+            conv_params = []
+            fc_param = []
+            for name, param in model.named_parameters():
+                if name.startwith(("fc1", "att_block")):
+                    fc_param.append(param)
+                else:
+                    conv_params.append(param)
+        loss_class = getattr(
+            losses,
+            # keep compatibility
+            config.get("loss_type", "BCEWithLogitsLoss"),
+        )
+        criterion = loss_class(**config["loss_params"]).to(device)
+        optimizer_class = getattr(
+            optimizers,
+            # keep compatibility
+            config.get("optimizer_type", "Adam"),
+        )
+        optimizer = optimizer_class(
+            [
+                {"params": conv_params, "lr": config["optimizer_params"]["conv_lr"]},
+                {"params": fc_param, "lr": config["optimizer_params"]["fc_lr"]},
+            ]
+        )
+
+        scheduler_class = getattr(
+            torch.optim.lr_scheduler,
+            # keep compatibility
+            config.get("scheduler_type", "StepLR"),
+        )
+        scheduler = scheduler_class(optimizer=optimizer, **config["scheduler_params"])
+
+        logging.info(model)
+        # define trainer
+        from trainers import SEDTrainer
+
+        trainer = SEDTrainer(
+            steps=0,
+            epochs=0,
+            data_loader=data_loader,
+            model=model.to(device),
+            criterion=criterion,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            config=config,
+            device=device,
+            train=True,
+        )
+        # resume from checkpoint
+        if len(args.resume) != 0:
+            trainer.load_checkpoint(args.resume)
+            logging.info(f"Successfully resumed from {args.resume}.")
+        # run training loop
+        try:
+            trainer.run()
+        except KeyboardInterrupt:
+            trainer.save_checkpoint(
+                os.path.join(config["outdir"], f"checkpoint-{trainer.steps}steps.pkl")
             )
-
-    data_loader = {
-        "train": DataLoader(
-            dataset=train_dataset,
-            batch_sampler=train_balanced_batch_sampler,
-            collate_fn=train_collater,
-            num_workers=config["num_workers"],
-            pin_memory=config["pin_memory"],
-        ),
-        "dev": DataLoader(
-            dataset=dev_dataset,
-            # batch_sampler=dev_balanced_batch_sampler,
-            collate_fn=train_collater,
-            num_workers=config["num_workers"],
-            pin_memory=config["pin_memory"],
-        ),
-        "eval": DataLoader(
-            eval_dataset,
-            batch_size=config["batch_size"],
-            shuffle=False,
-            collate_fn=eval_collater,
-            num_workers=config["num_workers"],
-            pin_memory=config["pin_memory"],
-        ),
-    }
-    # from IPython import embed
-
-    # embed()
-    # define models and optimizers
-    model_class = getattr(
-        parallel_wavegan.models,
-        # keep compatibility
-        config.get("model_type", "ResNet38"),
-    )
-    model = model_class(training=True, **config["model_params"]).to(device)
-    if len(args.cache_path) != 0:
-        weights = torch.load(args.cache_path)
-        model.load_state_dict(weights["model"])
-        logging.info(f"Successfully load weight from {args.cache_path}")
-    if config.get("model_type", "ResNet38") in ["ResNet38Double", "ResNet38Att"]:
-        conv_params = []
-        fc_param = []
-        for name, param in model.named_parameters():
-            if "conv_layer" in name:
-                conv_params.append(param)
-            else:
-                fc_param.append(param)
-    else:
-        model.bn0 = nn.BatchNorm2d(config["num_mels"])
-        model.fc_audioset = nn.Linear(**config["fc_audioset"])
-        nn.init.xavier_uniform_(model.fc_audioset.weight)
-        conv_params = []
-        fc_param = []
-        for name, param in model.named_parameters():
-            if name in ["fc_audioset.weight", "fc_audioset.bias"]:
-                fc_param.append(param)
-            else:
-                conv_params.append(param)
-    loss_class = getattr(
-        parallel_wavegan.losses,
-        # keep compatibility
-        config.get("loss_type", "BCELoss"),
-    )
-    criterion = loss_class(**config["loss_params"]).to(device)
-    optimizer_class = getattr(
-        parallel_wavegan.optimizers,
-        # keep compatibility
-        config.get("optimizer_type", "Adam"),
-    )
-    optimizer = optimizer_class(
-        [
-            {"params": conv_params, "lr": config["optimizer_params"]["conv_lr"]},
-            {"params": fc_param, "lr": config["optimizer_params"]["fc_lr"]},
-        ]
-    )
-
-    scheduler_class = getattr(
-        torch.optim.lr_scheduler,
-        # keep compatibility
-        config.get("scheduler_type", "StepLR"),
-    )
-    scheduler = scheduler_class(optimizer=optimizer, **config["scheduler_params"])
-
-    logging.info(model)
-    # define trainer
-    if config.get("model_type", "ResNet38") == "ResNet38":
-        from parallel_wavegan.trainer import OECTrainer
-
-        trainer = OECTrainer(
-            steps=0,
-            epochs=0,
-            data_loader=data_loader,
-            model=model.to(device),
-            criterion=criterion,
-            optimizer=optimizer,
-            scheduler=scheduler,
-            config=config,
-            device=device,
-            train=True,
-        )
-    else:
-        from parallel_wavegan.trainer import GreedyOECTrainer
-
-        trainer = GreedyOECTrainer(
-            steps=0,
-            epochs=0,
-            data_loader=data_loader,
-            model=model.to(device),
-            criterion=criterion,
-            optimizer=optimizer,
-            scheduler=scheduler,
-            config=config,
-            device=device,
-            train=True,
-        )
-    # resume from checkpoint
-    if len(args.resume) != 0:
-        trainer.load_checkpoint(args.resume)
-        logging.info(f"Successfully resumed from {args.resume}.")
-    # run training loop
-    try:
-        trainer.run()
-    except KeyboardInterrupt:
-        trainer.save_checkpoint(
-            os.path.join(config["outdir"], f"checkpoint-{trainer.steps}steps.pkl")
-        )
-        logging.info(f"Successfully saved checkpoint @ {trainer.steps}steps.")
+            logging.info(f"Successfully saved checkpoint @ {trainer.steps}steps.")
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ class CenterLoss(nn.Module):
     """
 
     def __init__(self, num_classes=10, feat_dim=2, device="cpu"):
-        super(CenterLoss, self).__init__()
+        super(self.__class__, self).__init__()
         self.num_classes = num_classes
         self.feat_dim = feat_dim
         self.device = device

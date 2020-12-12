@@ -12,16 +12,13 @@ import torch
 class FeatTrainCollater(object):
     """Customized collater for Pytorch DataLoader for feat form data in training."""
 
-    def __init__(self, max_frames=512, pos_machine="fan"):
+    def __init__(self, max_frames=512):
         """Initialize customized collater for PyTorch DataLoader.
 
         Args:
             max_frames (int): The max size of melspectrograms frame.
-            pos_machine (str): The name of positive machine.
-
         """
         self.max_frames = max_frames
-        self.pos_machine = pos_machine
 
     def __call__(self, batch):
         """Convert into batch tensors.

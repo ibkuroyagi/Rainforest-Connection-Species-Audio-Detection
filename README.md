@@ -23,6 +23,10 @@ sbatch -c 4 -w million2 << EOF
 make
 EOF
 ```
+
+</div></details>
+
+
 ## コンペの主題は何?
 少量のデータセットかつ外部ノイズの多い音からAudio-taggingをする
 ただし、複数の種類が存在する可能性がある
@@ -42,10 +46,9 @@ EOF
 - 無音区間予測で精度改善?
 
 ## 決定事項
-- 初手のCVの切り方は
+- 初手のCVの切り方はiterative-stratificationを用いる
+- 推論に使うデータを分離するためにダイアライゼーションコードを作成する
 
-
-</div></details>
 
 <details><summary>kaggle日記</summary><div>
 

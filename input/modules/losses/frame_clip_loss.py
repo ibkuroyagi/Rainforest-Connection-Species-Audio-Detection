@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2020 Ibuki Kuroyanagi
-#  MIT License (https://opensource.org/licenses/MIT)
 
 """Frame and Clip Loss modules."""
 

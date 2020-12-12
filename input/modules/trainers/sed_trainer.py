@@ -1,12 +1,10 @@
 import logging
 import os
-from shutil import register_unpack_format
 import sys
 from tqdm import tqdm
 from collections import defaultdict
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import torch
 from sklearn.manifold import TSNE
@@ -14,12 +12,12 @@ from tensorboardX import SummaryWriter
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
-from losses import CenterLoss
-from utils import lwlrap
+from losses import CenterLoss  # noqa: E402
+from utils import lwlrap  # noqa: E402
 
 
-class GreedyOECTrainer(object):
-    """Customized trainer module for OEC training."""
+class SEDTrainer(object):
+    """Customized trainer module for SED training."""
 
     def __init__(
         self,
@@ -82,6 +80,7 @@ class GreedyOECTrainer(object):
             self.tsne = TSNE(**config["tsne_params"])
 
         self.finish_train = False
+        self.best_loss = 0
         self.total_train_loss = defaultdict(float)
         self.total_eval_loss = defaultdict(float)
         self.epoch_train_loss = defaultdict(float)
@@ -320,6 +319,15 @@ class GreedyOECTrainer(object):
             logging.info(
                 f"Inference (Epochs: {self.epochs}) lwlrap: {items['score']:.6f}"
             )
+            if items["score"] > self.best_score:
+                self.best_score = items["score"]
+                logging.info(
+                    f"Epochs: {self.epochs}, BEST score was updated {self.best_score:.6f}."
+                )
+                self.save_checkpoint(
+                    os.path.join(self.config["outdir"], "best_score.pkl")
+                )
+                logging.info(f"Best model was updated @ {self.steps} steps.")
             self._write_to_tensorboard(self.eval_metric)
             self.eval_metric = defaultdict(float)
         # record
