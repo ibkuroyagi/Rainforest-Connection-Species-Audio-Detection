@@ -10,7 +10,7 @@ if [ -e "${PWD}/../venv/bin/activate" ]; then
 fi
 
 # python related
-export OMP_NUM_THREADS=1
+export OMP_NUM_THREADS=4
 export PYTHONIOENCODING=UTF-8
 export MPL_BACKEND=Agg
 export LC_CTYPE=en_US.UTF-8

@@ -93,7 +93,7 @@ class RainForestDataset(Dataset):
         self.use_time_list = use_time_list
         self.mode = mode
         self.allow_cache = allow_cache
-        self.is_noamalize = is_normalize
+        self.is_normalize = is_normalize
         if allow_cache:
             # NOTE(ibuki): Manager is need to share memory in dataloader with num_workers > 0
             self.manager = Manager()
@@ -125,7 +125,7 @@ class RainForestDataset(Dataset):
             items["feats"] = (
                 items["feats"] - items["feats"].mean(axis=0, keepdims=True)
             ) / items["feats"].std(axis=0, keepdims=True)
-        if self.is_normalize and "wave" in self.keys:
+        if self.is_normalize and "wave" in self.use_file_keys:
             items["wave"] = (items["wave"] - items["wave"].mean()) / items["wave"].std()
         if (self.mode == "all") or (self.mode == "tp"):
             items["time_list"] = self.use_time_list[idx]

@@ -142,6 +142,7 @@ def main():
     )
     y = ground_truth.iloc[:, 1:].values
     for fold, (train_idx, valid_idx) in enumerate(kfold.split(y, y)):
+        logging.info(f"Start training fold {fold}.")
         # train_y = ground_truth.iloc[train_idx]
         valid_y = ground_truth.iloc[valid_idx]
         train_tp["use_train"] = train_tp["recording_id"].map(
@@ -265,10 +266,11 @@ def main():
             model.att_block = AttBlock(**config["att_block"])
             nn.init.xavier_uniform_(model.att_block.att.weight)
             nn.init.xavier_uniform_(model.att_block.cla.weight)
+            logging.info("Successfully initialize custom weight.")
             conv_params = []
             fc_param = []
             for name, param in model.named_parameters():
-                if name.startwith(("fc1", "att_block")):
+                if name.startswith(("fc1", "att_block")):
                     fc_param.append(param)
                 else:
                     conv_params.append(param)
@@ -314,7 +316,7 @@ def main():
             train=True,
             use_center_loss=False,
             l_spec=5626,
-            save_name=f"fold{fold}"
+            save_name=f"fold{fold}",
         )
         # resume from checkpoint
         if len(args.resume) != 0:
@@ -325,7 +327,9 @@ def main():
             trainer.run()
         except KeyboardInterrupt:
             trainer.save_checkpoint(
-                os.path.join(config["outdir"], f"checkpoint-{trainer.steps}steps.pkl")
+                os.path.join(
+                    config["outdir"], f"checkpoint-{trainer.steps}stepsfold{fold}.pkl"
+                )
             )
             logging.info(f"Successfully saved checkpoint @ {trainer.steps}steps.")
 

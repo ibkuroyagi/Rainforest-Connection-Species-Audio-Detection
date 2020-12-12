@@ -47,7 +47,7 @@ EOF
 
 ## 決定事項
 - 初手のCVの切り方はiterative-stratificationを用いる
-- 推論に使うデータを分離するためにダイアライゼーションコードを作成する
+- 推論に使うデータをいい感じにクロップするためにダイアライゼーションコードを作成する
 
 
 <details><summary>kaggle日記</summary><div>

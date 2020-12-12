@@ -15,7 +15,7 @@ log() {
 stage=0        # stage to start
 stop_stage=100 # stage to stop
 n_gpus=1       # number of gpus for training
-n_jobs=8       # number of parallel jobs in feature extraction
+n_jobs=4       # number of parallel jobs in feature extraction
 type=wave      # preprocess type.
 cal_type=1     # if 1 -> statistic, else -> load cache pkl.
 conf=conf/Cnn14_DecisionLevelAtt.yaml

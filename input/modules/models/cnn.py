@@ -668,11 +668,11 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         segmentwise_output = segmentwise_output.transpose(1, 2)
 
         # Get framewise output
-        framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
-        framewise_output = pad_framewise_output(framewise_output, frames_num)
+        # framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
+        # framewise_output = pad_framewise_output(framewise_output, frames_num)
 
         output_dict = {
-            "y_frame": framewise_output,  # (B, T', n_class)
+            "y_frame": segmentwise_output,  # (B, T', n_class)
             "y_clip": clipwise_output,  # (B, n_class)
         }
 
