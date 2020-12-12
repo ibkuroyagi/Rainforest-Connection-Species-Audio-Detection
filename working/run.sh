@@ -57,10 +57,10 @@ fi
 if [ "${stage}" -le 1 ] && [ "${stop_stage}" -ge 1 ]; then
     log "Stage 1: Network training."
     outdir=${expdir}/${tag}
-    log "Training start. See the progress via ${outdir}/train.log"
+    log "Training start. See the progress via ${outdir}/sed_train.log"
     # shellcheck disable=SC2086
-    ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/train.log" \
-        python ../input/modules/bin/train.py \
+    ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_train.log" \
+        python ../input/modules/bin/sed_train.py \
         --datadir "${datadir}" \
         --dumpdir "${dumpdir}/${type}" \
         --outdir "${outdir}" \
@@ -68,7 +68,7 @@ if [ "${stage}" -le 1 ] && [ "${stop_stage}" -ge 1 ]; then
         --config "${conf}" \
         --resume "${resume}" \
         --verbose "${verbose}"
-    log "Successfully finished the training."
+    log "Successfully finished training."
 fi
 if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
     log "Stage 2: Network inference."

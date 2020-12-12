@@ -3,6 +3,7 @@
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
 sbatch ./run.sh \
-    --tag "base" \
-    --stop_stage "0" \
+    --tag "Cnn14_DecisionLevelAtt/base" \
+    --stage "1" \
+    --stop_stage "1" \
     --cal_type "0"
