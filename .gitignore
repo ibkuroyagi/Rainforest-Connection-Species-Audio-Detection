@@ -23,7 +23,7 @@ coverage.xml*
 .python-version
 .worktree
 @eaDir/
-.ipynb_checkpoints
+.ipynb_checkpoints/
 *.log
 *.pkl
 *.job
