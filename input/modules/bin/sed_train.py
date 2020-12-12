@@ -141,7 +141,7 @@ def main():
         n_splits=config["n_fold"], shuffle=True, random_state=config["seed"]
     )
     y = ground_truth.iloc[:, 1:].values
-    for i, (train_idx, valid_idx) in enumerate(kfold.split(y, y)):
+    for fold, (train_idx, valid_idx) in enumerate(kfold.split(y, y)):
         # train_y = ground_truth.iloc[train_idx]
         valid_y = ground_truth.iloc[valid_idx]
         train_tp["use_train"] = train_tp["recording_id"].map(
@@ -296,8 +296,8 @@ def main():
             config.get("scheduler_type", "StepLR"),
         )
         scheduler = scheduler_class(optimizer=optimizer, **config["scheduler_params"])
-
-        logging.info(model)
+        if fold == 0:
+            logging.info(model)
         # define trainer
         from trainers import SEDTrainer
 
@@ -312,6 +312,9 @@ def main():
             config=config,
             device=device,
             train=True,
+            use_center_loss=False,
+            l_spec=5626,
+            save_name=f"fold{fold}"
         )
         # resume from checkpoint
         if len(args.resume) != 0:

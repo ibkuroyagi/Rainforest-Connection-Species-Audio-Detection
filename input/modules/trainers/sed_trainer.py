@@ -33,6 +33,7 @@ class SEDTrainer(object):
         train=False,
         use_center_loss=False,
         l_spec=5626,
+        save_name="",
     ):
         """Initialize trainer.
 
@@ -64,6 +65,7 @@ class SEDTrainer(object):
         if train:
             self.writer = SummaryWriter(config["outdir"])
         self.use_center_loss = use_center_loss
+        self.save_name = save_name
         if use_center_loss:
             self.center_loss = CenterLoss(device=device, **config["center_loss_params"])
             self.optimizer_centloss = optimizer(
@@ -80,7 +82,7 @@ class SEDTrainer(object):
             self.tsne = TSNE(**config["tsne_params"])
 
         self.finish_train = False
-        self.best_loss = 0
+        self.best_score = 0
         self.total_train_loss = defaultdict(float)
         self.total_eval_loss = defaultdict(float)
         self.epoch_train_loss = defaultdict(float)
@@ -325,7 +327,9 @@ class SEDTrainer(object):
                     f"Epochs: {self.epochs}, BEST score was updated {self.best_score:.6f}."
                 )
                 self.save_checkpoint(
-                    os.path.join(self.config["outdir"], "best_score.pkl")
+                    os.path.join(
+                        self.config["outdir"], f"best_score{self.save_name}.pkl"
+                    )
                 )
                 logging.info(f"Best model was updated @ {self.steps} steps.")
             self._write_to_tensorboard(self.eval_metric)
@@ -419,7 +423,10 @@ class SEDTrainer(object):
     def _check_save_interval(self):
         if self.steps % self.config["save_interval_steps"] == 0:
             self.save_checkpoint(
-                os.path.join(self.config["outdir"], f"checkpoint-{self.steps}steps.pkl")
+                os.path.join(
+                    self.config["outdir"],
+                    f"checkpoint-{self.steps}steps{self.save_name}.pkl",
+                )
             )
             logging.info(f"Successfully saved checkpoint @ {self.steps} steps.")
 

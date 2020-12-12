@@ -22,12 +22,14 @@ conf=conf/Cnn14_DecisionLevelAtt.yaml
 verbose=1 # verbosity level, higher is more logging
 
 # directory related
-datadir=../input/rfcx-species-audio-detection
+datadir="../input/rfcx-species-audio-detection"
 dumpdir=dump
 expdir=exp                        # directory to save experiments
 tag="Cnn14_DecisionLevelAtt/base" # tag for manangement of the naming of experiments
+cache_path="../input/pretrained/Cnn14_DecisionLevelAtt.pth"
+resume=""
 # evaluation related
-checkpoint="best_loss" # path of checkpoint to be used for evaluation
+checkpoint="best_score" # path of checkpoint to be used for evaluation
 step="best"
 
 . utils/parse_options.sh || exit 1
@@ -59,8 +61,12 @@ if [ "${stage}" -le 1 ] && [ "${stop_stage}" -ge 1 ]; then
     # shellcheck disable=SC2086
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/train.log" \
         python ../input/modules/bin/train.py \
+        --datadir "${datadir}" \
+        --dumpdir "${dumpdir}/${type}" \
         --outdir "${outdir}" \
+        --cache_path "${cache_path}" \
         --config "${conf}" \
+        --resume "${resume}" \
         --verbose "${verbose}"
     log "Successfully finished the training."
 fi
@@ -68,7 +74,7 @@ if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
     log "Stage 2: Network inference."
     outdir=${expdir}/${tag}/${step}
     checkpoints=""
-    for fold in {0..9}; do
+    for fold in {0..4}; do
         checkpoints+="${outdir}/${checkpoint}${fold}fold.pkl "
     done
     log "Inference start. See the progress via ${outdir}/inference.log"
