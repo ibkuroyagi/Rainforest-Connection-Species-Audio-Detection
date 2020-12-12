@@ -12,6 +12,7 @@ log() {
 . ./cmd.sh || exit 1
 
 # basic setting
+verbose=1      # verbosity level, higher is more logging
 stage=0        # stage to start
 stop_stage=100 # stage to stop
 n_gpus=1       # number of gpus for training
@@ -19,7 +20,6 @@ n_jobs=4       # number of parallel jobs in feature extraction
 type=wave      # preprocess type.
 cal_type=1     # if 1 -> statistic, else -> load cache pkl.
 conf=conf/Cnn14_DecisionLevelAtt.yaml
-verbose=1 # verbosity level, higher is more logging
 
 # directory related
 datadir="../input/rfcx-species-audio-detection"

@@ -84,14 +84,13 @@ class SEDTrainer(object):
         self.finish_train = False
         self.best_score = 0
         self.total_train_loss = defaultdict(float)
-        self.total_eval_loss = defaultdict(float)
         self.epoch_train_loss = defaultdict(float)
         self.epoch_eval_loss = defaultdict(float)
         self.eval_metric = defaultdict(float)
-        self.train_pred_epoch = np.empty((0, 1))
-        self.train_y_epoch = np.empty((0, 1))
-        self.dev_pred_epoch = np.empty((0, 1))
-        self.dev_y_epoch = np.empty((0, 1))
+        self.train_pred_epoch = np.empty((0, config["n_class"]))
+        self.train_y_epoch = np.empty((0, config["n_class"]))
+        self.dev_pred_epoch = np.empty((0, config["n_class"]))
+        self.dev_y_epoch = np.empty((0, config["n_class"]))
         self.n_eval_split = config["n_eval_split"]
         self.forward_count = 0
 
@@ -152,6 +151,7 @@ class SEDTrainer(object):
         y_ = self.model(x)  # {y_frame: (B, T', n_class), y_clip: (B, n_class)}
         if self.config["loss_type"] == "FrameClipLoss":
             loss = self.criterion(y_["y_frame"], y_frame, y_["y_clip"], y_clip)
+            logging.debug(f"loss: {self.steps}:{loss.item()}")
         if self.use_center_loss:
             center_loss_label = batch["label"]
             loss += (
@@ -159,30 +159,30 @@ class SEDTrainer(object):
                 * self.config["center_loss_alpha"]
             )
             self.optimizer_centloss.zero_grad()
-        if not torch.isnan(loss):
-            loss = loss / self.config["accum_grads"]
-            loss.backward()
-            if self.use_center_loss:
-                # multiple (1./alpha) in order to remove the effect of alpha on updating centers
-                for param in self.center_loss.parameters():
-                    param.grad.data *= 1.0 / self.config["center_loss_alpha"]
-                self.optimizer_centloss.step()
-            self.forward_count += 1
-            if self.forward_count == self.config["accum_grads"]:
-                # update parameters
-                self.optimizer.step()
-                self.optimizer.zero_grad()
-                self.forward_count = 0
+        # if not torch.isnan(loss):
+        loss = loss / self.config["accum_grads"]
+        loss.backward(retain_graph=True)
+        if self.use_center_loss:
+            # multiple (1./alpha) in order to remove the effect of alpha on updating centers
+            for param in self.center_loss.parameters():
+                param.grad.data *= 1.0 / self.config["center_loss_alpha"]
+            self.optimizer_centloss.step()
+        self.forward_count += 1
+        if self.forward_count == self.config["accum_grads"]:
+            # update parameters
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+            self.forward_count = 0
 
-                # update scheduler step
-                if self.scheduler is not None:
-                    self.scheduler.step()
+            # update scheduler step
+            if self.scheduler is not None:
+                self.scheduler.step()
 
-                # update counts
-                self.steps += 1
-                self.tqdm.update(1)
-                self._check_train_finish()
-
+            # update counts
+            self.steps += 1
+            self.tqdm.update(1)
+            self._check_train_finish()
+        #  fi
         self.total_train_loss["train/loss"] += (
             loss.item() / batch_size * self.config["accum_grads"]
         )
@@ -216,8 +216,9 @@ class SEDTrainer(object):
                 return
         try:
             self.epoch_train_loss["train/epoch_lwlrap"] = lwlrap(
-                y_true=self.train_y_epoch, y_score=self.train_pred_epoch
+                self.train_y_epoch, self.train_pred_epoch
             )
+            logging.debug(f"lwlrap:{self.epoch_train_loss['train/epoch_lwlrap']}")
         except ValueError:
             logging.warning("Raise ValueError: May be contain NaN in y_pred.")
             pass
@@ -239,14 +240,14 @@ class SEDTrainer(object):
         self.train_steps_per_epoch = train_steps_per_epoch
         self.epochs += 1
         # reset
-        self.train_y_epoch = np.empty((0, 1))
-        self.train_pred_epoch = np.empty((0, 1))
+        self.train_y_epoch = np.empty((0, self.config["n_class"]))
+        self.train_pred_epoch = np.empty((0, self.config["n_class"]))
         self.epoch_train_loss = defaultdict(float)
         if self.use_center_loss:
             self.train_embedding_epoch = np.empty(
                 (0, self.config["center_loss_params"]["feat_dim"])
             )
-            self.train_label_epoch = np.empty((0, 1))
+            self.train_label_epoch = np.empty((0, self.config["n_class"]))
 
     @torch.no_grad()
     def _eval_step(self, batch):
@@ -258,6 +259,7 @@ class SEDTrainer(object):
         y_ = self.model(x)
         if self.config["loss_type"] == "FrameClipLoss":
             loss = self.criterion(y_["y_frame"], y_frame, y_["y_clip"], y_clip)
+
         if self.use_center_loss:
             center_loss_label = batch["label"]
             loss += (
@@ -265,7 +267,7 @@ class SEDTrainer(object):
                 * self.config["center_loss_alpha"]
             )
         # add to total eval loss
-        self.total_eval_loss["dev/loss"] += loss.item() / batch_size
+        self.epoch_eval_loss["dev/loss"] += loss.item() / batch_size
         if self.config["loss_type"] == "FrameClipLoss":
             self.dev_pred_epoch = np.concatenate(
                 [self.dev_pred_epoch, y_["y_clip"].detach().cpu().numpy()], axis=0
@@ -294,8 +296,8 @@ class SEDTrainer(object):
             # eval one step
             self._eval_step(batch)
         try:
-            self.epoch_dev_loss["dev/epoch_lwlrap"] = lwlrap(
-                y_true=self.dev_y_epoch, y_score=self.dev_pred_epoch
+            self.epoch_eval_loss["dev/epoch_lwlrap"] = lwlrap(
+                self.dev_y_epoch, self.dev_pred_epoch
             )
         except ValueError:
             logging.warning("Raise ValueError: May be contain NaN in y_pred.")
@@ -308,12 +310,6 @@ class SEDTrainer(object):
         for key in self.epoch_eval_loss.keys():
             logging.info(
                 f"(Epoch: {self.epochs}) {key} = {self.epoch_eval_loss[key]:.4f}."
-            )
-        # average loss
-        for key in self.total_eval_loss.keys():
-            self.total_eval_loss[key] /= eval_steps_per_epoch
-            logging.info(
-                f"(Steps: {self.steps}) {key} = {self.total_eval_loss[key]:.4f}."
             )
         logging.info(f"(Steps: {self.steps}) Start eval data's evaluation.")
         if self.epochs % self.config["eval_interval_epochs"] == 0:
@@ -335,7 +331,6 @@ class SEDTrainer(object):
             self._write_to_tensorboard(self.eval_metric)
             self.eval_metric = defaultdict(float)
         # record
-        self._write_to_tensorboard(self.total_eval_loss)
         self._write_to_tensorboard(self.epoch_eval_loss)
         if self.use_center_loss and (
             self.epochs % self.config["eval_interval_epochs"] == 0
@@ -345,15 +340,14 @@ class SEDTrainer(object):
             )
 
         # reset
-        self.total_eval_loss = defaultdict(float)
         self.epoch_eval_loss = defaultdict(float)
-        self.dev_pred_epoch = np.empty((0, 1))
-        self.dev_y_epoch = np.empty((0, 1))
+        self.dev_pred_epoch = np.empty((0, self.config["n_class"]))
+        self.dev_y_epoch = np.empty((0, self.config["n_class"]))
         if self.use_center_loss:
             self.dev_embedding_epoch = np.empty(
                 (0, self.config["center_loss_params"]["feat_dim"])
             )
-            self.dev_label_epoch = np.empty((0, 1))
+            self.dev_label_epoch = np.empty((0, self.config["n_class"]))
         # restore mode
         self.model.train()
 

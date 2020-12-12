@@ -160,7 +160,8 @@ def lwlrap(truth, scores):
     per_class_lwlrap = np.sum(precisions_for_samples_by_classes, axis=0) / np.maximum(
         1, labels_per_class
     )
-    return per_class_lwlrap, weight_per_class
+    score = (per_class_lwlrap * weight_per_class).sum()
+    return score
 
 
 def down_sampler(source, l_target=16, mode="sum"):
@@ -193,6 +194,5 @@ if __name__ == "__main__":
     y_true = np.array([[1, 0, 0], [0, 0, 1]])
     y_score = np.array([[0.75, 0.5, 1], [1, 0.2, 0.1]])
 
-    score_class, weight = lwlrap(y_true, y_score)
-    score = (score_class * weight).sum()
+    score = lwlrap(y_true, y_score)
     print(f"score:{score:.4f}")

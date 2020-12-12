@@ -205,7 +205,7 @@ def main():
             eval_collater = FeatEvalCollater(
                 max_frames=config.get("max_frames", 512),
                 n_split=config.get("n_eval_split", 20),
-                is_label=False,
+                is_label=True,
             )
             from datasets import FeatTrainCollater
 
@@ -218,12 +218,14 @@ def main():
             "train": DataLoader(
                 dataset=train_dataset,
                 collate_fn=train_collater,
+                batch_size=config["batch_size"],
                 num_workers=config["num_workers"],
                 pin_memory=config["pin_memory"],
             ),
             "dev": DataLoader(
                 dataset=dev_dataset,
                 collate_fn=train_collater,
+                batch_size=config["batch_size"],
                 num_workers=config["num_workers"],
                 pin_memory=config["pin_memory"],
             ),
@@ -250,7 +252,7 @@ def main():
             weights = torch.load(args.cache_path)
             model.load_state_dict(weights["model"])
             logging.info(f"Successfully load weight from {args.cache_path}")
-        if config.get("model_type", "Cnn14_DecisionLevelAtt") in [
+        if config.get("model_type" "Cnn14_DecisionLevelAtt") in [
             "ResNet38Double",
             "ResNet38Att",
         ]:
@@ -316,7 +318,7 @@ def main():
             config=config,
             device=device,
             train=True,
-            use_center_loss=False,
+            use_center_loss=config.get("use_center_loss", False),
             l_spec=5626,
             save_name=f"fold{fold}",
         )

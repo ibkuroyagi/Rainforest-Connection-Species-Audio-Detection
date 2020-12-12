@@ -6,4 +6,5 @@ sbatch ./run.sh \
     --tag "Cnn14_DecisionLevelAtt/base" \
     --stage "1" \
     --stop_stage "1" \
-    --cal_type "0"
+    --cal_type "0" \
+    --verbose 2
