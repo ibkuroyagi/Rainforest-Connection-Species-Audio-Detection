@@ -4,21 +4,29 @@
 #  MIT License (https://opensource.org/licenses/MIT)
 
 """Collater function modules."""
-
+import sys
 import numpy as np
 import torch
+
+sys.path.append("../../")
+sys.path.append("../input/modules")
+from utils import down_sampler  # noqa: E402
 
 
 class FeatTrainCollater(object):
     """Customized collater for Pytorch DataLoader for feat form data in training."""
 
-    def __init__(self, max_frames=512):
+    def __init__(self, max_frames=512, l_target=16, mode="sum"):
         """Initialize customized collater for PyTorch DataLoader.
 
         Args:
             max_frames (int): The max size of melspectrograms frame.
+            l_target (int): Length of embedding time frame.
+            mode (str): Mode of down sampler. ["sum" or "binary"]
         """
         self.max_frames = max_frames
+        self.mode = mode
+        self.l_target = l_target
 
     def __call__(self, batch):
         """Convert into batch tensors.
@@ -53,7 +61,10 @@ class FeatTrainCollater(object):
                 ending = l_spec
             beginning = ending - self.max_frames
             logmel_batch.append(logmel[beginning:ending].astype(np.float32))
-            frame_batch.append(matrix_tp[beginning:ending].astype(np.float32))
+            embedded_frame = down_sampler(
+                matrix_tp[beginning:ending], l_target=self.l_target, mode=self.mode
+            )
+            frame_batch.append(embedded_frame.astype(np.float32))
             clip_batch.append(
                 matrix_tp[beginning:ending].any(axis=0).astype(np.float32)
             )
@@ -61,7 +72,7 @@ class FeatTrainCollater(object):
         # convert each batch to tensor, assume that each item in batch has the same length
         # (B, mel, max_frames)
         logmel_batch = torch.tensor(logmel_batch, dtype=torch.float).transpose(2, 1)
-        # (B, max_frame, n_class)
+        # (B, l_target, n_class)
         frame_batch = torch.tensor(frame_batch, dtype=torch.float)
         # (B, n_class)
         clip_batch = torch.tensor(clip_batch, dtype=torch.float)

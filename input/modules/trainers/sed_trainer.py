@@ -159,11 +159,8 @@ class SEDTrainer(object):
                 * self.config["center_loss_alpha"]
             )
             self.optimizer_centloss.zero_grad()
-        print(y_)
-        print(x.shape)
         if not torch.isnan(loss):
             loss = loss / self.config["accum_grads"]
-            print(f"loss:{loss.item()}")
             loss.backward()
             if self.use_center_loss:
                 # multiple (1./alpha) in order to remove the effect of alpha on updating centers

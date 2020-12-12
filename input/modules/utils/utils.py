@@ -163,6 +163,32 @@ def lwlrap(truth, scores):
     return per_class_lwlrap, weight_per_class
 
 
+def down_sampler(source, l_target=16, mode="sum"):
+    """Down sampling function.
+
+    Args:
+        source (ndarray): (T, n_class)
+        l_target (int, optional): Target length. Defaults to 16.
+        mode (str, optional): ["sum" or "binary"]. Defaults to "sum".
+
+    Returns:
+        new_source: down sampled tensor. (l_target, n_class)
+    """
+    l_source, n_class = source.shape
+    new_source = np.zeros((l_target, n_class))
+    l_effect = l_source // l_target
+    for i in range(l_target):
+        t_start = i * l_effect
+        t_end = (i + 1) * l_effect
+        if i == l_target - 1:
+            t_end = l_source
+        if mode == "sum":
+            new_source[i] = source[t_start:t_end].sum(axis=0) / l_effect
+        elif mode == "binary":
+            new_source[i] = (source[t_start:t_end] > 0).any(axis=0)
+    return new_source
+
+
 if __name__ == "__main__":
     y_true = np.array([[1, 0, 0], [0, 0, 1]])
     y_score = np.array([[0.75, 0.5, 1], [1, 0.2, 0.1]])
