@@ -36,15 +36,20 @@ model_params:
 ###########################################################
 #                    TRAINING SETTING                     #
 ###########################################################
+# dataset
 train_dataset_mode: tp
-n_fold: 5
-accum_grads: 1
-batch_size: 64 # Batch size.
-batch_max_steps: 2000 # Length of each audio in batch. Make sure dividable by hop_size.
-pin_memory: False # Whether to pin memory in Pytorch DataLoader.
-num_workers: 2 # Number of workers in Pytorch DataLoader.
 allow_cache: True # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: True
+# collater_fc
+max_frames: 512
+l_target: 16
+collater_mode: binary
+# dataloader
+accum_grads: 1
+batch_size: 64 # Batch size.
+pin_memory: False # Whether to pin memory in Pytorch DataLoader.
+num_workers: 2 # Number of workers in Pytorch DataLoader.
+
 ###########################################################
 #                       LOSS SETTING                      #
 ###########################################################
@@ -77,5 +82,4 @@ log_interval_steps: 50 # Interval steps to record the training log.
 ###########################################################
 #                     OTHER SETTING                       #
 ###########################################################
-max_frames: 512
 n_eval_split: 20

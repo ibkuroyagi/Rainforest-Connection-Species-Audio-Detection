@@ -211,6 +211,8 @@ def main():
 
             train_collater = FeatTrainCollater(
                 max_frames=config.get("max_frames", 512),
+                l_target=config.get("l_target", 16),
+                mode=config.get("collater_mode", "sum"),
             )
         data_loader = {
             "train": DataLoader(

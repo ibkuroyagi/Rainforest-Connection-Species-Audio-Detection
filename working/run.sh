@@ -43,7 +43,7 @@ if [ "${stage}" -le 0 ] && [ "${stop_stage}" -ge 0 ]; then
     log "Feature extraction. See the progress via ${dumpdir}/preprocess.log"
     # shellcheck disable=SC2086
     ${train_cmd} --num_threads "${n_jobs}" "${dumpdir}/preprocess.log" \
-        python ../input/modules/bin/preprocess.py \
+        python3.6 ../input/modules/bin/preprocess.py \
         --datadir "${datadir}" \
         --dumpdir "${dumpdir}" \
         --config "${conf}" \
@@ -60,7 +60,7 @@ if [ "${stage}" -le 1 ] && [ "${stop_stage}" -ge 1 ]; then
     log "Training start. See the progress via ${outdir}/sed_train.log"
     # shellcheck disable=SC2086
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_train.log" \
-        python ../input/modules/bin/sed_train.py \
+        python3.6 ../input/modules/bin/sed_train.py \
         --datadir "${datadir}" \
         --dumpdir "${dumpdir}/${type}" \
         --outdir "${outdir}" \
