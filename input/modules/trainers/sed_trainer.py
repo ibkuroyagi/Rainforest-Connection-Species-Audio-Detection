@@ -373,16 +373,17 @@ class SEDTrainer(object):
                 for i in range(self.n_eval_split):
                     y_batch_ = self.model(x_batchs[i])
                     y_clip[i] = torch.cat([y_clip[i], y_batch_["y_clip"]], dim=0)
-                    y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
+                    # y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
         # (B, n_eval_split, n_class)
         y_clip = torch.cat(y_clip, dim=1).detach().cpu().numpy()
         # (B, n_eval_split, T, n_class)
-        y_frame = torch.cat(y_frame, dim=1).detach().cpu().numpy()
+        # y_frame = torch.cat(y_frame, dim=1).detach().cpu().numpy()
         if mode == "valid":
             y_clip_true = y_clip_true.numpy()
             score = lwlrap(y_clip_true, y_clip.max(axis=1))
             self.eval_metric["eval_metric/lwlrap"] = score
-            return {"y_clip": y_clip, "y_frame": y_frame, "score": score}
+            return {"y_clip": y_clip, "score": score}
+            # return {"y_clip": y_clip, "y_frame": y_frame, "score": score}
         return {"y_clip": y_clip, "y_frame": y_frame}
 
     def plot_embedding(self, embedding, label, name="", dirname=""):

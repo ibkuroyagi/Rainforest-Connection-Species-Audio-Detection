@@ -118,10 +118,10 @@ def main():
         logging.info(f"{key} = {value}")
     if config["model_params"].get("require_prep", True):
         train_keys = ["wave"]
-        eval_keys = ["wave"]
+        eval_keys = ["wave", "matrix_tp"]
     else:
         train_keys = ["feats"]
-        eval_keys = ["feats"]
+        eval_keys = ["feats", "matrix_tp"]
     train_tp = pd.read_csv(os.path.join(args.datadir, "train_tp.csv"))
     if config.get("train_dataset_mode", "tp") == "all":
         train_fp = pd.read_csv(os.path.join(args.datadir, "train_fp.csv"))

@@ -7,4 +7,4 @@ sbatch ./run.sh \
     --stage "1" \
     --stop_stage "1" \
     --cal_type "0" \
-    --verbose 2
+    --verbose 1
