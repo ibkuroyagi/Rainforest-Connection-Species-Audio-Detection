@@ -32,7 +32,6 @@ class SEDTrainer(object):
         device=torch.device("cpu"),
         train=False,
         use_center_loss=False,
-        l_spec=5626,
         save_name="",
     ):
         """Initialize trainer.
@@ -61,7 +60,6 @@ class SEDTrainer(object):
         self.config = config
         self.device = device
         self.train = train
-        self.l_spec = l_spec
         if train:
             self.writer = SummaryWriter(config["outdir"])
         self.use_center_loss = use_center_loss
@@ -324,7 +322,9 @@ class SEDTrainer(object):
                 )
                 self.save_checkpoint(
                     os.path.join(
-                        self.config["outdir"], f"best_score{self.save_name}.pkl"
+                        self.config["outdir"],
+                        "best_score",
+                        f"best_score{self.save_name}.pkl",
                     )
                 )
                 logging.info(f"Best model was updated @ {self.steps} steps.")
@@ -360,7 +360,9 @@ class SEDTrainer(object):
             for _ in range(self.n_eval_split)
         ]
         y_frame = [
-            torch.empty((0, self.l_spec, self.config["n_class"])).to(self.device)
+            torch.empty((0, self.config["l_target"], self.config["n_class"])).to(
+                self.device
+            )
             for _ in range(self.n_eval_split)
         ]
         y_clip_true = torch.empty((0, self.config["n_class"]))
@@ -373,17 +375,16 @@ class SEDTrainer(object):
                 for i in range(self.n_eval_split):
                     y_batch_ = self.model(x_batchs[i])
                     y_clip[i] = torch.cat([y_clip[i], y_batch_["y_clip"]], dim=0)
-                    # y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
+                    y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
         # (B, n_eval_split, n_class)
-        y_clip = torch.cat(y_clip, dim=1).detach().cpu().numpy()
+        y_clip = torch.stack(y_clip, dim=0).detach().cpu().numpy()
         # (B, n_eval_split, T, n_class)
-        # y_frame = torch.cat(y_frame, dim=1).detach().cpu().numpy()
+        y_frame = torch.stack(y_frame, dim=0).detach().cpu().numpy()
         if mode == "valid":
             y_clip_true = y_clip_true.numpy()
-            score = lwlrap(y_clip_true, y_clip.max(axis=1))
+            score = lwlrap(y_clip_true, y_clip.max(axis=0))
             self.eval_metric["eval_metric/lwlrap"] = score
-            return {"y_clip": y_clip, "score": score}
-            # return {"y_clip": y_clip, "y_frame": y_frame, "score": score}
+            return {"y_clip": y_clip, "y_frame": y_frame, "score": score}
         return {"y_clip": y_clip, "y_frame": y_frame}
 
     def plot_embedding(self, embedding, label, name="", dirname=""):
@@ -420,7 +421,8 @@ class SEDTrainer(object):
             self.save_checkpoint(
                 os.path.join(
                     self.config["outdir"],
-                    f"checkpoint-{self.steps}steps{self.save_name}.pkl",
+                    f"checkpoint-{self.steps}",
+                    f"checkpoint-{self.steps}{self.save_name}.pkl",
                 )
             )
             logging.info(f"Successfully saved checkpoint @ {self.steps} steps.")

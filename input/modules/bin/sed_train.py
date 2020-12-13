@@ -319,7 +319,6 @@ def main():
             device=device,
             train=True,
             use_center_loss=config.get("use_center_loss", False),
-            l_spec=5626,
             save_name=f"fold{fold}",
         )
         # resume from checkpoint
