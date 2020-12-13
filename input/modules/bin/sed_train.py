@@ -317,7 +317,7 @@ def main():
             scheduler=scheduler,
             config=config,
             device=device,
-            train=True,
+            train=fold == 0,
             use_center_loss=config.get("use_center_loss", False),
             save_name=f"fold{fold}",
         )

@@ -81,14 +81,25 @@ class SEDTrainer(object):
 
         self.finish_train = False
         self.best_score = 0
-        self.total_train_loss = defaultdict(float)
         self.epoch_train_loss = defaultdict(float)
         self.epoch_eval_loss = defaultdict(float)
         self.eval_metric = defaultdict(float)
         self.train_pred_epoch = np.empty((0, config["n_class"]))
+        self.train_pred_frame_epoch = torch.empty(
+            (0, config["l_target"], config["n_class"])
+        ).to(device)
         self.train_y_epoch = np.empty((0, config["n_class"]))
+        self.train_y_frame_epoch = torch.empty(
+            (0, config["l_target"], config["n_class"])
+        ).to(device)
         self.dev_pred_epoch = np.empty((0, config["n_class"]))
+        self.dev_pred_frame_epoch = torch.empty(
+            (0, config["l_target"], config["n_class"])
+        ).to(device)
         self.dev_y_epoch = np.empty((0, config["n_class"]))
+        self.dev_y_frame_epoch = torch.empty(
+            (0, config["l_target"], config["n_class"])
+        ).to(device)
         self.n_eval_split = config["n_eval_split"]
         self.forward_count = 0
 
@@ -145,7 +156,6 @@ class SEDTrainer(object):
         x = batch["X"].to(self.device)
         y_frame = batch["y_frame"].to(self.device)
         y_clip = batch["y_clip"].to(self.device)
-        batch_size = x.size(0)
         y_ = self.model(x)  # {y_frame: (B, T', n_class), y_clip: (B, n_class)}
         if self.config["loss_type"] == "FrameClipLoss":
             loss = self.criterion(y_["y_frame"], y_frame, y_["y_clip"], y_clip)
@@ -157,34 +167,37 @@ class SEDTrainer(object):
                 * self.config["center_loss_alpha"]
             )
             self.optimizer_centloss.zero_grad()
-        # if not torch.isnan(loss):
-        loss = loss / self.config["accum_grads"]
-        loss.backward(retain_graph=True)
-        if self.use_center_loss:
-            # multiple (1./alpha) in order to remove the effect of alpha on updating centers
-            for param in self.center_loss.parameters():
-                param.grad.data *= 1.0 / self.config["center_loss_alpha"]
-            self.optimizer_centloss.step()
-        self.forward_count += 1
-        if self.forward_count == self.config["accum_grads"]:
-            # update parameters
-            self.optimizer.step()
-            self.optimizer.zero_grad()
-            self.forward_count = 0
+        if not torch.isnan(loss):
+            loss = loss / self.config["accum_grads"]
+            loss.backward(retain_graph=True)
+            if self.use_center_loss:
+                # multiple (1./alpha) in order to remove the effect of alpha on updating centers
+                for param in self.center_loss.parameters():
+                    param.grad.data *= 1.0 / self.config["center_loss_alpha"]
+                self.optimizer_centloss.step()
+            self.forward_count += 1
+            if self.forward_count == self.config["accum_grads"]:
+                # update parameters
+                self.optimizer.step()
+                self.optimizer.zero_grad()
+                self.forward_count = 0
 
-            # update scheduler step
-            if self.scheduler is not None:
-                self.scheduler.step()
+                # update scheduler step
+                if self.scheduler is not None:
+                    self.scheduler.step()
 
-            # update counts
-            self.steps += 1
-            self.tqdm.update(1)
-            self._check_train_finish()
-        #  fi
-        self.total_train_loss["train/loss"] += (
-            loss.item() / batch_size * self.config["accum_grads"]
-        )
+                # update counts
+                self.steps += 1
+                self.tqdm.update(1)
+                self._check_train_finish()
+
         if self.config["loss_type"] == "FrameClipLoss":
+            self.train_pred_frame_epoch = torch.cat(
+                [self.train_pred_frame_epoch, y_["y_frame"]], dim=0
+            )
+            self.train_y_frame_epoch = torch.cat(
+                [self.train_y_frame_epoch, y_frame], dim=0
+            )
             self.train_pred_epoch = np.concatenate(
                 [self.train_pred_epoch, y_["y_clip"].detach().cpu().numpy()], axis=0
             )
@@ -206,7 +219,6 @@ class SEDTrainer(object):
             self._train_step(batch)
 
             # check interval
-            self._check_log_interval()
             self._check_save_interval()
 
             # check whether training is finished
@@ -216,7 +228,12 @@ class SEDTrainer(object):
             self.epoch_train_loss["train/epoch_lwlrap"] = lwlrap(
                 self.train_y_epoch, self.train_pred_epoch
             )
-            logging.debug(f"lwlrap:{self.epoch_train_loss['train/epoch_lwlrap']}")
+            self.epoch_train_loss["train/epoch_loss"] = self.criterion(
+                self.train_pred_frame_epoch,
+                self.train_y_frame_epoch,
+                torch.tensor(self.train_pred_epoch).to(self.device),
+                torch.tensor(self.train_y_epoch).to(self.device),
+            ).item()
         except ValueError:
             logging.warning("Raise ValueError: May be contain NaN in y_pred.")
             pass
@@ -227,7 +244,7 @@ class SEDTrainer(object):
         )
         for key in self.epoch_train_loss.keys():
             logging.info(
-                f"(Epoch: {self.epochs}) {key} = {self.epoch_train_loss[key]:.4f}."
+                f"(Epoch: {self.epochs}) {key} = {self.epoch_train_loss[key]:.6f}."
             )
         self._write_to_tensorboard(self.epoch_train_loss)
         if self.use_center_loss and (self.epochs % 20 == 0):
@@ -238,6 +255,12 @@ class SEDTrainer(object):
         self.train_steps_per_epoch = train_steps_per_epoch
         self.epochs += 1
         # reset
+        self.train_pred_frame_epoch = torch.empty(
+            (0, self.config["l_target"], self.config["n_class"])
+        ).to(self.device)
+        self.train_y_frame_epoch = torch.empty(
+            (0, self.config["l_target"], self.config["n_class"])
+        ).to(self.device)
         self.train_y_epoch = np.empty((0, self.config["n_class"]))
         self.train_pred_epoch = np.empty((0, self.config["n_class"]))
         self.epoch_train_loss = defaultdict(float)
@@ -267,6 +290,10 @@ class SEDTrainer(object):
         # add to total eval loss
         self.epoch_eval_loss["dev/loss"] += loss.item() / batch_size
         if self.config["loss_type"] == "FrameClipLoss":
+            self.dev_pred_frame_epoch = torch.cat(
+                [self.dev_pred_frame_epoch, y_["y_frame"]], dim=0
+            )
+            self.dev_y_frame_epoch = torch.cat([self.dev_y_frame_epoch, y_frame], dim=0)
             self.dev_pred_epoch = np.concatenate(
                 [self.dev_pred_epoch, y_["y_clip"].detach().cpu().numpy()], axis=0
             )
@@ -297,6 +324,12 @@ class SEDTrainer(object):
             self.epoch_eval_loss["dev/epoch_lwlrap"] = lwlrap(
                 self.dev_y_epoch, self.dev_pred_epoch
             )
+            self.epoch_eval_loss["dev/epoch_loss"] = self.criterion(
+                self.dev_pred_frame_epoch,
+                self.dev_y_frame_epoch,
+                torch.tensor(self.dev_pred_epoch).to(self.device),
+                torch.tensor(self.dev_y_epoch).to(self.device),
+            ).item()
         except ValueError:
             logging.warning("Raise ValueError: May be contain NaN in y_pred.")
             pass
@@ -307,7 +340,7 @@ class SEDTrainer(object):
         )
         for key in self.epoch_eval_loss.keys():
             logging.info(
-                f"(Epoch: {self.epochs}) {key} = {self.epoch_eval_loss[key]:.4f}."
+                f"(Epoch: {self.epochs}) {key} = {self.epoch_eval_loss[key]:.6f}."
             )
         logging.info(f"(Steps: {self.steps}) Start eval data's evaluation.")
         if self.epochs % self.config["eval_interval_epochs"] == 0:
@@ -341,6 +374,12 @@ class SEDTrainer(object):
 
         # reset
         self.epoch_eval_loss = defaultdict(float)
+        self.dev_pred_frame_epoch = torch.empty(
+            (0, self.config["l_target"], self.config["n_class"])
+        ).to(self.device)
+        self.dev_y_frame_epoch = torch.empty(
+            (0, self.config["l_target"], self.config["n_class"])
+        ).to(self.device)
         self.dev_pred_epoch = np.empty((0, self.config["n_class"]))
         self.dev_y_epoch = np.empty((0, self.config["n_class"]))
         if self.use_center_loss:
@@ -417,7 +456,7 @@ class SEDTrainer(object):
             self.writer.add_scalar(key, value, self.steps)
 
     def _check_save_interval(self):
-        if self.steps % self.config["save_interval_steps"] == 0:
+        if (self.steps % self.config["save_interval_steps"] == 0) and (self.steps != 0):
             self.save_checkpoint(
                 os.path.join(
                     self.config["outdir"],
@@ -426,18 +465,6 @@ class SEDTrainer(object):
                 )
             )
             logging.info(f"Successfully saved checkpoint @ {self.steps} steps.")
-
-    def _check_log_interval(self):
-        if self.steps % self.config["log_interval_steps"] == 0:
-            for key in self.total_train_loss.keys():
-                # self.total_train_loss[key] /= self.config["log_interval_steps"]
-                logging.info(
-                    f"(Steps: {self.steps}) {key} = {self.total_train_loss[key]:.4f}."
-                )
-            self._write_to_tensorboard(self.total_train_loss)
-
-            # reset
-            self.total_train_loss = defaultdict(float)
 
     def _check_train_finish(self):
         if self.steps >= self.config["train_max_steps"]:
