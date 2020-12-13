@@ -628,7 +628,6 @@ class Cnn14_DecisionLevelAtt(nn.Module):
             x = x.transpose(1, 3)
         else:
             x = input.unsqueeze(3)
-        frames_num = x.shape[2]
         x = self.bn0(x)
         x = x.transpose(1, 3)
 

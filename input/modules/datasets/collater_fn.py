@@ -5,6 +5,8 @@
 
 """Collater function modules."""
 import sys
+import random
+
 import numpy as np
 import torch
 
@@ -45,17 +47,18 @@ class FeatTrainCollater(object):
         logmel_batch = []
         frame_batch = []
         clip_batch = []
+        beginnings = []
         # select start point
         for logmel, matrix_tp, time_list in zip(logmels, matrix_tp_list, all_time_list):
             l_spec = len(logmel)
-            idx = np.random.randint(len(time_list))
+            idx = random.randrange(len(time_list))
             time_start = int(l_spec * time_list[idx][1] / 60.0)
             time_end = int(l_spec * time_list[idx][2] / 60.0)
             center = np.round((time_start + time_end) / 2)
             beginning = center - self.max_frames / 2
             if beginning < 0:
                 beginning = 0
-            beginning = np.random.randint(beginning, center)
+            beginning = random.randrange(beginning, center)
             ending = beginning + self.max_frames
             if ending > l_spec:
                 ending = l_spec
@@ -68,6 +71,7 @@ class FeatTrainCollater(object):
             clip_batch.append(
                 matrix_tp[beginning:ending].any(axis=0).astype(np.float32)
             )
+            beginnings.append(beginning)
 
         # convert each batch to tensor, assume that each item in batch has the same length
         # (B, mel, max_frames)
@@ -76,7 +80,12 @@ class FeatTrainCollater(object):
         frame_batch = torch.tensor(frame_batch, dtype=torch.float)
         # (B, n_class)
         clip_batch = torch.tensor(clip_batch, dtype=torch.float)
-        return {"X": logmel_batch, "y_frame": frame_batch, "y_clip": clip_batch}
+        return {
+            "X": logmel_batch,
+            "y_frame": frame_batch,
+            "y_clip": clip_batch,
+            "beginnings": beginnings,
+        }
 
 
 class FeatEvalCollater(object):

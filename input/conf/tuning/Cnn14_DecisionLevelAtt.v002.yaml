@@ -21,7 +21,7 @@ model_type: "Cnn14_DecisionLevelAtt" # pretrained model's type.
 att_block:
   n_in: 2048
   n_out: 24
-  activation: sigmoid
+  activation: linear
 
 model_params:
   sample_rate: 16000
@@ -45,8 +45,8 @@ max_frames: 512
 l_target: 16
 collater_mode: sum
 # dataloader
-accum_grads: 8
-batch_size: 8 # Batch size.
+accum_grads: 2
+batch_size: 32 # Batch size.
 pin_memory: False # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
 # trainer

@@ -42,9 +42,9 @@ class RainForestDataset(Dataset):
             allow_cache (bool): Whether to allow cache of the loaded files.
             seed (int): seed
         """
-        if seed is not None:
-            self.seed = seed
-            np.random.seed(seed)
+        # if seed is not None:
+        #     self.seed = seed
+        #     np.random.seed(seed)
         # find all of the mel files
         if (files is None) and len(root_dir) != 0:
             files = sorted(find_files(root_dir, "*.h5"))

@@ -21,7 +21,7 @@ model_type: "Cnn14_DecisionLevelAtt" # pretrained model's type.
 att_block:
   n_in: 2048
   n_out: 24
-  activation: sigmoid
+  activation: linear
 
 model_params:
   sample_rate: 16000
@@ -54,9 +54,8 @@ use_center_loss: False
 ###########################################################
 #                       LOSS SETTING                      #
 ###########################################################
-loss_type: FrameClipLoss
+loss_type: BCEWithLogitsLoss
 loss_params:
-  clip_ratio: 0.5
   reduction: mean
 
 ###########################################################
@@ -64,7 +63,7 @@ loss_params:
 ###########################################################
 optimizer_type: "Adam"
 optimizer_params:
-  conv_lr: 0.0001 # convolution layer's learning rate.
+  conv_lr: 0.001 # convolution layer's learning rate.
   fc_lr: 0.001 # full connection layer's learning rate.
 scheduler_type: "StepLR"
 scheduler_params:
