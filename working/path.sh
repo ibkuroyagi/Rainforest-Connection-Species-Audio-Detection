@@ -4,9 +4,9 @@ export LD_LIBRARY_PATH="${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}"
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 
 # path related
-if [ -e "${PWD}/../venv/bin/activate" ]; then
+if [ -e "${PWD}/../tools/venv/bin/activate" ]; then
     # shellcheck disable=SC1090
-    . "${PWD}/../venv/bin/activate"
+    . "${PWD}/../tools/venv/bin/activate"
 fi
 
 # python related
