@@ -76,6 +76,15 @@ EOF
     - 今日やったこと
         * trainer, bin/sed_trainの作成
     - 次回やること
+        * trainer, bin/sed_trainの作成
+- 12/13(日)
+    - 今日やったこと
+        * trainer, bin/sed_trainの作成
+    - 次回やること
+        * clip ratioとlrを調整v003~v005
+- 12/14(土)
+    - 今日やったこと
+        * trainer, bin/sed_trainの作成
+    - 次回やること
         * 手元環境でのEDAとstage1の作成
-
 </div></details>

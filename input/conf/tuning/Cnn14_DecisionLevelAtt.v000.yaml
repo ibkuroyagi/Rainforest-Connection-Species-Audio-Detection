@@ -43,7 +43,7 @@ is_normalize: False
 # collater_fc
 max_frames: 512
 l_target: 16
-collater_mode: sum
+collater_mode: binary
 # dataloader
 accum_grads: 2
 batch_size: 32 # Batch size.
@@ -54,9 +54,8 @@ use_center_loss: False
 ###########################################################
 #                       LOSS SETTING                      #
 ###########################################################
-loss_type: FrameClipLoss
+loss_type: BCEWithLogitsLoss
 loss_params:
-  clip_ratio: 0.5
   reduction: mean
 
 ###########################################################

@@ -43,7 +43,7 @@ is_normalize: False
 # collater_fc
 max_frames: 512
 l_target: 16
-collater_mode: sum
+collater_mode: binary
 # dataloader
 accum_grads: 2
 batch_size: 32 # Batch size.

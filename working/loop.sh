@@ -2,11 +2,11 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v002
+No=v002-binary
 model=Cnn14_DecisionLevelAtt
 stage=1
 stop_stage=1
-
+# for No in v000 v003 v004; do
 sbatch -J "${model}/${No}" ./run.sh \
     --conf "conf/tuning/${model}.${No}.yaml" \
     --tag "${model}/${No}" \
@@ -14,3 +14,4 @@ sbatch -J "${model}/${No}" ./run.sh \
     --stop_stage "${stop_stage}" \
     --cal_type "0" \
     --verbose 1
+# done

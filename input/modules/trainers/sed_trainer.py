@@ -5,7 +5,6 @@ from tqdm import tqdm
 from collections import defaultdict
 
 import numpy as np
-import matplotlib.pyplot as plt
 import torch
 from sklearn.manifold import TSNE
 from tensorboardX import SummaryWriter
@@ -462,6 +461,8 @@ class SEDTrainer(object):
             embedding (ndarray): (B, 2048)
             label (ndarray): (B,)
         """
+        import matplotlib.pyplot as plt
+
         X_embedded = self.tsne.fit_transform(embedding)
         colors = ["r", "g", "b"]
         label_names = ["normal", "anomaly", "outliter"]
