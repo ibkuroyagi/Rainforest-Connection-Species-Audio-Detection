@@ -43,7 +43,7 @@ if [ "${stage}" -le 0 ] && [ "${stop_stage}" -ge 0 ]; then
     log "Feature extraction. See the progress via ${dumpdir}/preprocess.log"
     # shellcheck disable=SC2086
     ${train_cmd} --num_threads "${n_jobs}" "${dumpdir}/preprocess.log" \
-        python3.6 ../input/modules/bin/preprocess.py \
+        python ../input/modules/bin/preprocess.py \
         --datadir "${datadir}" \
         --dumpdir "${dumpdir}" \
         --config "${conf}" \

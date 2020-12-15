@@ -15,6 +15,7 @@ from models.utils import do_mixup  # noqa: E402
 from models.utils import init_bn  # noqa: E402
 from models.utils import init_layer  # noqa: E402
 from models.utils import interpolate  # noqa: E402
+from models.utils import Mixup  # noqa: E402
 from models.utils import pad_framewise_output  # noqa: E402
 
 
@@ -612,12 +613,14 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         self.require_prep = require_prep
         self.is_spec_augmenter = is_spec_augmenter
         self.mixup_lambda = mixup_lambda
+        if mixup_lambda is not None:
+            self.mixup = Mixup(mixup_alpha=mixup_lambda)
 
     def init_weight(self):
         init_bn(self.bn0)
         init_layer(self.fc1)
 
-    def forward(self, input, mixup_lambda=None):
+    def forward(self, input):
         """Input: (batch_size, data_length)"""
 
         if self.require_prep:
@@ -636,8 +639,8 @@ class Cnn14_DecisionLevelAtt(nn.Module):
 
         # Mixup on spectrogram
         if self.training and self.mixup_lambda is not None:
-            mixup_lambda = np.random.beta(self.mixup_lambda, self.mixup_lambda)
-            x = do_mixup(x, mixup_lambda)
+            mixup_lambda_list = self.mixup.get_lambda(batch_size=x.size(0))
+            x = do_mixup(x, mixup_lambda_list)
 
         x = self.conv_block1(x, pool_size=(2, 2), pool_type="avg")
         x = F.dropout(x, p=0.2, training=self.training)
