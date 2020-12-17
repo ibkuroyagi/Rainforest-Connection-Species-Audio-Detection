@@ -4,10 +4,11 @@ import torch.nn as nn
 
 
 class Mixup(object):
-    def __init__(self, mixup_alpha, random_seed=1234):
+    def __init__(self, mixup_alpha, random_seed=1234, device="cpu"):
         """Mixup coefficient generator."""
         self.mixup_alpha = mixup_alpha
         self.random_state = np.random.RandomState(random_seed)
+        self.device = device
 
     def get_lambda(self, batch_size):
         """Get mixup random coefficients.
@@ -22,7 +23,7 @@ class Mixup(object):
             mixup_lambdas.append(lam)
             mixup_lambdas.append(1.0 - lam)
 
-        return np.array(mixup_lambdas)
+        return torch.tensor(mixup_lambdas, dtype=torch.float).to(self.device)
 
 
 def init_layer(layer):
@@ -85,6 +86,7 @@ def do_mixup(x, mixup_lambda):
     Returns:
       out: (batch_size, ...)
     """
+    x = torch.cat([x, x], dim=0)
     out = (
         x[0::2].transpose(0, -1) * mixup_lambda[0::2]
         + x[1::2].transpose(0, -1) * mixup_lambda[1::2]

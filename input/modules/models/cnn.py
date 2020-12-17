@@ -614,7 +614,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         self.is_spec_augmenter = is_spec_augmenter
         self.mixup_lambda = mixup_lambda
         if mixup_lambda is not None:
-            self.mixup = Mixup(mixup_alpha=mixup_lambda)
+            self.mixup = Mixup(mixup_alpha=mixup_lambda, device="cuda")
 
     def init_weight(self):
         init_bn(self.bn0)

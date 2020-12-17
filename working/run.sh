@@ -30,7 +30,6 @@ cache_path="../input/pretrained/Cnn14_DecisionLevelAtt.pth"
 resume=""
 # evaluation related
 checkpoint="best_score" # path of checkpoint to be used for evaluation
-step="best"
 
 . utils/parse_options.sh || exit 1
 
@@ -41,7 +40,7 @@ if [ "${stage}" -le 0 ] && [ "${stop_stage}" -ge 0 ]; then
     statistic_path="${dumpdir}/cache/${type}.pkl"
     [ ! -e "${dumpdir}/cache" ] && mkdir -p "${dumpdir}/cache"
     log "Feature extraction. See the progress via ${dumpdir}/preprocess.log"
-    # shellcheck disable=SC2086
+    # shellcheck disable=SC2086,SC2154
     ${train_cmd} --num_threads "${n_jobs}" "${dumpdir}/preprocess.log" \
         python ../input/modules/bin/preprocess.py \
         --datadir "${datadir}" \
@@ -58,7 +57,7 @@ if [ "${stage}" -le 1 ] && [ "${stop_stage}" -ge 1 ]; then
     log "Stage 1: Network training."
     outdir=${expdir}/${tag}
     log "Training start. See the progress via ${outdir}/sed_train.log"
-    # shellcheck disable=SC2086
+    # shellcheck disable=SC2086,SC2154
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_train.log" \
         python ../input/modules/bin/sed_train.py \
         --datadir "${datadir}" \
@@ -72,19 +71,20 @@ if [ "${stage}" -le 1 ] && [ "${stop_stage}" -ge 1 ]; then
 fi
 if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
     log "Stage 2: Network inference."
-    outdir=${expdir}/${tag}/${step}
+    outdir=${expdir}/${tag}/${checkpoint}
     checkpoints=""
     for fold in {0..4}; do
-        checkpoints+="${outdir}/${checkpoint}${fold}fold.pkl "
+        checkpoints+="${outdir}/${checkpoint}fold${fold}.pkl "
     done
-    log "Inference start. See the progress via ${outdir}/inference.log"
+    log "Inference start. See the progress via ${outdir}/sed_inference.log"
     # shellcheck disable=SC2086
-    ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/inference.log" \
-        python node_inference.py \
+    ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_inference.log" \
+        python ../input/modules/bin/sed_inference.py \
+        --datadir "${datadir}" \
+        --dumpdir "${dumpdir}" \
         --outdir "${outdir}" \
         --config "${conf}" \
         --checkpoints ${checkpoints} \
-        --dpgmmdir "${dpgmmdir}" \
         --verbose "${verbose}"
     log "Successfully finished the inference."
 fi

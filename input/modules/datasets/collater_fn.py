@@ -47,7 +47,7 @@ class FeatTrainCollater(object):
         logmel_batch = []
         frame_batch = []
         clip_batch = []
-        beginnings = []
+        # beginnings = []
         # select start point
         for logmel, matrix_tp, time_list in zip(logmels, matrix_tp_list, all_time_list):
             l_spec = len(logmel)
@@ -71,7 +71,7 @@ class FeatTrainCollater(object):
             clip_batch.append(
                 matrix_tp[beginning:ending].any(axis=0).astype(np.float32)
             )
-            beginnings.append(beginning)
+            # beginnings.append(beginning)
 
         # convert each batch to tensor, assume that each item in batch has the same length
         # (B, mel, max_frames)
@@ -84,7 +84,7 @@ class FeatTrainCollater(object):
             "X": logmel_batch,
             "y_frame": frame_batch,
             "y_clip": clip_batch,
-            "beginnings": beginnings,
+            # "beginnings": beginnings,
         }
 
 

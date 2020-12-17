@@ -444,14 +444,20 @@ class SEDTrainer(object):
                     y_clip[i] = torch.cat([y_clip[i], y_batch_["y_clip"]], dim=0)
                     y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
         # (B, n_eval_split, n_class)
-        y_clip = torch.stack(y_clip, dim=0).detach().cpu().numpy()
+        y_clip = torch.sigmoid(torch.stack(y_clip, dim=0)).cpu().numpy().transpose(1, 0)
         # (B, n_eval_split, T, n_class)
-        y_frame = torch.stack(y_frame, dim=0).detach().cpu().numpy()
+        y_frame = (
+            torch.sigmoid(torch.stack(y_frame, dim=0)).cpu().numpy().transpose(1, 0)
+        )
         if mode == "valid":
             y_clip_true = y_clip_true.numpy()
-            score = lwlrap(y_clip_true, y_clip.max(axis=0))
+            score = lwlrap(y_clip_true, y_clip.max(axis=1))
             self.eval_metric["eval_metric/lwlrap"] = score
-            return {"y_clip": y_clip, "y_frame": y_frame, "score": score}
+            return {
+                "y_clip": y_clip,
+                "y_frame": y_frame,
+                "score": score,
+            }
         return {"y_clip": y_clip, "y_frame": y_frame}
 
     def plot_embedding(self, embedding, label, name="", dirname=""):
