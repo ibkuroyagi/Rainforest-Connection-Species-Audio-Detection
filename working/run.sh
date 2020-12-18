@@ -39,9 +39,9 @@ if [ "${stage}" -le 0 ] && [ "${stop_stage}" -ge 0 ]; then
     log "Stage 0: Feature extraction."
     statistic_path="${dumpdir}/cache/${type}.pkl"
     [ ! -e "${dumpdir}/cache" ] && mkdir -p "${dumpdir}/cache"
-    log "Feature extraction. See the progress via ${dumpdir}/preprocess.log"
+    log "Feature extraction. See the progress via ${dumpdir}/${type}/preprocess.log"
     # shellcheck disable=SC2086,SC2154
-    ${train_cmd} --num_threads "${n_jobs}" "${dumpdir}/preprocess.log" \
+    ${train_cmd} --num_threads "${n_jobs}" "${dumpdir}/${type}/preprocess.log" \
         python ../input/modules/bin/preprocess.py \
         --datadir "${datadir}" \
         --dumpdir "${dumpdir}" \
