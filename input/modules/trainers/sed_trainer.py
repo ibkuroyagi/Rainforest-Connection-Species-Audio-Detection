@@ -444,10 +444,15 @@ class SEDTrainer(object):
                     y_clip[i] = torch.cat([y_clip[i], y_batch_["y_clip"]], dim=0)
                     y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
         # (B, n_eval_split, n_class)
-        y_clip = torch.sigmoid(torch.stack(y_clip, dim=0)).cpu().numpy().transpose(1, 0)
+        y_clip = (
+            torch.sigmoid(torch.stack(y_clip, dim=0)).cpu().numpy().transpose(1, 0, 2)
+        )
         # (B, n_eval_split, T, n_class)
         y_frame = (
-            torch.sigmoid(torch.stack(y_frame, dim=0)).cpu().numpy().transpose(1, 0)
+            torch.sigmoid(torch.stack(y_frame, dim=0))
+            .cpu()
+            .numpy()
+            .transpose(1, 0, 2, 3)
         )
         if mode == "valid":
             y_clip_true = y_clip_true.numpy()

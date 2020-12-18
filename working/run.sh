@@ -16,7 +16,7 @@ verbose=1      # verbosity level, higher is more logging
 stage=0        # stage to start
 stop_stage=100 # stage to stop
 n_gpus=1       # number of gpus for training
-n_jobs=4       # number of parallel jobs in feature extraction
+n_jobs=2       # number of parallel jobs in feature extraction
 type=wave      # preprocess type.
 cal_type=1     # if 1 -> statistic, else -> load cache pkl.
 conf=conf/Cnn14_DecisionLevelAtt.yaml
@@ -81,7 +81,7 @@ if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_inference.log" \
         python ../input/modules/bin/sed_inference.py \
         --datadir "${datadir}" \
-        --dumpdir "${dumpdir}" \
+        --dumpdir "${dumpdir}/${type}" \
         --outdir "${outdir}" \
         --config "${conf}" \
         --checkpoints ${checkpoints} \

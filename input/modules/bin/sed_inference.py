@@ -62,8 +62,8 @@ def main():
         "--checkpoints",
         default=[],
         type=str,
-        nargs="?",
-        help="checkpoint file path to resume training. (default=[])",
+        nargs="+",
+        help="List of checkpoint file path to resume training. (default=[])",
     )
     parser.add_argument(
         "--verbose",
@@ -140,14 +140,16 @@ def main():
             config["n_class"],
         )
     )
+    scores = []
     # Initialize each fold prediction.
+    sub = pd.read_csv(os.path.join(args.datadir, "sample_submission.csv"))
     pred_clip = np.zeros(
-        (config["n_fold"], len(ground_truth), config["n_eval_split"], config["n_class"])
+        (config["n_fold"], len(sub), config["n_eval_split"], config["n_class"])
     )
     pred_frame = np.zeros(
         (
             config["n_fold"],
-            len(ground_truth),
+            len(sub),
             config["n_eval_split"],
             config["l_target"],
             config["n_class"],
@@ -162,10 +164,6 @@ def main():
             config.get("model_type", "Cnn14_DecisionLevelAtt"),
         )
         model = model_class(training=True, **config["model_params"]).to(device)
-        if len(args.cache_path) != 0:
-            weights = torch.load(args.cache_path)
-            model.load_state_dict(weights["model"])
-            logging.info(f"Successfully load weight from {args.cache_path}")
         if config.get("model_type" "Cnn14_DecisionLevelAtt") in [
             "ResNet38Double",
             "ResNet38Att",
@@ -243,25 +241,42 @@ def main():
         )
         trainer.load_checkpoint(args.checkpoints[fold])
         logging.info(
-            f"Successfully resumed from {args.checkpoints[fold]}.(Epochs:{trainer.Epochs})"
+            f"Successfully resumed from {args.checkpoints[fold]}.(Epochs:{trainer.epochs}, Steps:{trainer.steps})"
         )
         # inference validation data
         oof_dict = trainer.inference(mode="valid")
         oof_clip[valid_idx] = oof_dict["y_clip"]
         oof_frame[valid_idx] = oof_dict["y_frame"]
+        scores.append(oof_dict["score"])
         logging.info(f"Fold:{fold}, lwlrap:{oof_dict['score']:.6f}")
 
         # initialize test data
         test_dataset = RainForestDataset(
             root_dir=os.path.join(args.dumpdir, "test"),
-            keys=eval_keys,
+            keys=["feats"],
             mode="test",
             is_normalize=config.get("is_normalize", False),
             allow_cache=config.get("allow_cache", False),  # keep compatibility
             seed=None,
         )
         logging.info(f"The number of test files = {len(test_dataset)}.")
+        if config["model_params"].get("require_prep", True):
+            # from datasets import WaveEvalCollater
 
+            # eval_collater = WaveEvalCollater(
+            #     sf=config["sampling_rate"],
+            #     sec=config.get("sec", 10),
+            #     n_split=config.get("n_eval_split", 3),
+            # )
+            pass
+        else:
+            from datasets import FeatEvalCollater
+
+            eval_collater = FeatEvalCollater(
+                max_frames=config.get("max_frames", 512),
+                n_split=config.get("n_eval_split", 20),
+                is_label=False,
+            )
         data_loader = {
             "eval": DataLoader(
                 test_dataset,
@@ -289,7 +304,7 @@ def main():
         )
         trainer.load_checkpoint(args.checkpoints[fold])
         logging.info(
-            f"Successfully resumed from {args.checkpoints[fold]}.(Epochs:{trainer.epochs})"
+            f"Successfully resumed from {args.checkpoints[fold]}.(Epochs:{trainer.epochs}, Steps:{trainer.steps})"
         )
         # inference test data
         pred_dict = trainer.inference(mode="test")
@@ -326,14 +341,15 @@ def main():
     # modify submission shape
     oof_sub = ground_truth.copy()
     oof_sub.iloc[:, 1:] = oof_clip.max(axis=1)
-    oof_sub.to_csv(os.path.join(args.outdir, "oof.csv"))
+    oof_sub.to_csv(os.path.join(args.outdir, "oof.csv"), index=False)
     logging.info(f"Successfully saved oof at {os.path.join(args.outdir, 'oof.csv')}.")
     oof_score = lwlrap(ground_truth.iloc[:, 1:].values, oof_sub.iloc[:, 1:].values)
-    logging.info(f"OOF score is {oof_score:.6f}.")
+    for i, score in enumerate(scores):
+        logging.info(f"Fold:{i} oof score is {score:.6f}.")
+    logging.info(f"All oof score is {oof_score:.6f}.")
 
-    sub = pd.read_csv(os.path.join(args.datadir, "sample_submission.csv"))
     sub.iloc[:, 1:] = pred_clip_mean.max(axis=1)
-    sub.to_csv(os.path.join(args.outdir, "submission.csv"))
+    sub.to_csv(os.path.join(args.outdir, "submission.csv"), index=False)
     logging.info(
         f"Successfully saved submission at {os.path.join(args.outdir, 'submission.csv')}."
     )
