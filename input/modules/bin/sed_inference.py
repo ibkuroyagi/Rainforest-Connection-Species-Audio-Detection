@@ -126,6 +126,9 @@ def main():
             ground_truth["recording_id"] == recording_id,
             train_tp.loc[i, "species_id"] + 1,
         ] = 1.0
+    ground_truth_path = os.path.join(args.datadir, "ground_truth.csv")
+    if not os.path.isfile(ground_truth_path):
+        ground_truth.to_csv(ground_truth_path, index=False)
     kfold = MultilabelStratifiedKFold(
         n_splits=config["n_fold"], shuffle=True, random_state=config["seed"]
     )
@@ -163,7 +166,7 @@ def main():
             # keep compatibility
             config.get("model_type", "Cnn14_DecisionLevelAtt"),
         )
-        model = model_class(training=True, **config["model_params"]).to(device)
+        model = model_class(training=False, **config["model_params"]).to(device)
         if config.get("model_type" "Cnn14_DecisionLevelAtt") in [
             "ResNet38Double",
             "ResNet38Att",
@@ -209,7 +212,7 @@ def main():
             keys=eval_keys,
             mode="test",
             is_normalize=config.get("is_normalize", False),
-            allow_cache=config.get("allow_cache", False),  # keep compatibility
+            allow_cache=False,
             seed=None,
         )
         logging.info(f"The number of validation files = {len(valid_dataset)}.")
@@ -256,7 +259,7 @@ def main():
             keys=["feats"],
             mode="test",
             is_normalize=config.get("is_normalize", False),
-            allow_cache=config.get("allow_cache", False),  # keep compatibility
+            allow_cache=False,
             seed=None,
         )
         logging.info(f"The number of test files = {len(test_dataset)}.")

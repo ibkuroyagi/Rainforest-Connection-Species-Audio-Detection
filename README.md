@@ -4,6 +4,10 @@
 ## 締め切り
 February 17, 2021 - Final submission deadline.
 
+## CV vs PL
+スプレッドシートにCVとPLの関係を記録する
+[https://docs.google.com/spreadsheets/d/10_kbyXUlYpSEzLPpDA3JL_s4R1IsHNfuKhdA5gp6L4c/edit?usp=sharing](https://docs.google.com/spreadsheets/d/10_kbyXUlYpSEzLPpDA3JL_s4R1IsHNfuKhdA5gp6L4c/edit?usp=sharing)
+
 ## introduction
 ホームディレクトリに.kaggleディレクトリが作成されている前提で作成します。 
 ない場合は、こちら[https://www.currypurin.com/entry/2018/kaggle-api](https://www.currypurin.com/entry/2018/kaggle-api)を参照してください。
