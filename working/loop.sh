@@ -2,10 +2,10 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v004
+No=v003-cos
 model=Cnn14_DecisionLevelAtt
-type=mel64hop512
-stage=0
+type=mel128hop1024
+stage=1
 stop_stage=2
 # for No in v002 v002-binary v003 v004; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000; do
@@ -15,7 +15,7 @@ sbatch -J "${type}/${model}/${No}" ./run.sh \
     --stage "${stage}" \
     --stop_stage "${stop_stage}" \
     --type "${type}" \
-    --cal_type "1" \
+    --cal_type "0" \
     --verbose 1
 # done
 # done

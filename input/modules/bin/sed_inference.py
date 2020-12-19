@@ -348,8 +348,8 @@ def main():
     logging.info(f"Successfully saved oof at {os.path.join(args.outdir, 'oof.csv')}.")
     oof_score = lwlrap(ground_truth.iloc[:, 1:].values, oof_sub.iloc[:, 1:].values)
     for i, score in enumerate(scores):
-        logging.info(f"Fold:{i} oof score is {score:.6f}.")
-    logging.info(f"All oof score is {oof_score:.6f}.")
+        logging.info(f"Fold:{i} oof score is {score:.6f}")
+    logging.info(f"All oof score is {oof_score:.6f}")
 
     sub.iloc[:, 1:] = pred_clip_mean.max(axis=1)
     sub.to_csv(os.path.join(args.outdir, "submission.csv"), index=False)

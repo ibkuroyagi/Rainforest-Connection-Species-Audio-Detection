@@ -170,13 +170,13 @@ def main():
         statistic["std"] = tmp.std()
         with open(args.statistic_path, "wb") as f:
             pickle.dump(statistic, f)
-            logging.info(f"Successfully saved statistic to {args.statistic_path}.")
+        logging.info(f"Successfully saved statistic to {args.statistic_path}.")
         del tmp
         gc.collect()
     else:
         with open(args.statistic_path, "rb") as f:
             statistic = pickle.load(f)
-            logging.info(f"Successfully loaded statistic from {args.statistic_path}.")
+        logging.info(f"Successfully loaded statistic from {args.statistic_path}.")
     logging.info(
         f"Statistic mean: {statistic['mean']:.4f}, std: {statistic['std']:.4f}"
     )

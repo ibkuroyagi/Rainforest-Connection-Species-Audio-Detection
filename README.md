@@ -43,9 +43,9 @@ EOF
 - CVの切り方をtestと同じ分布にする
 
 ## アイデア
-- segment-wise predoction(種によって鳴いている時間の長さが異なる)
+- ~~segment-wise predoction(種によって鳴いている時間の長さが異なる)~~
 - wav2vec
-- SpecAug
+- ~~SpecAug~~
 - ダイアライゼーションの出力を代入(ラベルがオーバーラップしている)
 - 無音区間予測で精度改善?
 
@@ -53,6 +53,10 @@ EOF
 - 初手のCVの切り方はiterative-stratificationを用いる
 - 推論に使うデータをいい感じにクロップするためにダイアライゼーションコードを作成する
 
+## 実験結果からの気づき
+- v004(num_mels=64, max_frame=1024)のスコアが著しく低いことから周波数成分の分解濃が重要だと思われる.
+- 全てのモデルにおいて訓練データのlossが下がり切っているので,タスクが簡単過ぎる可能性が高い.より難易度の高い問題設定にする必要がある.
+- どのモデルもだいたい500stepsあたりで過学習になり始めるので、そこの調整が重要そう
 
 <details><summary>kaggle日記</summary><div>
 
@@ -110,5 +114,14 @@ EOF
     - 今日やったこと
         * 推論結果提出, 推論時の後処理を分析
     - 次回やること
-        * 
+        * v003, num_mels: 128, hop_size: 512 -> 1024 (window: 2048 -> 4096), max_frame: 512
+        * v004, num_mels: 128 -> 64, hop_size: 512 (window: 2048), max_frame: 512 -> 1024
+- 12/19(土)
+    - 今日やったこと
+        * v003, num_mels: 128, hop_size: 512 -> 1024 (window: 2048 -> 4096), max_frame: 512(提出)
+        * v004, num_mels: 128 -> 64, hop_size: 512 (window: 2048), max_frame: 512 -> 1024(提出)
+        * CosineAnnealingLR適応
+    - 次回やること
+        * v003, num_mels: 128, hop_size: 512 -> 1024 (window: 2048 -> 4096), max_frame: 512
+        * v004, num_mels: 128 -> 64, hop_size: 512 (window: 2048), max_frame: 512 -> 1024
 </div></details>
