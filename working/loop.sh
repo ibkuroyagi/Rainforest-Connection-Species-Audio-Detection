@@ -2,9 +2,9 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v003-cos
+No=v002-clip065-cos
 model=Cnn14_DecisionLevelAtt
-type=mel128hop1024
+type=wave
 stage=1
 stop_stage=2
 # for No in v002 v002-binary v003 v004; do
