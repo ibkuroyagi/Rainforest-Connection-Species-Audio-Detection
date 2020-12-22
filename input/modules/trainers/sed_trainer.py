@@ -80,22 +80,23 @@ class SEDTrainer(object):
 
         self.finish_train = False
         self.best_score = 0
+        self.n_target = 24
         self.epoch_train_loss = defaultdict(float)
         self.epoch_eval_loss = defaultdict(float)
         self.eval_metric = defaultdict(float)
-        self.train_pred_epoch = np.empty((0, config["n_class"]))
+        self.train_pred_epoch = np.empty((0, self.n_target))
         self.train_pred_frame_epoch = torch.empty(
             (0, config["l_target"], config["n_class"])
         ).to(device)
-        self.train_y_epoch = np.empty((0, config["n_class"]))
+        self.train_y_epoch = np.empty((0, self.n_target))
         self.train_y_frame_epoch = torch.empty(
             (0, config["l_target"], config["n_class"])
         ).to(device)
-        self.dev_pred_epoch = np.empty((0, config["n_class"]))
+        self.dev_pred_epoch = np.empty((0, self.n_target))
         self.dev_pred_frame_epoch = torch.empty(
             (0, config["l_target"], config["n_class"])
         ).to(device)
-        self.dev_y_epoch = np.empty((0, config["n_class"]))
+        self.dev_y_epoch = np.empty((0, self.n_target))
         self.dev_y_frame_epoch = torch.empty(
             (0, config["l_target"], config["n_class"])
         ).to(device)
@@ -154,8 +155,10 @@ class SEDTrainer(object):
         """Train model one step."""
         x = batch["X"].to(self.device)
         y_frame = batch["y_frame"].to(self.device)
-        y_clip = batch["y_clip"].to(self.device)
+        y_clip = batch["y_clip"][:, : self.n_target].to(self.device)
         y_ = self.model(x)  # {y_frame: (B, T', n_class), y_clip: (B, n_class)}
+        if self.config["n_class"] != self.n_target:
+            y_["y_clip"] = y_["y_clip"][:, : self.n_target]
         if self.config["loss_type"] == "FrameClipLoss":
             loss = self.criterion(y_["y_frame"], y_frame, y_["y_clip"], y_clip)
         elif self.config["loss_type"] == "BCEWithLogitsLoss":
@@ -277,8 +280,8 @@ class SEDTrainer(object):
         self.train_y_frame_epoch = torch.empty(
             (0, self.config["l_target"], self.config["n_class"])
         ).to(self.device)
-        self.train_y_epoch = np.empty((0, self.config["n_class"]))
-        self.train_pred_epoch = np.empty((0, self.config["n_class"]))
+        self.train_y_epoch = np.empty((0, self.n_target))
+        self.train_pred_epoch = np.empty((0, self.n_target))
         self.epoch_train_loss = defaultdict(float)
         if self.use_center_loss:
             self.train_embedding_epoch = np.empty(
@@ -291,8 +294,10 @@ class SEDTrainer(object):
         """Evaluate model one step."""
         x = batch["X"].to(self.device)
         y_frame = batch["y_frame"].to(self.device)
-        y_clip = batch["y_clip"].to(self.device)
+        y_clip = batch["y_clip"][:, : self.n_target].to(self.device)
         y_ = self.model(x)
+        if self.config["n_class"] != self.n_target:
+            y_["y_clip"] = y_["y_clip"][:, : self.n_target]
         if self.config["loss_type"] == "FrameClipLoss":
             loss = self.criterion(y_["y_frame"], y_frame, y_["y_clip"], y_clip)
         elif self.config["loss_type"] == "BCEWithLogitsLoss":
@@ -408,8 +413,8 @@ class SEDTrainer(object):
         self.dev_y_frame_epoch = torch.empty(
             (0, self.config["l_target"], self.config["n_class"])
         ).to(self.device)
-        self.dev_pred_epoch = np.empty((0, self.config["n_class"]))
-        self.dev_y_epoch = np.empty((0, self.config["n_class"]))
+        self.dev_pred_epoch = np.empty((0, self.n_target))
+        self.dev_y_epoch = np.empty((0, self.n_target))
         if self.use_center_loss:
             self.dev_embedding_epoch = np.empty(
                 (0, self.config["center_loss_params"]["feat_dim"])
@@ -423,7 +428,7 @@ class SEDTrainer(object):
         # evaluate
         keys_list = [f"X{i}" for i in range(self.n_eval_split)]
         y_clip = [
-            torch.empty((0, self.config["n_class"])).to(self.device)
+            torch.empty((0, self.n_target)).to(self.device)
             for _ in range(self.n_eval_split)
         ]
         y_frame = [
@@ -437,11 +442,15 @@ class SEDTrainer(object):
         with torch.no_grad():
             for batch in tqdm(self.data_loader["eval"]):
                 if mode == "valid":
-                    y_clip_true = torch.cat([y_clip_true, batch["y_clip"]], dim=0)
+                    y_clip_true = torch.cat(
+                        [y_clip_true, batch["y_clip"][:, : self.n_target]], dim=0
+                    )
                 x_batchs = [batch[key].to(self.device) for key in keys_list]
                 for i in range(self.n_eval_split):
                     y_batch_ = self.model(x_batchs[i])
-                    y_clip[i] = torch.cat([y_clip[i], y_batch_["y_clip"]], dim=0)
+                    y_clip[i] = torch.cat(
+                        [y_clip[i], y_batch_["y_clip"][:, : self.n_target]], dim=0
+                    )
                     y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
         # (B, n_eval_split, n_class)
         y_clip = (

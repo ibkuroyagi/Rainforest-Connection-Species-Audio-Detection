@@ -4,12 +4,12 @@
 # Created by Ibuki Kuroyanagi
 No=v002-cos25
 model=Cnn14_DecisionLevelAtt
-type=wave
-stage=0
+type=wave #mel128hop1024
+stage=1
 stop_stage=2
-# for No in v002 v002-binary v003 v004; do
+# for No in v002-cos25 v004-cos25; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000; do
-sbatch -J "${type}/${model}/${No}" ./run.sh \
+sbatch -J "${type}/${No}" ./run.sh \
     --conf "conf/tuning/${model}.${No}.yaml" \
     --tag "${type}/${model}/${No}" \
     --stage "${stage}" \
