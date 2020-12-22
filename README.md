@@ -122,6 +122,10 @@ EOF
         * v004, num_mels: 128 -> 64, hop_size: 512 (window: 2048), max_frame: 512 -> 1024(提出)
         * CosineAnnealingLR適応
     - 次回やること
-        * v003, num_mels: 128, hop_size: 512 -> 1024 (window: 2048 -> 4096), max_frame: 512
-        * v004, num_mels: 128 -> 64, hop_size: 512 (window: 2048), max_frame: 512 -> 1024
+        * 後処理の分析EDA
+- 12/22(火)
+    - 今日やったこと
+        * 後処理の分析EDA
+    - 次回やること
+        * 
 </div></details>
