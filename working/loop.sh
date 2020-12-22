@@ -2,10 +2,10 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v002-clip065-cos
+No=v002-cos25
 model=Cnn14_DecisionLevelAtt
 type=wave
-stage=1
+stage=0
 stop_stage=2
 # for No in v002 v002-binary v003 v004; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000; do

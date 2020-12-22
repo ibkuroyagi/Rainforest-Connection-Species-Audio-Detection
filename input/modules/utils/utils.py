@@ -228,7 +228,7 @@ def get_concat_down_frame(y_frame, l_original=5626, max_frames=512):
         down_concat_frame (ndarray): Concatenated down sampled frames(l_down_target, n_class).
     """
     n_eval_split, l_target, n_class = y_frame.shape
-    l_down_target = (l_original + l_target) // (max_frames // l_target)
+    l_down_target = (l_original + l_target * l_target) // (max_frames // l_target)
     down_concat_frame = np.zeros((l_down_target, n_class))
     avg_frame = np.zeros((l_down_target, 1))
     for i in range(n_eval_split):
@@ -236,7 +236,7 @@ def get_concat_down_frame(y_frame, l_original=5626, max_frames=512):
             beginning = l_down_target - l_target
             endding = l_down_target
         else:
-            beginning = int(i * ((l_down_target - l_target) // (n_eval_split - 1)))
+            beginning = int(i * np.round(l_down_target / n_eval_split))
             endding = beginning + l_target
         down_concat_frame[beginning:endding] += y_frame[i]
         avg_frame[beginning:endding] += 1

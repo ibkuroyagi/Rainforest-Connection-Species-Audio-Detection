@@ -18,7 +18,7 @@ from utils import down_sampler  # noqa: E402
 class FeatTrainCollater(object):
     """Customized collater for Pytorch DataLoader for feat form data in training."""
 
-    def __init__(self, max_frames=512, l_target=16, mode="sum"):
+    def __init__(self, max_frames=512, l_target=16, mode="sum", n_class=24):
         """Initialize customized collater for PyTorch DataLoader.
 
         Args:
@@ -29,6 +29,7 @@ class FeatTrainCollater(object):
         self.max_frames = max_frames
         self.mode = mode
         self.l_target = l_target
+        self.n_class = n_class
 
     def __call__(self, batch):
         """Convert into batch tensors.
@@ -42,7 +43,7 @@ class FeatTrainCollater(object):
             Tensor: clip label (B, n_class).
         """
         logmels = [b["feats"] for b in batch]
-        matrix_tp_list = [b["matrix_tp"] for b in batch]
+        matrix_tp_list = [b["matrix_tp"][:, : self.n_class] for b in batch]
         all_time_list = [b["time_list"] for b in batch]
         logmel_batch = []
         frame_batch = []
@@ -91,7 +92,7 @@ class FeatTrainCollater(object):
 class FeatEvalCollater(object):
     """Customized collater for Pytorch DataLoader for feat form data in evaluation."""
 
-    def __init__(self, max_frames=512, n_split=20, is_label=False):
+    def __init__(self, max_frames=512, n_split=20, is_label=False, n_class=24):
         """Initialize customized collater for PyTorch DataLoader.
 
         Args:
@@ -102,6 +103,7 @@ class FeatEvalCollater(object):
         self.max_frames = max_frames
         self.n_split = n_split
         self.is_label = is_label
+        self.n_class = n_class
 
     def __call__(self, batch):
         """Convert into batch tensors.
@@ -137,7 +139,7 @@ class FeatEvalCollater(object):
             )  # (B, mel, max_frames)
 
         if self.is_label:
-            matrix_tp_list = [b["matrix_tp"] for b in batch]
+            matrix_tp_list = [b["matrix_tp"][:, : self.n_class] for b in batch]
             items["y_clip"] = torch.tensor(
                 [
                     matrix_tp.any(axis=0).astype(np.float32)

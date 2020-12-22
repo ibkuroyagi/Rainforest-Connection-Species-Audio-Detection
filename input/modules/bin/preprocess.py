@@ -71,7 +71,7 @@ def logmelfilterbank(
     return np.log10(np.maximum(eps, np.dot(spc, mel_basis.T)))
 
 
-def make_utt_matrix(train_df, recording_id: str, l_spec=5626, n_class=24):
+def make_utt_matrix(train_df, recording_id: str, l_spec=5626, n_class=25):
     """Make ground truth matrix.
 
     Args:
@@ -89,6 +89,8 @@ def make_utt_matrix(train_df, recording_id: str, l_spec=5626, n_class=24):
         t_start = int(l_spec * (tmp.loc[i, "t_min"] / 60.0))
         t_end = int(l_spec * (tmp.loc[i, "t_max"] / 60.0))
         matrix[t_start:t_end, tmp.loc[i, "species_id"]] = 1.0
+    if n_class == 25:
+        matrix[:, 24] = matrix.any(axis=1).astype(np.int64)
     return matrix
 
 
