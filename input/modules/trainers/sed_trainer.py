@@ -12,6 +12,7 @@ from tensorboardX import SummaryWriter
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
+import optimizers  # noqa: E402
 from losses import CenterLoss  # noqa: E402
 from utils import lwlrap  # noqa: E402
 
@@ -66,11 +67,20 @@ class SEDTrainer(object):
         self.save_name = save_name
         if use_center_loss:
             self.center_loss = CenterLoss(device=device, **config["center_loss_params"])
-            self.optimizer_centloss = optimizer(
-                self.center_loss.parameters(), **config["optimizer_params"]
+            optimizer_class = getattr(
+                optimizers,
+                config.get("optimizer_type", "Adam"),
             )
-            self.train_label_epoch = np.empty((0, 1))
-            self.dev_label_epoch = np.empty((0, 1))
+            self.optimizer_centloss = optimizer_class(
+                [
+                    {
+                        "params": self.center_loss.parameters(),
+                        "lr": config["optimizer_params"]["fc_lr"],
+                    }
+                ]
+            )
+            self.train_label_epoch = np.empty(0)
+            self.dev_label_epoch = np.empty(0)
             self.train_embedding_epoch = np.empty(
                 (0, config["center_loss_params"]["feat_dim"])
             )
@@ -210,15 +220,19 @@ class SEDTrainer(object):
                 [self.train_y_frame_epoch, y_frame], dim=0
             )
             self.train_pred_epoch = np.concatenate(
-                [self.train_pred_epoch, y_["y_clip"].detach().cpu().numpy()], axis=0
+                [
+                    self.train_pred_epoch,
+                    y_["y_clip"][:, : self.n_target].detach().cpu().numpy(),
+                ],
+                axis=0,
             )
             self.train_y_epoch = np.concatenate(
-                [self.train_y_epoch, y_clip.detach().cpu().numpy()], axis=0
+                [self.train_y_epoch, y_clip[:, : self.n_target].detach().cpu().numpy()],
+                axis=0,
             )
         if self.use_center_loss:
             self.train_label_epoch = np.concatenate(
-                [self.train_label_epoch, center_loss_label.detach().cup().numpy()],
-                axis=0,
+                [self.train_label_epoch, center_loss_label.detach().cpu().numpy()],
             )
             self.train_embedding_epoch = np.concatenate(
                 [self.train_embedding_epoch, y_["embedding"].detach().cpu().numpy()]
@@ -294,7 +308,7 @@ class SEDTrainer(object):
             self.train_embedding_epoch = np.empty(
                 (0, self.config["center_loss_params"]["feat_dim"])
             )
-            self.train_label_epoch = np.empty((0, self.config["n_class"]))
+            self.train_label_epoch = np.empty(0)
 
     @torch.no_grad()
     def _eval_step(self, batch):
@@ -324,14 +338,19 @@ class SEDTrainer(object):
             )
             self.dev_y_frame_epoch = torch.cat([self.dev_y_frame_epoch, y_frame], dim=0)
             self.dev_pred_epoch = np.concatenate(
-                [self.dev_pred_epoch, y_["y_clip"].detach().cpu().numpy()], axis=0
+                [
+                    self.dev_pred_epoch,
+                    y_["y_clip"][:, : self.n_target].detach().cpu().numpy(),
+                ],
+                axis=0,
             )
             self.dev_y_epoch = np.concatenate(
-                [self.dev_y_epoch, y_clip.detach().cpu().numpy()], axis=0
+                [self.dev_y_epoch, y_clip[:, : self.n_target].detach().cpu().numpy()],
+                axis=0,
             )
         if self.use_center_loss:
             self.dev_label_epoch = np.concatenate(
-                [self.dev_label_epoch, center_loss_label.detach().cpu().numpy()], axis=0
+                [self.dev_label_epoch, center_loss_label.detach().cpu().numpy()]
             )
             self.dev_embedding_epoch = np.concatenate(
                 [self.dev_embedding_epoch, y_["embedding"].detach().cpu().numpy()]
@@ -427,7 +446,7 @@ class SEDTrainer(object):
             self.dev_embedding_epoch = np.empty(
                 (0, self.config["center_loss_params"]["feat_dim"])
             )
-            self.dev_label_epoch = np.empty((0, self.config["n_class"]))
+            self.dev_label_epoch = np.empty(0)
         # restore mode
         self.model.train()
 

@@ -44,10 +44,16 @@ EOF
 
 ## アイデア
 - ~~segment-wise predoction(種によって鳴いている時間の長さが異なる)~~
+- ~~CenterLoss~~
 - wav2vec
 - ~~SpecAug~~
 - ダイアライゼーションの出力を代入(ラベルがオーバーラップしている)
 - 無音区間予測で精度改善?
+- ResNexst50をtorchvisionから重みをインポートしてファインチューニング(埋め込み層を明示的に作成)
+- EENDをconformerで実装
+- Mixupを実装
+- Augmentationがデータセット内でできるようにwave形式の入力を受け取るようにdataset, collater_fcに追記
+- TimeStretchが0.9, 1.1のmatrix_tpを作成
 
 ## 決定事項
 - 初手のCVの切り方はiterative-stratificationを用いる
@@ -57,7 +63,7 @@ EOF
 - v004(num_mels=64, max_frame=1024)のスコアが著しく低いことから周波数成分の分解濃が重要だと思われる.
 - 全てのモデルにおいて訓練データのlossが下がり切っているので,タスクが簡単過ぎる可能性が高い.より難易度の高い問題設定にする必要がある.
 - どのモデルもだいたい500stepsあたりで過学習になり始めるので、そこの調整が重要そう
-
+- 今回のmetricは順位のみが影響するので、sumよりbinaryを用いて確実に1を出力するモデルを作ることが重要
 <details><summary>kaggle日記</summary><div>
 
 - 11/29(日)
@@ -132,6 +138,17 @@ EOF
     - 次回やること
         * EENDの論文を読む(Transformerの実装を確認して、わからない点を吉村さん林さんに確認する12/24まで)
         * center-loss実装
-        * Time-strtchをしたときにwavデータのshapeに変化があるかどうかを確認
+        * Time-stretchをしたときにwavデータのshapeに変化があるかどうかを確認
+            * preprocessにて0.9, 1.1を追加する(ASRで実験的に良いAugmentationと言われている)
+- 12/23(水)
+    - 今日やったこと
+        * center-loss実装
+        * noiseクラスを追加して学習n_class=25(提出&記録)
+        * noiseクラスのアノテーションを変更(ラベル区間を明示的に0に)
+        * EENDの論文を読む(Transformerの実装を確認して、わからない点を吉村さん林さんに確認する12/24まで)
+            * 60sec程度のかなり長い音を入力してアノテーションを付けることはできるか(無音やノイズの際に反応しないか)
+    - 次回やること
+        * EENDの論文を読む(Transformerの実装を確認して、わからない点を吉村さん林さんに確認する12/24まで)
+        * Time-stretchをしたときにwavデータのshapeに変化があるかどうかを確認
             * preprocessにて0.9, 1.1を追加する(ASRで実験的に良いAugmentationと言われている)
 </div></details>

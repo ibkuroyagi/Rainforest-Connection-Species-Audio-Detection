@@ -2,10 +2,10 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v002-cos25-center
+No=v004-cos25-center
 model=Cnn14_DecisionLevelAtt
-type=wave #mel128hop1024
-stage=0
+type=mel64hop512
+stage=1
 stop_stage=2
 # for No in v002-cos25 v004-cos25; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000; do
