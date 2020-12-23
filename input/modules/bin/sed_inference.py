@@ -107,6 +107,7 @@ def main():
     with open(args.config) as f:
         config = yaml.load(f, Loader=yaml.Loader)
     config.update(vars(args))
+    config["n_target"] = 24
     with open(os.path.join(args.outdir, "config.yml"), "w") as f:
         yaml.dump(config, f, Dumper=yaml.Dumper)
     for key, value in config.items():
@@ -134,7 +135,7 @@ def main():
     )
     y = ground_truth.iloc[:, 1:].values
     # Initialize out of fold
-    oof_clip = np.zeros((len(ground_truth), config["n_eval_split"], config["n_class"]))
+    oof_clip = np.zeros((len(ground_truth), config["n_eval_split"], config["n_target"]))
     oof_frame = np.zeros(
         (
             len(ground_truth),
@@ -147,7 +148,7 @@ def main():
     # Initialize each fold prediction.
     sub = pd.read_csv(os.path.join(args.datadir, "sample_submission.csv"))
     pred_clip = np.zeros(
-        (config["n_fold"], len(sub), config["n_eval_split"], config["n_class"])
+        (config["n_fold"], len(sub), config["n_eval_split"], config["n_target"])
     )
     pred_frame = np.zeros(
         (

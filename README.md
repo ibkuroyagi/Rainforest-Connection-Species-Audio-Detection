@@ -128,6 +128,10 @@ EOF
         * 後処理の分析EDA
             * 無音区間(ラベルなし区間)での予測がかなり間違えている
                 * 無音もしくはノイズであることを明示的に伝えたい
+        * noiseクラスを追加して学習n_class=25
     - 次回やること
-        * 
+        * EENDの論文を読む(Transformerの実装を確認して、わからない点を吉村さん林さんに確認する12/24まで)
+        * center-loss実装
+        * Time-strtchをしたときにwavデータのshapeに変化があるかどうかを確認
+            * preprocessにて0.9, 1.1を追加する(ASRで実験的に良いAugmentationと言われている)
 </div></details>

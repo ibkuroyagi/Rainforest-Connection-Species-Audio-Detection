@@ -656,6 +656,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         x = F.dropout(x, p=0.2, training=self.training)
         # print(f"feature_map:{x.shape}")
         x = torch.mean(x, dim=3)
+        embedding = torch.mean(x, dim=2)
         # print(f"feature_map: mean-dim3{x.shape}")
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
@@ -676,6 +677,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         output_dict = {
             "y_frame": segmentwise_output,  # (B, T', n_class)
             "y_clip": clipwise_output,  # (B, n_class)
+            "embedding": embedding,  # (B, feat_dim)
         }
 
         return output_dict

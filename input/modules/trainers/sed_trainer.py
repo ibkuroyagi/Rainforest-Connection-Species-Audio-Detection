@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 import sys
 from tqdm import tqdm
 from collections import defaultdict
@@ -155,16 +156,21 @@ class SEDTrainer(object):
         """Train model one step."""
         x = batch["X"].to(self.device)
         y_frame = batch["y_frame"].to(self.device)
-        y_clip = batch["y_clip"][:, : self.n_target].to(self.device)
+        y_clip = batch["y_clip"].to(self.device)
         y_ = self.model(x)  # {y_frame: (B, T', n_class), y_clip: (B, n_class)}
-        if self.config["n_class"] != self.n_target:
-            y_["y_clip"] = y_["y_clip"][:, : self.n_target]
         if self.config["loss_type"] == "FrameClipLoss":
-            loss = self.criterion(y_["y_frame"], y_frame, y_["y_clip"], y_clip)
+            loss = self.criterion(
+                y_["y_frame"],
+                y_frame,
+                y_["y_clip"][:, : self.n_target],
+                y_clip[:, : self.n_target],
+            )
         elif self.config["loss_type"] == "BCEWithLogitsLoss":
-            loss = self.criterion(y_["y_clip"], y_clip)
+            loss = self.criterion(
+                y_["y_clip"][:, : self.n_target], y_clip[:, : self.n_target]
+            )
         if self.use_center_loss:
-            center_loss_label = batch["label"]
+            center_loss_label = self._get_center_loss_label(y_clip[:, : self.n_target])
             loss += (
                 self.center_loss(y_["embedding"], center_loss_label)
                 * self.config["center_loss_alpha"]
@@ -211,7 +217,8 @@ class SEDTrainer(object):
             )
         if self.use_center_loss:
             self.train_label_epoch = np.concatenate(
-                [self.train_label_epoch, center_loss_label], axis=0
+                [self.train_label_epoch, center_loss_label.detach().cup().numpy()],
+                axis=0,
             )
             self.train_embedding_epoch = np.concatenate(
                 [self.train_embedding_epoch, y_["embedding"].detach().cpu().numpy()]
@@ -266,7 +273,7 @@ class SEDTrainer(object):
                 f"(Epoch: {self.epochs}) {key} = {self.epoch_train_loss[key]:.6f}."
             )
         self._write_to_tensorboard(self.epoch_train_loss)
-        if self.use_center_loss and (self.epochs % 20 == 0):
+        if self.use_center_loss and (self.epochs % 5 == 0):
             self.plot_embedding(
                 self.train_embedding_epoch, self.train_label_epoch, name="train"
             )
@@ -304,6 +311,7 @@ class SEDTrainer(object):
             loss = self.criterion(y_["y_clip"], y_clip)
 
         if self.use_center_loss:
+            center_loss_label = self._get_center_loss_label(y_clip[:, : self.n_target])
             center_loss_label = batch["label"]
             loss += (
                 self.center_loss(y_["embedding"], center_loss_label)
@@ -323,7 +331,7 @@ class SEDTrainer(object):
             )
         if self.use_center_loss:
             self.dev_label_epoch = np.concatenate(
-                [self.dev_label_epoch, center_loss_label], axis=0
+                [self.dev_label_epoch, center_loss_label.detach().cpu().numpy()], axis=0
             )
             self.dev_embedding_epoch = np.concatenate(
                 [self.dev_embedding_epoch, y_["embedding"].detach().cpu().numpy()]
@@ -437,7 +445,7 @@ class SEDTrainer(object):
             )
             for _ in range(self.n_eval_split)
         ]
-        y_clip_true = torch.empty((0, self.config["n_class"]))
+        y_clip_true = torch.empty((0, self.n_target))
         self.model.eval()
         with torch.no_grad():
             for batch in tqdm(self.data_loader["eval"]):
@@ -452,7 +460,7 @@ class SEDTrainer(object):
                         [y_clip[i], y_batch_["y_clip"][:, : self.n_target]], dim=0
                     )
                     y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
-        # (B, n_eval_split, n_class)
+        # (B, n_eval_split, n_target)
         y_clip = (
             torch.sigmoid(torch.stack(y_clip, dim=0)).cpu().numpy().transpose(1, 0, 2)
         )
@@ -484,14 +492,11 @@ class SEDTrainer(object):
         import matplotlib.pyplot as plt
 
         X_embedded = self.tsne.fit_transform(embedding)
-        colors = ["r", "g", "b"]
-        label_names = ["normal", "anomaly", "outliter"]
+        label_names = np.unique(label)
         plt.figure()
         for i, label_name in enumerate(label_names):
             tmp = X_embedded[label == label_name]
-            plt.scatter(
-                tmp[:, 0], tmp[:, 1], alpha=0.3, label=label_name, color=colors[i]
-            )
+            plt.scatter(tmp[:, 0], tmp[:, 1], alpha=0.3, label=label_name)
         plt.legend()
         plt.title(f"Distribution of {name} embedding layer at {self.epochs}.")
         if len(dirname) == 0:
@@ -499,6 +504,21 @@ class SEDTrainer(object):
         if not os.path.exists(dirname):
             os.makedirs(dirname)
         plt.savefig(os.path.join(dirname, f"{name}epoch{self.epochs}.png"))
+
+    def _get_center_loss_label(self, y_clip):
+        """Get center loss label.
+
+        Args:
+            y_clip (torch.tensor): (B, n_target)
+        Returns:
+            label: (torch.tensor): (B,)
+        """
+        batch_size = len(y_clip)
+        label = torch.zeros(batch_size).to(self.device)
+        for i in range(batch_size):
+            called_idx = torch.where(y_clip[i] == 1)
+            label[i] = called_idx[random.randint(0, len(called_idx) - 1)]
+        return label
 
     def _write_to_tensorboard(self, loss):
         """Write to tensorboard."""

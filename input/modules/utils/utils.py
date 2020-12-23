@@ -186,11 +186,15 @@ def down_sampler(source, l_target=16, mode="sum"):
         if mode == "sum":
             new_source[i] = source[t_start:t_end].sum(axis=0) / l_effect
         elif mode == "binary":
-            new_source[i] = (source[t_start:t_end] > 0).any(axis=0)
+            new_source[i] = (source[t_start:t_end] > 0).any(axis=0).astype(np.int64)
+            if n_class == 25:
+                new_source[i, 24] = int(~(new_source[i, :24] > 0).any(axis=0))
     return new_source
 
 
-def get_down_sample_matrix(matrix, l_target=16, max_frames=512, n_eval_split=20):
+def get_down_sample_matrix(
+    matrix, l_target=16, max_frames=512, n_eval_split=20, mode="binary"
+):
     """Get down-sampled ground truth data.
 
     Args:
@@ -198,6 +202,7 @@ def get_down_sample_matrix(matrix, l_target=16, max_frames=512, n_eval_split=20)
         l_target (int, optional): Target length. Defaults to 16.
         max_frames (int, optional): Max frame of model's input. Defaults to 512.
         n_eval_split (int, optional): The number of split eval data. Defaults to 20.
+        mode (str, optional): Mode of down sampling. Defaults to binary.
 
     Returns:
         ground_truth_frame(ndarray): (n_eval_split, l_target, n_class)
@@ -212,7 +217,7 @@ def get_down_sample_matrix(matrix, l_target=16, max_frames=512, n_eval_split=20)
             beginning = int(i * ((l_original - max_frames) // (n_eval_split - 1)))
             endding = beginning + max_frames
         tmp = matrix[beginning:endding]
-        ground_truth_frame[i] = down_sampler(tmp, l_target=l_target, mode="sum")
+        ground_truth_frame[i] = down_sampler(tmp, l_target=l_target, mode=mode)
     return ground_truth_frame
 
 
@@ -228,7 +233,8 @@ def get_concat_down_frame(y_frame, l_original=5626, max_frames=512):
         down_concat_frame (ndarray): Concatenated down sampled frames(l_down_target, n_class).
     """
     n_eval_split, l_target, n_class = y_frame.shape
-    l_down_target = (l_original + l_target * l_target) // (max_frames // l_target)
+    l_down_target = (l_original) // (max_frames // l_target) + l_target
+    _l_down_target = l_original // (max_frames // l_target)
     down_concat_frame = np.zeros((l_down_target, n_class))
     avg_frame = np.zeros((l_down_target, 1))
     for i in range(n_eval_split):
@@ -236,8 +242,9 @@ def get_concat_down_frame(y_frame, l_original=5626, max_frames=512):
             beginning = l_down_target - l_target
             endding = l_down_target
         else:
-            beginning = int(i * np.round(l_down_target / n_eval_split))
+            beginning = int(i * np.round(_l_down_target / n_eval_split))
             endding = beginning + l_target
+        # print(i, l_down_target, beginning, endding)
         down_concat_frame[beginning:endding] += y_frame[i]
         avg_frame[beginning:endding] += 1
     down_concat_frame = down_concat_frame / avg_frame
