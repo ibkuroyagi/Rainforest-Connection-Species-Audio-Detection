@@ -188,7 +188,7 @@ def main():
             lambda x: x not in valid_y["recording_id"].values
         )
         # get data loader
-        if config["model_params"].get("require_prep", True):
+        if config["model_params"].get("require_prep", False):
             # from datasets import WaveEvalCollater
 
             # eval_collater = WaveEvalCollater(
@@ -264,7 +264,7 @@ def main():
             seed=None,
         )
         logging.info(f"The number of test files = {len(test_dataset)}.")
-        if config["model_params"].get("require_prep", True):
+        if config["model_params"].get("require_prep", False):
             # from datasets import WaveEvalCollater
 
             # eval_collater = WaveEvalCollater(
