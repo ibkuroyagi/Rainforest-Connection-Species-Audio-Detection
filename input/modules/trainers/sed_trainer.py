@@ -75,7 +75,7 @@ class SEDTrainer(object):
                 [
                     {
                         "params": self.center_loss.parameters(),
-                        "lr": config["optimizer_params"]["conv_lr"],
+                        "lr": config["optimizer_params"]["fc_lr"],
                     }
                 ]
             )
@@ -168,6 +168,9 @@ class SEDTrainer(object):
         y_frame = batch["y_frame"].to(self.device)
         y_clip = batch["y_clip"].to(self.device)
         y_ = self.model(x)  # {y_frame: (B, T', n_class), y_clip: (B, n_class)}
+        logging.debug(
+            f"y_frame:{y_frame[0]}, y_clip:{y_clip[0]}, y_frame:{y_['y_frame'][0]}, y_clip:{y_['y_clip'][0]}"
+        )
         if self.config["loss_type"] == "FrameClipLoss":
             loss = self.criterion(
                 y_["y_frame"],
@@ -216,7 +219,7 @@ class SEDTrainer(object):
         else:
             logging.warn("Loss contain NaN. Don't back-poropagated.")
 
-        if self.config["model_type"] == "Cnn14_DecisionLevelAtt":
+        if self.config["model_type"] in ["Cnn14_DecisionLevelAtt", "ResNext50"]:
             self.train_pred_frame_epoch = torch.cat(
                 [self.train_pred_frame_epoch, y_["y_frame"]], dim=0
             )
@@ -335,7 +338,7 @@ class SEDTrainer(object):
                 * self.config["center_loss_alpha"]
             )
         # add to total eval loss
-        if self.config["model_type"] == "Cnn14_DecisionLevelAtt":
+        if self.config["model_type"] in ["Cnn14_DecisionLevelAtt", "ResNext50"]:
             self.dev_pred_frame_epoch = torch.cat(
                 [self.dev_pred_frame_epoch, y_["y_frame"]], dim=0
             )

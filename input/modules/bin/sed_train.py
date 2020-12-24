@@ -116,7 +116,9 @@ def main():
         yaml.dump(config, f, Dumper=yaml.Dumper)
     for key, value in config.items():
         logging.info(f"{key} = {value}")
-    if config["model_params"].get("require_prep", True):
+    if (config["model_params"].get("require_prep", False)) or (
+        config.get("wave_mode", False)
+    ):
         train_keys = ["wave"]
         eval_keys = ["wave", "matrix_tp"]
     else:
@@ -184,7 +186,7 @@ def main():
         logging.info(f"The number of evaluation files = {len(eval_dataset)}.")
 
         # get data loader
-        if config["model_params"].get("require_prep", True):
+        if config["model_params"].get("require_prep", False):
             # from datasets import WaveEvalCollater
 
             # eval_collater = WaveEvalCollater(
@@ -277,7 +279,7 @@ def main():
             conv_params = []
             fc_param = []
             for name, param in model.named_parameters():
-                if name.startswith(("fc1", "att_block")):
+                if name.startswith(("resnext50.fc", "fc1", "att_block")):
                     fc_param.append(param)
                 else:
                     conv_params.append(param)

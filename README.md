@@ -152,4 +152,14 @@ EOF
         * EENDの論文を読む(Transformerの実装を確認して、わからない点を吉村さん林さんに確認する12/24まで)
         * Time-stretchをしたときにwavデータのshapeに変化があるかどうかを確認
             * preprocessにて0.9, 1.1を追加する(ASRで実験的に良いAugmentationと言われている)
+- 12/24(木)
+    - 今日やったこと
+        * center-loss実装(提出)
+        * ResNext50を実装してv000の実験
+        * EENDの論文を読む(Transformerの実装を確認して、わからない点を吉村さん林さんに確認する12/24まで)
+            * 60sec程度のかなり長い音を入力してアノテーションを付けることはできるか(無音やノイズの際に反応しないか)
+    - 次回やること
+        * EENDの論文を読む(Transformerの実装を確認して、わからない点を吉村さん林さんに確認する12/24まで)
+        * Time-stretchをしたときにwavデータのshapeに変化があるかどうかを確認
+            * preprocessにて0.9, 1.1を追加する(ASRで実験的に良いAugmentationと言われている)
 </div></details>

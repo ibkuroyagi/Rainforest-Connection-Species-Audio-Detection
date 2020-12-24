@@ -46,7 +46,6 @@ class ResNext50(nn.Module):
     def init_weight(self):
         init_bn(self.bn0)
         init_layer(self.fc1)
-        init_layer(self.resnext50.fc)
 
     def forward(self, input):
         """Input: (batch_size, mels, T')"""
