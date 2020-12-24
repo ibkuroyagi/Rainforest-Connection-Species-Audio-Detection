@@ -19,3 +19,4 @@ librosa
 torchlibrosa
 torchvision
 ipywidgets
+colorednoise
