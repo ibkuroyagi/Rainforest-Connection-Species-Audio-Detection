@@ -14,9 +14,10 @@ sys.path.append("../input/modules")
 from models.utils import do_mixup  # noqa: E402
 from models.utils import init_bn  # noqa: E402
 from models.utils import init_layer  # noqa: E402
-from models.utils import interpolate  # noqa: E402
 from models.utils import Mixup  # noqa: E402
-from models.utils import pad_framewise_output  # noqa: E402
+
+# from models.utils import interpolate  # noqa: E402
+# from models.utils import pad_framewise_output  # noqa: E402
 
 
 class ConvBlock(nn.Module):

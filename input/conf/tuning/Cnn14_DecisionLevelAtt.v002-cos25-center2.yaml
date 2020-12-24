@@ -60,7 +60,7 @@ loss_params:
   clip_ratio: 0.50
   reduction: mean
 
-center_loss_alpha: 5.0e-5
+center_loss_alpha: 5.0e-4
 center_loss_params:
   num_classes: 24
   feat_dim: 2048
@@ -84,7 +84,7 @@ scheduler_params:
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
-train_max_steps: 3000 # Number of training steps.
+train_max_steps: 2500 # Number of training steps.
 save_interval_steps: 1000 # Interval steps to save checkpoint.
 eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################

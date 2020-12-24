@@ -17,3 +17,5 @@ flake8
 tensorflow
 librosa
 torchlibrosa
+torchvision
+ipywidgets

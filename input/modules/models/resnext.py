@@ -1,0 +1,98 @@
+import torch
+import torch.nn as nn
+import torchvision
+import torch.nn.functional as F
+from torchlibrosa.augmentation import SpecAugmentation
+from .cnn import AttBlock
+from .utils import Mixup
+from .utils import init_bn
+from .utils import init_layer
+from .utils import do_mixup
+
+
+class ResNext50(nn.Module):
+    def __init__(
+        self,
+        num_mels=128,
+        classes_num=25,
+        training=False,
+        is_spec_augmenter=False,
+        mixup_lambda=None,
+    ):
+
+        super(self.__class__, self).__init__()
+        self.bn0 = nn.BatchNorm2d(num_mels)
+        self.conv0 = nn.Conv2d(1, 3, 1, 1)
+        self.resnext50 = torchvision.models.resnext50_32x4d(pretrained=True)
+        self.resnext50.fc = nn.Linear(2048, classes_num, bias=True)
+        self.fc1 = nn.Linear(2048, 2048, bias=True)
+        self.att_block = AttBlock(2048, classes_num, activation="linear")
+
+        # self.init_weight()
+        self.training = training
+        self.is_spec_augmenter = is_spec_augmenter
+        if is_spec_augmenter:
+            # Spec augmenter
+            self.spec_augmenter = SpecAugmentation(
+                time_drop_width=64,
+                time_stripes_num=2,
+                freq_drop_width=8,
+                freq_stripes_num=2,
+            )
+        self.mixup_lambda = mixup_lambda
+        if mixup_lambda is not None:
+            self.mixup = Mixup(mixup_alpha=mixup_lambda, device="cuda")
+
+    def init_weight(self):
+        init_bn(self.bn0)
+        init_layer(self.fc1)
+        init_layer(self.resnext50.fc)
+
+    def forward(self, input):
+        """Input: (batch_size, mels, T')"""
+
+        x = input.unsqueeze(3)
+        x = self.bn0(x)
+        x = x.transpose(1, 3)
+        if self.training and self.is_spec_augmenter:
+            x = self.spec_augmenter(x)
+
+        # Mixup on spectrogram
+        if self.training and self.mixup_lambda is not None:
+            mixup_lambda_list = self.mixup.get_lambda(batch_size=x.size(0))
+            x = do_mixup(x, mixup_lambda_list)
+        x = self.conv0(x)
+        x = self.resnext50.conv1(x)
+        x = self.resnext50.bn1(x)
+        x = self.resnext50.relu(x)
+        x = self.resnext50.maxpool(x)
+        x = self.resnext50.layer1(x)
+        x = self.resnext50.layer2(x)
+        x = self.resnext50.layer3(x)
+        x = self.resnext50.layer4(x)
+
+        # print(f"feature_map:{x.shape}")
+        x = torch.mean(x, dim=3)
+        embedding = torch.mean(x, dim=2)
+        clipwise_output1 = self.resnext50.fc(embedding)
+        # print(f"feature_map: mean-dim3{x.shape}")
+        x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
+        x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
+        x = x1 + x2
+        x = F.dropout(x, p=0.5, training=self.training)
+        x = x.transpose(1, 2)
+        x = F.relu_(self.fc1(x))
+        x = x.transpose(1, 2)
+        x = F.dropout(x, p=0.5, training=self.training)
+        # print(f"pool1d_map: mean-dim3{x.shape}")
+        (clipwise_output2, _, segmentwise_output) = self.att_block(x)
+        segmentwise_output = segmentwise_output.transpose(1, 2)
+        clipwise_output = clipwise_output1 + clipwise_output2
+
+        output_dict = {
+            "y_frame": segmentwise_output,  # (B, T', n_class)
+            "y_clip": clipwise_output,  # (B, n_class)
+            "embedding": embedding,  # (B, feat_dim)
+        }
+
+        return output_dict

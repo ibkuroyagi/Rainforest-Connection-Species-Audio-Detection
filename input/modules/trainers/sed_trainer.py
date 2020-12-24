@@ -75,7 +75,7 @@ class SEDTrainer(object):
                 [
                     {
                         "params": self.center_loss.parameters(),
-                        "lr": config["optimizer_params"]["fc_lr"],
+                        "lr": config["optimizer_params"]["conv_lr"],
                     }
                 ]
             )
@@ -181,9 +181,13 @@ class SEDTrainer(object):
             )
         if self.use_center_loss:
             center_loss_label = self._get_center_loss_label(y_clip[:, : self.n_target])
-            loss += (
+            center_loss = (
                 self.center_loss(y_["embedding"], center_loss_label)
                 * self.config["center_loss_alpha"]
+            )
+            loss += center_loss
+            logging.debug(
+                f"loss:{loss.item()}, center:{center_loss.item()}, clip:{loss.item()-center_loss.item()}"
             )
             self.optimizer_centloss.zero_grad()
         if not torch.isnan(loss):
@@ -326,7 +330,6 @@ class SEDTrainer(object):
 
         if self.use_center_loss:
             center_loss_label = self._get_center_loss_label(y_clip[:, : self.n_target])
-            center_loss_label = batch["label"]
             loss += (
                 self.center_loss(y_["embedding"], center_loss_label)
                 * self.config["center_loss_alpha"]
@@ -522,6 +525,7 @@ class SEDTrainer(object):
             dirname = os.path.join(self.config["outdir"], "predictions", "embedding")
         if not os.path.exists(dirname):
             os.makedirs(dirname)
+        plt.tight_layout()
         plt.savefig(os.path.join(dirname, f"{name}epoch{self.epochs}.png"))
 
     def _get_center_loss_label(self, y_clip):
@@ -535,7 +539,7 @@ class SEDTrainer(object):
         batch_size = len(y_clip)
         label = torch.zeros(batch_size).to(self.device)
         for i in range(batch_size):
-            called_idx = torch.where(y_clip[i] == 1)
+            called_idx = torch.where(y_clip[i] == 1)[0]
             label[i] = called_idx[random.randint(0, len(called_idx) - 1)]
         return label
 

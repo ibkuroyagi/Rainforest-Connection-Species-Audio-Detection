@@ -2,9 +2,9 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v004-cos25-center
+No=v003-cos25-center2
 model=Cnn14_DecisionLevelAtt
-type=mel64hop512
+type=mel128hop1024
 stage=1
 stop_stage=2
 # for No in v002-cos25 v004-cos25; do
@@ -16,6 +16,6 @@ sbatch -J "${type}/${No}" ./run.sh \
     --stop_stage "${stop_stage}" \
     --type "${type}" \
     --cal_type "0" \
-    --verbose 1
+    --verbose 2
 # done
 # done

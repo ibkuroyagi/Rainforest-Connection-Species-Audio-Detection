@@ -1,4 +1,6 @@
-# n_class25
+# fix data preprocess reduce frame size.
+# hop_size: 512 -> 1024
+# fft_size: 2048 -> 4096
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -9,8 +11,8 @@ n_fold: 5
 #                    PREPROCESS SETTING                   #
 ###########################################################
 sr: 48000
-fft_size: 2048
-hop_size: 512
+fft_size: 4096
+hop_size: 1024
 window: hann
 num_mels: 128
 fmin: 50
@@ -57,10 +59,10 @@ use_center_loss: True
 ###########################################################
 loss_type: FrameClipLoss
 loss_params:
-  clip_ratio: 0.50
+  clip_ratio: 0.55
   reduction: mean
 
-center_loss_alpha: 5.0e-5
+center_loss_alpha: 5.0e-4
 center_loss_params:
   num_classes: 24
   feat_dim: 2048
@@ -84,10 +86,10 @@ scheduler_params:
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
-train_max_steps: 3000 # Number of training steps.
+train_max_steps: 2500 # Number of training steps.
 save_interval_steps: 1000 # Interval steps to save checkpoint.
 eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
 #                     OTHER SETTING                       #
 ###########################################################
-n_eval_split: 20
+n_eval_split: 10
