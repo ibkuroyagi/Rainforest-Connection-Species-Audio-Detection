@@ -20,7 +20,7 @@ class RainForestDataset(Dataset):
 
     def __init__(
         self,
-        root_dir="",
+        root_dirs=[],
         files=None,
         train_tp=None,
         train_fp=None,
@@ -33,7 +33,7 @@ class RainForestDataset(Dataset):
         """Initialize dataset.
 
         Args:
-            root_dir (str): Root directory for dumped files.
+            root_dirs (list): List of root directories for dumped files.
             train_tp (DataFrame): train_tp (default: None)
             train_fp (DataFrame): train_fp (default: None)
             keys: (list): List of key of dataset.
@@ -46,8 +46,10 @@ class RainForestDataset(Dataset):
         #     self.seed = seed
         #     np.random.seed(seed)
         # find all of the mel files
-        if (files is None) and len(root_dir) != 0:
-            files = sorted(find_files(root_dir, "*.h5"))
+        if (files is None) and (len(root_dirs) != 0):
+            files = []
+            for root_dir in root_dirs:
+                files += sorted(find_files(root_dir, "*.h5"))
         use_file_keys = []
         use_file_list = []
         use_time_list = []

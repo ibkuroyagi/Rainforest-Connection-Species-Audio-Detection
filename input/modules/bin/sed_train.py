@@ -45,9 +45,10 @@ def main():
         help="root data directory.",
     )
     parser.add_argument(
-        "--dumpdir",
-        default=None,
+        "--dumpdirs",
+        default=[],
         type=str,
+        nargs="+",
         help="root dump directory.",
     )
     parser.add_argument(
@@ -151,7 +152,7 @@ def main():
             lambda x: x not in valid_y["recording_id"].values
         )
         train_dataset = RainForestDataset(
-            root_dir=os.path.join(args.dumpdir, "train"),
+            root_dirs=[os.path.join(dumpdir, "train") for dumpdir in args.dumpdirs],
             train_tp=train_tp[train_tp["use_train"]],
             train_fp=train_fp,
             keys=train_keys,
@@ -162,7 +163,7 @@ def main():
         )
         logging.info(f"The number of training files = {len(train_dataset)}.")
         dev_dataset = RainForestDataset(
-            root_dir=os.path.join(args.dumpdir, "train"),
+            root_dirs=[os.path.join(args.dumpdirs[0], "train")],
             train_tp=train_tp[~train_tp["use_train"]],
             train_fp=train_fp,
             keys=train_keys,

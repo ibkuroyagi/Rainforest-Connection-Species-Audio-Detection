@@ -608,7 +608,6 @@ class Cnn14_DecisionLevelAtt(nn.Module):
 
         self.fc1 = nn.Linear(2048, 2048, bias=True)
         self.att_block = AttBlock(2048, classes_num, activation="sigmoid")
-        self.fc = nn.Linear(2048, 25, bias=True)
 
         self.init_weight()
         self.training = training
@@ -621,7 +620,6 @@ class Cnn14_DecisionLevelAtt(nn.Module):
     def init_weight(self):
         init_bn(self.bn0)
         init_layer(self.fc1)
-        init_layer(self.fc)
 
     def forward(self, input):
         """Input: (batch_size, data_length)"""
@@ -660,7 +658,6 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         # print(f"feature_map:{x.shape}")
         x = torch.mean(x, dim=3) + torch.max(x, dim=3)[0]
         embedding = torch.mean(x, dim=2)
-        clipwise_output1 = self.fc(embedding)
         # print(f"feature_map: mean-dim3{x.shape}")
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
@@ -671,9 +668,8 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         x = x.transpose(1, 2)
         x = F.dropout(x, p=0.5, training=self.training)
         # print(f"pool1d_map: mean-dim3{x.shape}")
-        (clipwise_output2, _, segmentwise_output) = self.att_block(x)
+        (clipwise_output, _, segmentwise_output) = self.att_block(x)
         segmentwise_output = segmentwise_output.transpose(1, 2)
-        clipwise_output = clipwise_output1 + clipwise_output2
         # Get framewise output
         # framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
         # framewise_output = pad_framewise_output(framewise_output, frames_num)

@@ -58,6 +58,8 @@ EOF
 ## 決定事項
 - 初手のCVの切り方はiterative-stratificationを用いる
 - 推論に使うデータをいい感じにクロップするためにダイアライゼーションコードを作成する
+- augmentationは[dcase2020-task4-1st](http://dcase.community/documents/challenge2020/technical_reports/DCASE2020_Miyazaki_108.pdf)にならって,mixup, time-shiftを導入
+- time-shiftはASR分野では0.9, 1.1倍にすると実験的に良いという報告(espnet)からその数値を採用
 
 ## 実験結果からの気づき
 - v004(num_mels=64, max_frame=1024)のスコアが著しく低いことから周波数成分の分解濃が重要だと思われる.
@@ -67,6 +69,7 @@ EOF
     - 下手にノイズの鳥の声で高い確率が出力されてしまい順位を誤ると大きな痛手になる
 - mel64hop512は総じて低いスコア
     - つまり、周波数方向の情報が重要な要素となっているので、その活用が効くと推測
+- embeddingから直接clipwise_outputを求めると精度劇的に悪化する -> 時間成分を考慮しない(外部環境音のみで識別する)モデルになるため推論時に超悪さする
 <details><summary>kaggle日記</summary><div>
 
 - 11/29(日)
@@ -164,4 +167,12 @@ EOF
         * EENDの論文を読む(Transformerの実装を確認して、わからない点を吉村さん林さんに確認する12/24まで)
         * Time-stretchをしたときにwavデータのshapeに変化があるかどうかを確認
             * preprocessにて0.9, 1.1を追加する(ASRで実験的に良いAugmentationと言われている)
+- 12/25(金)
+    - 今日やったこと
+        * EENDの論文を読む(完全に理解した)
+        * Time-stretchを実装v003-aug, v005で実験
+            * preprocessにて0.9, 1.1を追加する(ASRで実験的に良いAugmentationと言われている)
+    - 次回やること
+        * mixupを実装&音を聴いて妥当性を評価
+        * 実験結果を提出&まとめる
 </div></details>

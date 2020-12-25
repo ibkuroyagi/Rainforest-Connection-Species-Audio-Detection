@@ -112,7 +112,7 @@ def main():
         yaml.dump(config, f, Dumper=yaml.Dumper)
     for key, value in config.items():
         logging.info(f"{key} = {value}")
-    if config["model_params"].get("require_prep", True):
+    if config["model_params"].get("require_prep", False):
         eval_keys = ["wave", "matrix_tp"]
     else:
         eval_keys = ["feats", "matrix_tp"]

@@ -117,6 +117,9 @@ def main():
     parser.add_argument(
         "--cal_type", type=int, default=1, help="whether calculate statistics."
     )
+    parser.add_argument(
+        "--facter", type=float, default=1.0, help="The facter of speed."
+    )
     parser.add_argument("--type", type=str, default="wave", help="Type of preprocess.")
     parser.add_argument(
         "--verbose",
@@ -162,6 +165,11 @@ def main():
     tp_list = train_tp["recording_id"].unique()
     train_fp = pd.read_csv(os.path.join(args.datadir, "train_fp.csv"))
     fp_list = train_fp["recording_id"].unique()
+    if args.facter != 1.0:
+        train_tp["t_max"] = train_tp["t_max"] / args.facter
+        train_tp["t_min"] = train_tp["t_min"] / args.facter
+        train_fp["t_max"] = train_fp["t_max"] / args.facter
+        train_fp["t_min"] = train_fp["t_min"] / args.facter
     # get dataset
     if (args.datadir is not None) and args.cal_type == 1:
         tmp = np.zeros((len(all_path_list), 2880000))
@@ -192,6 +200,8 @@ def main():
         for path in tqdm(path_list):
             x, _ = librosa.load(path=path, sr=sr)
             x = (x - statistic["mean"]) / statistic["std"]
+            if args.facter != 1.0:
+                x = librosa.effects.time_stretch(x, args.facter)
             # extract feature
             mel = logmelfilterbank(
                 x,

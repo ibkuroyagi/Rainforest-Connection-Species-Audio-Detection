@@ -73,7 +73,6 @@ class ResNext50(nn.Module):
         # print(f"feature_map:{x.shape}")
         x = torch.mean(x, dim=3) + torch.max(x, dim=3)[0]
         embedding = torch.mean(x, dim=2)
-        clipwise_output1 = self.resnext50.fc(embedding)
         # print(f"feature_map: mean-dim3{x.shape}")
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
@@ -84,9 +83,8 @@ class ResNext50(nn.Module):
         x = x.transpose(1, 2)
         x = F.dropout(x, p=0.5, training=self.training)
         # print(f"pool1d_map: mean-dim3{x.shape}")
-        (clipwise_output2, _, segmentwise_output) = self.att_block(x)
+        (clipwise_output, _, segmentwise_output) = self.att_block(x)
         segmentwise_output = segmentwise_output.transpose(1, 2)
-        clipwise_output = clipwise_output1 + clipwise_output2
 
         output_dict = {
             "y_frame": segmentwise_output,  # (B, T', n_class)
