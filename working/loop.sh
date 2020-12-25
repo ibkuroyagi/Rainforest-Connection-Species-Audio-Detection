@@ -2,9 +2,13 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v003            #v003-cos25-center2
-model=ResNext50    #Cnn14_DecisionLevelAtt
-type=mel128hop1024 #wave       #mel128hop1024
+No=v005 #v003-cos25-center2
+model=Cnn14_DecisionLevelAtt
+type=wave
+
+# model=ResNext50
+# type=mel128hop1024
+
 stage=1
 stop_stage=2
 # for No in v002-cos25 v004-cos25; do

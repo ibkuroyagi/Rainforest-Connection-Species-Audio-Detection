@@ -71,7 +71,7 @@ class ResNext50(nn.Module):
         x = self.resnext50.layer4(x)
 
         # print(f"feature_map:{x.shape}")
-        x = torch.mean(x, dim=3)
+        x = torch.mean(x, dim=3) + torch.max(x, dim=3)[0]
         embedding = torch.mean(x, dim=2)
         clipwise_output1 = self.resnext50.fc(embedding)
         # print(f"feature_map: mean-dim3{x.shape}")
