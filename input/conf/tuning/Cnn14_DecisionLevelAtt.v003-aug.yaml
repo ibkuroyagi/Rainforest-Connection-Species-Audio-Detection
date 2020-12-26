@@ -81,8 +81,8 @@ optimizer_params:
   fc_lr: 0.001 # full connection layer's learning rate.
 scheduler_type: "CosineAnnealingLR"
 scheduler_params:
-  T_max: 200 # scheduler step size.
-  eta_min: 5.0e-6
+  T_max: 1000 # scheduler step size.
+  eta_min: 1.0e-5
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################

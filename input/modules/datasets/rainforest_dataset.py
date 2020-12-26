@@ -2,6 +2,7 @@
 
 # Copyright 2020 Ibuki Kuroyanagi
 
+import logging
 import sys
 import h5py
 import numpy as np
@@ -56,35 +57,57 @@ class RainForestDataset(Dataset):
         if mode == "tp":
             tp_list = train_tp["recording_id"].unique()
             for file in files:
+                if "sp0.9" in file:
+                    facter = 0.9
+                elif "sp1.1" in file:
+                    facter = 1.1
+                else:
+                    facter = 1.0
                 recording_id = file.split("/")[-1].split(".")[0]
                 if recording_id in tp_list:
                     use_file_keys.append(keys + ["matrix_tp"])
                     use_file_list.append(file)
+                    # logging.debug(f"{facter}: {file}")
                     use_time_list.append(
                         train_tp[train_tp["recording_id"] == recording_id]
-                        .loc[:, ["species_id", "t_min", "t_max"]]
+                        .loc[:, ["t_min", "t_max"]]
                         .values
                     )
         elif mode == "all":
             tp_list = train_tp["recording_id"].unique()
             fp_list = train_fp["recording_id"].unique()
             for file in files:
+                if "sp0.9" in file:
+                    facter = 0.9
+                elif "sp1.1" in file:
+                    facter = 1.1
+                else:
+                    facter = 1.0
                 recording_id = file.split("/")[-1].split(".")[0]
                 if recording_id in tp_list:
                     use_file_keys.append(keys + ["matrix_tp"])
                     use_file_list.append(file)
+                    # logging.debug(f"{facter}: {file}")
                     use_time_list.append(
-                        train_tp[train_tp["recording_id"] == recording_id]
-                        .loc[:, ["species_id", "t_min", "t_max"]]
-                        .values
+                        (
+                            train_tp[train_tp["recording_id"] == recording_id]
+                            .loc[:, ["t_min", "t_max"]]
+                            .values
+                            / facter,
+                            60 / facter,
+                        )
                     )
                 if recording_id in fp_list:
                     use_file_keys.append(keys + ["matrix_fp"])
                     use_file_list.append(file)
                     use_time_list.append(
-                        train_fp[train_fp["recording_id"] == recording_id]
-                        .loc[:, ["species_id", "t_min", "t_max"]]
-                        .values
+                        (
+                            train_fp[train_fp["recording_id"] == recording_id]
+                            .loc[:, ["t_min", "t_max"]]
+                            .values
+                            / facter,
+                            60 / facter,
+                        )
                     )
         elif mode == "test":
             for file in files:

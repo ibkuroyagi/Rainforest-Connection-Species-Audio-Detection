@@ -58,7 +58,7 @@ def main():
         "--cache_path",
         type=str,
         default="",
-        help="Paht of pretrained model's weight.",
+        help="Paht of official pretrained model's weight.",
     )
     parser.add_argument(
         "--config", type=str, required=True, help="yaml format configuration file."
@@ -66,10 +66,10 @@ def main():
     parser.add_argument("--seed", type=int, default=1, help="seed.")
     parser.add_argument(
         "--resume",
-        default="",
+        default=[],
         type=str,
         nargs="?",
-        help='checkpoint file path to resume training. (default="")',
+        help="checkpoint file path to resume training. (default=[])",
     )
     parser.add_argument(
         "--verbose",
@@ -175,7 +175,7 @@ def main():
         logging.info(f"The number of development files = {len(dev_dataset)}.")
         eval_dataset = RainForestDataset(
             files=[
-                os.path.join(args.dumpdir, "train", f"{recording_id}.h5")
+                os.path.join(args.dumpdirs[0], "train", f"{recording_id}.h5")
                 for recording_id in tp_list[valid_idx]
             ],
             keys=eval_keys,
@@ -185,7 +185,6 @@ def main():
             seed=None,
         )
         logging.info(f"The number of evaluation files = {len(eval_dataset)}.")
-
         # get data loader
         if config["model_params"].get("require_prep", False):
             # from datasets import WaveEvalCollater
@@ -328,9 +327,9 @@ def main():
             save_name=f"fold{fold}",
         )
         # resume from checkpoint
-        if len(args.resume) != 0:
-            trainer.load_checkpoint(args.resume)
-            logging.info(f"Successfully resumed from {args.resume}.")
+        if args.resume is not None:
+            trainer.load_checkpoint(args.resume[fold])
+            logging.info(f"Successfully resumed from {args.resume[fold]}.")
         # run training loop
         try:
             trainer.run()

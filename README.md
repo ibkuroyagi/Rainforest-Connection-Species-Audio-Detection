@@ -49,11 +49,11 @@ EOF
 - ~~SpecAug~~
 - ダイアライゼーションの出力を代入(ラベルがオーバーラップしている)
 - 無音区間予測で精度改善?
-- ResNexst50をtorchvisionから重みをインポートしてファインチューニング(埋め込み層を明示的に作成)
+- ~~ResNexst50をtorchvisionから重みをインポートしてファインチューニング(埋め込み層を明示的に作成)~~
 - EENDをconformerで実装
 - Mixupを実装
 - Augmentationがデータセット内でできるようにwave形式の入力を受け取るようにdataset, collater_fcに追記
-- TimeStretchが0.9, 1.1のmatrix_tpを作成
+- ~~TimeStretchが0.9, 1.1のmatrix_tpを作成~~
 
 ## 決定事項
 - 初手のCVの切り方はiterative-stratificationを用いる
@@ -173,6 +173,7 @@ EOF
         * Time-stretchを実装v003-aug, v005で実験
             * preprocessにて0.9, 1.1を追加する(ASRで実験的に良いAugmentationと言われている)
     - 次回やること
-        * mixupを実装&音を聴いて妥当性を評価
+        * pinknoiseをdataset内で変換できるようにwaveベースで実装&音を聴いて妥当性を評価
         * 実験結果を提出&まとめる
+        * スケジューラーの無駄な減衰で学習が遅延しているので、BERTで使用されているやつをコピーして使用する
 </div></details>

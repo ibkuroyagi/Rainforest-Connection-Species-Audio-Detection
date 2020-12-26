@@ -9,10 +9,14 @@ model=Cnn14_DecisionLevelAtt
 # model=ResNext50
 type=mel128hop1024
 
-stage=1
+stage=2
 stop_stage=100
 # for No in v000 v001; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000; do
+resume=""
+# for fold in {0..4}; do
+#     resume+="exp/${type}/${model}/${No}/checkpoint-3000/checkpoint-3000fold${fold}.pkl "
+# done
 sbatch -J "${type}/${No}" ./run.sh \
     --conf "conf/tuning/${model}.${No}.yaml" \
     --tag "${type}/${model}/${No}" \
@@ -21,7 +25,8 @@ sbatch -J "${type}/${No}" ./run.sh \
     --type "${type}" \
     --cache_path "" \
     --cal_type "0" \
-    --verbose 1
+    --resume "${resume}" \
+    --verbose 2
 # --checkpoint "${checkpoint}" \
 # done
 # done

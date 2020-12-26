@@ -165,11 +165,11 @@ def main():
     tp_list = train_tp["recording_id"].unique()
     train_fp = pd.read_csv(os.path.join(args.datadir, "train_fp.csv"))
     fp_list = train_fp["recording_id"].unique()
-    if args.facter != 1.0:
-        train_tp["t_max"] = train_tp["t_max"] / args.facter
-        train_tp["t_min"] = train_tp["t_min"] / args.facter
-        train_fp["t_max"] = train_fp["t_max"] / args.facter
-        train_fp["t_min"] = train_fp["t_min"] / args.facter
+    # if args.facter != 1.0:
+    #     train_tp["t_max"] = train_tp["t_max"] / args.facter
+    #     train_tp["t_min"] = train_tp["t_min"] / args.facter
+    #     train_fp["t_max"] = train_fp["t_max"] / args.facter
+    #     train_fp["t_min"] = train_fp["t_min"] / args.facter
     # get dataset
     if (args.datadir is not None) and args.cal_type == 1:
         tmp = np.zeros((len(all_path_list), 2880000))

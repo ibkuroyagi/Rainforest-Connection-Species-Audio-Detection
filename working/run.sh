@@ -33,7 +33,6 @@ resume=""
 checkpoint="best_score" # path of checkpoint to be used for evaluation
 
 . utils/parse_options.sh || exit 1
-
 set -euo pipefail
 
 if [ "${stage}" -le 0 ] && [ "${stop_stage}" -ge 0 ]; then
@@ -93,12 +92,13 @@ if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_train.log" \
         python ../input/modules/bin/sed_train.py \
         --datadir "${datadir}" \
-        --dumpdirs "${dumpdirs}" \
+        --dumpdirs ${dumpdirs} \
         --outdir "${outdir}" \
         --cache_path "${cache_path}" \
         --config "${conf}" \
-        --resume "${resume}" \
-        --verbose "${verbose}"
+        --verbose "${verbose}" \
+        --resume ${resume}
+
     log "Successfully finished training."
 fi
 

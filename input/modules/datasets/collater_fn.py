@@ -6,9 +6,10 @@
 """Collater function modules."""
 import sys
 import random
-
+import logging
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
@@ -47,13 +48,14 @@ class FeatTrainCollater(object):
         logmel_batch = []
         frame_batch = []
         clip_batch = []
-        # beginnings = []
         # select start point
+        cnt = 0
         for logmel, matrix_tp, time_list in zip(logmels, matrix_tp_list, all_time_list):
             l_spec = len(logmel)
             idx = random.randrange(len(time_list))
-            time_start = int(l_spec * time_list[idx][1] / 60.0)
-            time_end = int(l_spec * time_list[idx][2] / 60.0)
+            logging.debug(f"{l_spec}, {time_list}")
+            time_start = int(l_spec * time_list[idx][0] / 60)
+            time_end = int(l_spec * time_list[idx][1] / 60)
             center = np.round((time_start + time_end) / 2)
             beginning = center - self.max_frames / 2
             if beginning < 0:
@@ -71,8 +73,19 @@ class FeatTrainCollater(object):
             clip_batch.append(
                 matrix_tp[beginning:ending].any(axis=0).astype(np.float32)
             )
-            # beginnings.append(beginning)
-
+            logging.debug(
+                f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
+            )
+            logging.debug(f"{clip_batch[-1]}")
+            if clip_batch[-1].sum() == 1:
+                plt.figure()
+                plt.imshow(matrix_tp.T, aspect="auto")
+                plt.colorbar()
+                plt.title(f"{time_start},{time_end}: {l_spec}: {beginning},{ending}")
+                plt.tight_layout()
+                plt.savefig(f"tmp/cnt{cnt}.png")
+                plt.close()
+            cnt += 1
         # convert each batch to tensor, assume that each item in batch has the same length
         # (B, mel, max_frames)
         logmel_batch = torch.tensor(logmel_batch, dtype=torch.float).transpose(2, 1)
@@ -84,7 +97,6 @@ class FeatTrainCollater(object):
             "X": logmel_batch,
             "y_frame": frame_batch,
             "y_clip": clip_batch,
-            # "beginnings": beginnings,
         }
 
 
