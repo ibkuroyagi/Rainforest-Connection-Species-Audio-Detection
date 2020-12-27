@@ -529,7 +529,7 @@ class AttBlock(nn.Module):
         # x: (n_samples, n_in, n_time)
         norm_att = torch.softmax(torch.tanh(self.att(x)), dim=-1)
         cla = self.nonlinear_transform(self.cla(x))
-        x = torch.sum(norm_att * cla, dim=2)
+        x = torch.max(norm_att * cla, dim=2)[0]
         return x, norm_att, cla
 
     def nonlinear_transform(self, x):
@@ -591,9 +591,9 @@ class Cnn14_DecisionLevelAtt(nn.Module):
 
         # Spec augmenter
         self.spec_augmenter = SpecAugmentation(
-            time_drop_width=64,
+            time_drop_width=80,
             time_stripes_num=2,
-            freq_drop_width=8,
+            freq_drop_width=20,
             freq_stripes_num=2,
         )
 

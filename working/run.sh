@@ -96,8 +96,8 @@ if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
         --outdir "${outdir}" \
         --cache_path "${cache_path}" \
         --config "${conf}" \
-        --verbose "${verbose}" \
-        --resume ${resume}
+        --resume ${resume} \
+        --verbose "${verbose}"
 
     log "Successfully finished training."
 fi

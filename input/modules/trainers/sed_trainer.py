@@ -75,7 +75,7 @@ class SEDTrainer(object):
                 [
                     {
                         "params": self.center_loss.parameters(),
-                        "lr": config["optimizer_params"]["fc_lr"],
+                        "lr": config["optimizer_params"]["conv_lr"],
                     }
                 ]
             )
@@ -91,7 +91,7 @@ class SEDTrainer(object):
 
         self.finish_train = False
         self.best_score = 0
-        self.n_target = 24
+        self.n_target = 24 + int(config.get("random", False))
         self.epoch_train_loss = defaultdict(float)
         self.epoch_eval_loss = defaultdict(float)
         self.eval_metric = defaultdict(float)
@@ -543,7 +543,10 @@ class SEDTrainer(object):
         label = torch.zeros(batch_size).to(self.device)
         for i in range(batch_size):
             called_idx = torch.where(y_clip[i] == 1)[0]
-            label[i] = called_idx[random.randint(0, len(called_idx) - 1)]
+            if len(called_idx) == 0:
+                label[i] = 24
+            else:
+                label[i] = called_idx[random.randint(0, len(called_idx) - 1)]
         return label
 
     def _write_to_tensorboard(self, loss):

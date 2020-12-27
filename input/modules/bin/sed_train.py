@@ -68,7 +68,7 @@ def main():
         "--resume",
         default=[],
         type=str,
-        nargs="?",
+        nargs="*",
         help="checkpoint file path to resume training. (default=[])",
     )
     parser.add_argument(
@@ -215,6 +215,7 @@ def main():
                 max_frames=config.get("max_frames", 512),
                 l_target=config.get("l_target", 16),
                 mode=config.get("collater_mode", "sum"),
+                random=config.get("random", False),
             )
         data_loader = {
             "train": DataLoader(
@@ -253,7 +254,9 @@ def main():
             config.get("model_type", "Cnn14_DecisionLevelAtt"),
         )
         model = model_class(training=True, **config["model_params"]).to(device)
-        if len(args.cache_path) != 0:
+        if (len(args.cache_path) != 0) and (
+            config["model_type"] == "Cnn14_DecisionLevelAtt"
+        ):
             weights = torch.load(args.cache_path)
             model.load_state_dict(weights["model"])
             logging.info(f"Successfully load weight from {args.cache_path}")
@@ -327,8 +330,8 @@ def main():
             save_name=f"fold{fold}",
         )
         # resume from checkpoint
-        if args.resume is not None:
-            trainer.load_checkpoint(args.resume[fold])
+        if len(args.resume) != 0:
+            trainer.load_checkpoint(args.resume[fold], load_only_params=True)
             logging.info(f"Successfully resumed from {args.resume[fold]}.")
         # run training loop
         try:

@@ -42,7 +42,7 @@ l_target: 16
 collater_mode: binary
 require_prep: False
 # dataloader
-accum_grads: 2
+accum_grads: 4
 batch_size: 32 # Batch size.
 pin_memory: False # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
@@ -56,7 +56,7 @@ loss_params:
   clip_ratio: 0.45
   reduction: mean
 
-center_loss_alpha: 5.0e-4
+center_loss_alpha: 1.0e-4
 center_loss_params:
   num_classes: 24
   feat_dim: 2048
@@ -72,15 +72,15 @@ tsne_params:
 optimizer_type: "Adam"
 optimizer_params:
   conv_lr: 0.0001 # convolution layer's learning rate.
-  fc_lr: 0.001 # full connection layer's learning rate.
+  fc_lr: 0.0005 # full connection layer's learning rate.
 scheduler_type: "CosineAnnealingLR"
 scheduler_params:
-  T_max: 200 # scheduler step size.
-  eta_min: 1.0e-6
+  T_max: 1000 # scheduler step size.
+  eta_min: 5.0e-5
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
-train_max_steps: 3000 # Number of training steps.
+train_max_steps: 4000 # Number of training steps.
 save_interval_steps: 1000 # Interval steps to save checkpoint.
 eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################

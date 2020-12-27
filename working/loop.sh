@@ -2,12 +2,12 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v003-aug #v003-cos25-center2
+No=v006 #v002-clip065-2
 model=Cnn14_DecisionLevelAtt
-# type=wave
+type=wave
 
 # model=ResNext50
-type=mel128hop1024
+# type=mel128hop1024
 
 stage=2
 stop_stage=100
@@ -23,10 +23,9 @@ sbatch -J "${type}/${No}" ./run.sh \
     --stage "${stage}" \
     --stop_stage "${stop_stage}" \
     --type "${type}" \
-    --cache_path "" \
     --cal_type "0" \
     --resume "${resume}" \
-    --verbose 2
+    --verbose 1
 # --checkpoint "${checkpoint}" \
 # done
 # done

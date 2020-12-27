@@ -19,17 +19,19 @@ from utils import down_sampler  # noqa: E402
 class FeatTrainCollater(object):
     """Customized collater for Pytorch DataLoader for feat form data in training."""
 
-    def __init__(self, max_frames=512, l_target=16, mode="sum"):
+    def __init__(self, max_frames=512, l_target=16, mode="sum", random=False):
         """Initialize customized collater for PyTorch DataLoader.
 
         Args:
             max_frames (int): The max size of melspectrograms frame.
             l_target (int): Length of embedding time frame.
             mode (str): Mode of down sampler. ["sum" or "binary"]
+            random (bool): Use simple random frame which may contain only noise(as same sa inference condition).
         """
         self.max_frames = max_frames
         self.mode = mode
         self.l_target = l_target
+        self.random = random
 
     def __call__(self, batch):
         """Convert into batch tensors.
@@ -49,18 +51,21 @@ class FeatTrainCollater(object):
         frame_batch = []
         clip_batch = []
         # select start point
-        cnt = 0
+        # cnt = 0
         for logmel, matrix_tp, time_list in zip(logmels, matrix_tp_list, all_time_list):
             l_spec = len(logmel)
-            idx = random.randrange(len(time_list))
-            logging.debug(f"{l_spec}, {time_list}")
-            time_start = int(l_spec * time_list[idx][0] / 60)
-            time_end = int(l_spec * time_list[idx][1] / 60)
-            center = np.round((time_start + time_end) / 2)
-            beginning = center - self.max_frames / 2
-            if beginning < 0:
-                beginning = 0
-            beginning = random.randrange(beginning, center)
+            if self.random:
+                beginning = random.randrange(0, l_spec - self.max_frames)
+            else:
+                idx = random.randrange(len(time_list))
+                # logging.debug(f"{l_spec}, {time_list}")
+                time_start = int(l_spec * time_list[idx][0] / 60)
+                time_end = int(l_spec * time_list[idx][1] / 60)
+                center = np.round((time_start + time_end) / 2)
+                beginning = center - self.max_frames / 2
+                if beginning < 0:
+                    beginning = 0
+                    beginning = random.randrange(beginning, center)
             ending = beginning + self.max_frames
             if ending > l_spec:
                 ending = l_spec
@@ -73,19 +78,19 @@ class FeatTrainCollater(object):
             clip_batch.append(
                 matrix_tp[beginning:ending].any(axis=0).astype(np.float32)
             )
-            logging.debug(
-                f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
-            )
-            logging.debug(f"{clip_batch[-1]}")
-            if clip_batch[-1].sum() == 1:
-                plt.figure()
-                plt.imshow(matrix_tp.T, aspect="auto")
-                plt.colorbar()
-                plt.title(f"{time_start},{time_end}: {l_spec}: {beginning},{ending}")
-                plt.tight_layout()
-                plt.savefig(f"tmp/cnt{cnt}.png")
-                plt.close()
-            cnt += 1
+            # logging.debug(
+            #     f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
+            # )
+            # logging.debug(f"{clip_batch[-1]}")
+            # if clip_batch[-1].sum() == 1:
+            #     plt.figure()
+            #     plt.imshow(matrix_tp.T, aspect="auto")
+            #     plt.colorbar()
+            #     plt.title(f"{time_start},{time_end}: {l_spec}: {beginning},{ending}")
+            #     plt.tight_layout()
+            #     plt.savefig(f"tmp/cnt{cnt}.png")
+            #     plt.close()
+            # cnt += 1
         # convert each batch to tensor, assume that each item in batch has the same length
         # (B, mel, max_frames)
         logmel_batch = torch.tensor(logmel_batch, dtype=torch.float).transpose(2, 1)
