@@ -34,9 +34,9 @@ class ResNext50(nn.Module):
         if is_spec_augmenter:
             # Spec augmenter
             self.spec_augmenter = SpecAugmentation(
-                time_drop_width=64,
+                time_drop_width=80,
                 time_stripes_num=2,
-                freq_drop_width=8,
+                freq_drop_width=20,
                 freq_stripes_num=2,
             )
         self.mixup_lambda = mixup_lambda

@@ -1,0 +1,94 @@
+# frame=2048, random, augmentation
+###########################################################
+#                      GLOBAL SETTING                     #
+###########################################################
+seed: 1
+n_class: 25
+n_fold: 5
+###########################################################
+#                    PREPROCESS SETTING                   #
+###########################################################
+sr: 48000
+fft_size: 2048
+hop_size: 512
+window: hann
+num_mels: 128
+fmin: 50
+fmax: 16000
+###########################################################
+#                     NETWORK SETTING                     #
+###########################################################
+model_type: "ResNext50" # pretrained model's type.
+att_block:
+  n_in: 2048
+  n_out: 25
+  activation: linear
+
+model_params:
+  num_mels: 128
+  classes_num: 25
+  is_spec_augmenter: True
+###########################################################
+#                    TRAINING SETTING                     #
+###########################################################
+# augmentation
+wave_mode: True
+augmentation_params:
+  PinkNoiseSNR: [always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0]
+  GaussianNoiseSNR: [always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0]
+  VolumeControl: [always_apply: False, p: 0.5, db_limit: 10, mode: cosine]
+# dataset
+train_dataset_mode: tp
+allow_cache: False # Whether to allow cache in dataset. If true, it requires cpu memory.
+is_normalize: False
+# collater_fc
+max_frames: 2048
+l_target: 64
+collater_mode: binary
+random: True
+# dataloader
+accum_grads: 8
+batch_size: 16 # Batch size.
+pin_memory: False # Whether to pin memory in Pytorch DataLoader.
+num_workers: 4 # Number of workers in Pytorch DataLoader.
+# trainer
+use_center_loss: True
+###########################################################
+#                       LOSS SETTING                      #
+###########################################################
+loss_type: FrameClipLoss
+loss_params:
+  clip_ratio: 0.50
+  reduction: mean
+
+center_loss_alpha: 5.0e-4
+center_loss_params:
+  num_classes: 25
+  feat_dim: 2048
+
+tsne_params:
+  n_components: 2
+  random_state: 0
+  perplexity: 30
+  n_iter: 1000
+###########################################################
+#              OPTIMIZER & SCHEDULER SETTING              #
+###########################################################
+optimizer_type: "Adam"
+optimizer_params:
+  conv_lr: 0.0001 # convolution layer's learning rate.
+  fc_lr: 0.0005 # full connection layer's learning rate.
+scheduler_type: "CosineAnnealingLR"
+scheduler_params:
+  T_max: 1000 # scheduler step size.
+  eta_min: 5.0e-5
+###########################################################
+#                    INTERVAL SETTING                     #
+###########################################################
+train_max_steps: 5000 # Number of training steps.
+save_interval_steps: 1000 # Interval steps to save checkpoint.
+eval_interval_epochs: 5 # Interval epochs to evaluate the network.
+###########################################################
+#                     OTHER SETTING                       #
+###########################################################
+n_eval_split: 5

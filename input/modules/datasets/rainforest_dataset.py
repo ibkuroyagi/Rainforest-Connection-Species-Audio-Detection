@@ -13,6 +13,7 @@ from torch.utils.data import Dataset
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
+import datasets  # noqa: E402
 from utils import find_files  # noqa: E402
 from utils import logmelfilterbank  # noqa: E402
 
@@ -156,6 +157,9 @@ class RainForestDataset(Dataset):
             ) / items["feats"].std(axis=0, keepdims=True)
         if self.is_normalize and "wave" in self.use_file_keys:
             items["wave"] = (items["wave"] - items["wave"].mean()) / items["wave"].std()
+        if self.config.get("wave_mode", False):
+            items["feats"] = self.wave2spec(items["wave"])
+            del items["wave"]
         if (self.mode == "all") or (self.mode == "tp"):
             items["time_list"] = self.use_time_list[idx]
         if self.allow_cache:
@@ -178,6 +182,19 @@ class RainForestDataset(Dataset):
         Returns:
             feats (ndarray): Augmented log mel spectrogram(T', mel).
         """
+        if self.config.get("augmentation_params", None) is not None:
+            compose_list = []
+            for key in self.config["augmentation_params"].keys():
+                aug_class = getattr(
+                    datasets,
+                    key,
+                )
+                compose_list.append(
+                    aug_class(**self.config["augmentation_params"][key])
+                )
+                logging.debug(f"{key}")
+            transform = datasets.Compose(compose_list)
+            wave = transform(wave)
         feats = logmelfilterbank(
             wave,
             sampling_rate=self.config["sr"],
@@ -188,8 +205,5 @@ class RainForestDataset(Dataset):
             fmin=self.config["fmin"],
             fmax=self.config["fmax"],
         )
-        if self.config.get("augmentation_params", None) is not None:
-            for key in self.config["augmentation_params"].keys():
-                key
 
         return feats

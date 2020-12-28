@@ -160,6 +160,7 @@ def main():
             is_normalize=config.get("is_normalize", False),
             allow_cache=config.get("allow_cache", False),  # keep compatibility
             seed=None,
+            config=config,
         )
         logging.info(f"The number of training files = {len(train_dataset)}.")
         dev_dataset = RainForestDataset(
