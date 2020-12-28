@@ -2,11 +2,11 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v006 #v002-clip065-2
-model=Cnn14_DecisionLevelAtt
+No=v002 #v002-clip065-2
+# model=Cnn14_DecisionLevelAtt
 type=wave
 
-# model=ResNext50
+model=ResNext50
 # type=mel128hop1024
 
 stage=2

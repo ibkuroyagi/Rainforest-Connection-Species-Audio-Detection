@@ -70,6 +70,11 @@ EOF
 - mel64hop512は総じて低いスコア
     - つまり、周波数方向の情報が重要な要素となっているので、その活用が効くと推測
 - embeddingから直接clipwise_outputを求めると精度劇的に悪化する -> 時間成分を考慮しない(外部環境音のみで識別する)モデルになるため推論時に超悪さする
+- lrは1.0e-4のオーダーが良く効く
+- CenterLossの正則化を強くしすぎると過学習を起こしてしまい、悪化する -> noiseクラスを許す(random=True)とinferenceとの差がなくなるので効果的
+- 学習がゆっくり進むようにmax_frame2048, batch_size128がほどよい
+- PANNs事前学習の重みはかなり効果的
+- 
 <details><summary>kaggle日記</summary><div>
 
 - 11/29(日)
