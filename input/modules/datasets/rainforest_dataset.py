@@ -13,7 +13,8 @@ from torch.utils.data import Dataset
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
-from utils.utils import find_files  # noqa: E402
+from utils import find_files  # noqa: E402
+from utils import logmelfilterbank  # noqa: E402
 
 
 class RainForestDataset(Dataset):
@@ -29,6 +30,7 @@ class RainForestDataset(Dataset):
         mode="tp",
         is_normalize=False,
         allow_cache=False,
+        config={},
         seed=None,
     ):
         """Initialize dataset.
@@ -41,6 +43,7 @@ class RainForestDataset(Dataset):
             mode (list): Mode of dataset. [tp, all, test]
             is_normalize(bool): flag of normalize
             allow_cache (bool): Whether to allow cache of the loaded files.
+            config (dict): Setting dict for on the fly.
             seed (int): seed
         """
         # if seed is not None:
@@ -119,6 +122,7 @@ class RainForestDataset(Dataset):
         self.mode = mode
         self.allow_cache = allow_cache
         self.is_normalize = is_normalize
+        self.config = config
         if allow_cache:
             # NOTE(ibuki): Manager is need to share memory in dataloader with num_workers > 0
             self.manager = Manager()
@@ -165,3 +169,27 @@ class RainForestDataset(Dataset):
             int: The length of dataset.
         """
         return len(self.use_file_list)
+
+    def wave2spec(self, wave: np.ndarray):
+        """Transfom wave to log mel sprctrogram and apply augmentation.
+
+        Args:
+            wave (ndarray): Original wave form (T,)
+        Returns:
+            feats (ndarray): Augmented log mel spectrogram(T', mel).
+        """
+        feats = logmelfilterbank(
+            wave,
+            sampling_rate=self.config["sr"],
+            hop_size=self.config["hop_size"],
+            fft_size=self.config["fft_size"],
+            window=self.config["window"],
+            num_mels=self.config["num_mels"],
+            fmin=self.config["fmin"],
+            fmax=self.config["fmax"],
+        )
+        if self.config.get("augmentation_params", None) is not None:
+            for key in self.config["augmentation_params"].keys():
+                key
+
+        return feats
