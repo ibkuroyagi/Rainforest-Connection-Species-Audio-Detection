@@ -61,12 +61,6 @@ class RainForestDataset(Dataset):
         if mode == "tp":
             tp_list = train_tp["recording_id"].unique()
             for file in files:
-                if "sp0.9" in file:
-                    facter = 0.9
-                elif "sp1.1" in file:
-                    facter = 1.1
-                else:
-                    facter = 1.0
                 recording_id = file.split("/")[-1].split(".")[0]
                 if recording_id in tp_list:
                     use_file_keys.append(keys + ["matrix_tp"])
@@ -81,37 +75,23 @@ class RainForestDataset(Dataset):
             tp_list = train_tp["recording_id"].unique()
             fp_list = train_fp["recording_id"].unique()
             for file in files:
-                if "sp0.9" in file:
-                    facter = 0.9
-                elif "sp1.1" in file:
-                    facter = 1.1
-                else:
-                    facter = 1.0
                 recording_id = file.split("/")[-1].split(".")[0]
                 if recording_id in tp_list:
                     use_file_keys.append(keys + ["matrix_tp"])
                     use_file_list.append(file)
                     # logging.debug(f"{facter}: {file}")
                     use_time_list.append(
-                        (
-                            train_tp[train_tp["recording_id"] == recording_id]
-                            .loc[:, ["t_min", "t_max"]]
-                            .values
-                            / facter,
-                            60 / facter,
-                        )
+                        train_tp[train_tp["recording_id"] == recording_id]
+                        .loc[:, ["t_min", "t_max"]]
+                        .values
                     )
                 if recording_id in fp_list:
                     use_file_keys.append(keys + ["matrix_fp"])
                     use_file_list.append(file)
                     use_time_list.append(
-                        (
-                            train_fp[train_fp["recording_id"] == recording_id]
-                            .loc[:, ["t_min", "t_max"]]
-                            .values
-                            / facter,
-                            60 / facter,
-                        )
+                        train_fp[train_fp["recording_id"] == recording_id]
+                        .loc[:, ["t_min", "t_max"]]
+                        .values
                     )
         elif mode == "test":
             for file in files:
@@ -124,6 +104,21 @@ class RainForestDataset(Dataset):
         self.allow_cache = allow_cache
         self.is_normalize = is_normalize
         self.config = config
+        self.transform = None
+        if ("wave" in use_file_keys) and (
+            config.get("augmentation_params", None) is not None
+        ):
+            compose_list = []
+            for key in self.config["augmentation_params"].keys():
+                aug_class = getattr(
+                    datasets,
+                    key,
+                )
+                compose_list.append(
+                    aug_class(**self.config["augmentation_params"][key])
+                )
+                logging.debug(f"{key}")
+            self.transform = datasets.Compose(compose_list)
         if allow_cache:
             # NOTE(ibuki): Manager is need to share memory in dataloader with num_workers > 0
             self.manager = Manager()
@@ -157,7 +152,7 @@ class RainForestDataset(Dataset):
             ) / items["feats"].std(axis=0, keepdims=True)
         if self.is_normalize and "wave" in self.use_file_keys:
             items["wave"] = (items["wave"] - items["wave"].mean()) / items["wave"].std()
-        if self.config.get("wave_mode", False):
+        if self.config.get("wave_mode", False) and ("wave" in self.use_file_keys):
             items["feats"] = self.wave2spec(items["wave"])
             del items["wave"]
         if (self.mode == "all") or (self.mode == "tp"):
@@ -182,19 +177,8 @@ class RainForestDataset(Dataset):
         Returns:
             feats (ndarray): Augmented log mel spectrogram(T', mel).
         """
-        if self.config.get("augmentation_params", None) is not None:
-            compose_list = []
-            for key in self.config["augmentation_params"].keys():
-                aug_class = getattr(
-                    datasets,
-                    key,
-                )
-                compose_list.append(
-                    aug_class(**self.config["augmentation_params"][key])
-                )
-                logging.debug(f"{key}")
-            transform = datasets.Compose(compose_list)
-            wave = transform(wave)
+        if self.transform is not None:
+            wave = self.transform(wave)
         feats = logmelfilterbank(
             wave,
             sampling_rate=self.config["sr"],

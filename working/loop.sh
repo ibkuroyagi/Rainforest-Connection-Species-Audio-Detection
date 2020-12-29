@@ -9,10 +9,10 @@ type=wave
 # model=ResNext50
 # type=mel128hop1024
 
-stage=3
+stage=2
 stop_stage=100
-# for No in v000 v001; do
-for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000; do
+for No in v009 v010; do
+    # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000; do
     resume=""
     # for fold in {0..4}; do
     #     resume+="exp/${type}/${model}/${No}/checkpoint-3000/checkpoint-3000fold${fold}.pkl "
@@ -25,7 +25,7 @@ for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000; do
         --type "${type}" \
         --cal_type "0" \
         --resume "${resume}" \
-        --verbose 1 \
-        --checkpoint "${checkpoint}"
+        --verbose 1
+    # --checkpoint "${checkpoint}"
 done
 # done

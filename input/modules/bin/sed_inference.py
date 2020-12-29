@@ -112,10 +112,7 @@ def main():
         yaml.dump(config, f, Dumper=yaml.Dumper)
     for key, value in config.items():
         logging.info(f"{key} = {value}")
-    if config["model_params"].get("require_prep", False):
-        eval_keys = ["wave", "matrix_tp"]
-    else:
-        eval_keys = ["feats", "matrix_tp"]
+    eval_keys = ["feats", "matrix_tp"]
     train_tp = pd.read_csv(os.path.join(args.datadir, "train_tp.csv"))
     # get dataset
     tp_list = train_tp["recording_id"].unique()
@@ -258,7 +255,7 @@ def main():
 
         # initialize test data
         test_dataset = RainForestDataset(
-            root_dir=os.path.join(args.dumpdir, "test"),
+            root_dirs=[os.path.join(args.dumpdir, "test")],
             keys=["feats"],
             mode="test",
             is_normalize=config.get("is_normalize", False),

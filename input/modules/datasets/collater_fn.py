@@ -65,7 +65,7 @@ class FeatTrainCollater(object):
                 beginning = center - self.max_frames / 2
                 if beginning < 0:
                     beginning = 0
-                    beginning = random.randrange(beginning, center)
+                beginning = random.randrange(beginning, center)
             ending = beginning + self.max_frames
             if ending > l_spec:
                 ending = l_spec
@@ -78,6 +78,8 @@ class FeatTrainCollater(object):
             clip_batch.append(
                 matrix_tp[beginning:ending].any(axis=0).astype(np.float32)
             )
+            if self.random:
+                clip_batch[-1][24] = (~clip_batch[-1][:24].any()).astype(np.float32)
             # logging.debug(
             #     f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
             # )

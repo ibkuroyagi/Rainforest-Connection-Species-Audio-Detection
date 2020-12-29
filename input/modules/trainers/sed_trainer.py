@@ -15,6 +15,7 @@ sys.path.append("../input/modules")
 import optimizers  # noqa: E402
 from losses import CenterLoss  # noqa: E402
 from utils import lwlrap  # noqa: E402
+from utils import original_mixup  # noqa: E402
 
 
 class SEDTrainer(object):
@@ -60,6 +61,7 @@ class SEDTrainer(object):
         self.scheduler = scheduler
         self.config = config
         self.device = device
+        self.mixup_alpha = config.get("mixup_alpha", None)
         self.train = train
         if train:
             self.writer = SummaryWriter(config["outdir"])
@@ -164,6 +166,8 @@ class SEDTrainer(object):
 
     def _train_step(self, batch):
         """Train model one step."""
+        if self.mixup_alpha is not None:
+            batch = original_mixup(batch, self.mixup_alpha)  # (B*2,...) -> (B,...)
         x = batch["X"].to(self.device)
         y_frame = batch["y_frame"].to(self.device)
         y_clip = batch["y_clip"].to(self.device)
@@ -278,7 +282,7 @@ class SEDTrainer(object):
                     torch.tensor(self.train_y_epoch).to(self.device),
                 ).item()
             self.epoch_train_loss["train/epoch_lwlrap"] = lwlrap(
-                self.train_y_epoch, self.train_pred_epoch
+                self.train_y_epoch[:, :24], self.train_pred_epoch[:, :24]
             )
             self.epoch_train_loss["train/lr"] = self.optimizer.param_groups[0]["lr"]
         except ValueError:
@@ -394,7 +398,7 @@ class SEDTrainer(object):
                     torch.tensor(self.train_y_epoch).to(self.device),
                 ).item()
             self.epoch_eval_loss["dev/epoch_lwlrap"] = lwlrap(
-                self.dev_y_epoch, self.dev_pred_epoch
+                self.dev_y_epoch[:, :24], self.dev_pred_epoch[:, :24]
             )
         except ValueError:
             logging.warning("Raise ValueError: May be contain NaN in y_pred.")
@@ -498,7 +502,7 @@ class SEDTrainer(object):
         )
         if mode == "valid":
             y_clip_true = y_clip_true.numpy()
-            score = lwlrap(y_clip_true, y_clip.max(axis=1))
+            score = lwlrap(y_clip_true[:, :24], y_clip.max(axis=1)[:, :24])
             self.eval_metric["eval_metric/lwlrap"] = score
             return {
                 "y_clip": y_clip,
@@ -542,7 +546,7 @@ class SEDTrainer(object):
         batch_size = len(y_clip)
         label = torch.zeros(batch_size).to(self.device)
         for i in range(batch_size):
-            called_idx = torch.where(y_clip[i] == 1)[0]
+            called_idx = torch.where(y_clip[i][:24] != 0)[0]
             if len(called_idx) == 0:
                 label[i] = 24
             else:
