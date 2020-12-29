@@ -1,4 +1,4 @@
-# ps0.9,1.1
+# center lossの割合を低下させて、サブタスクの影響かmaxの影響かを調査
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -62,7 +62,7 @@ loss_params:
   clip_ratio: 0.50
   reduction: mean
 
-center_loss_alpha: 5.0e-4
+center_loss_alpha: 1.0e-4
 center_loss_params:
   num_classes: 24
   feat_dim: 2048

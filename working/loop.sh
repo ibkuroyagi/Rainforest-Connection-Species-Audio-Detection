@@ -11,7 +11,7 @@ type=wave
 
 stage=2
 stop_stage=100
-for No in v009 v010; do
+for No in v005 v005-red v009-red; do
     # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000; do
     resume=""
     # for fold in {0..4}; do

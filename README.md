@@ -201,8 +201,18 @@ EOF
     - 今日やったこと
         * waveをデータセット内でfeatsに変換できるためのメソッドを作成
         * waveベースのAugmentationをDataset内で追加できるように
-    - 次回やること時間方向で最大値を採用することで長時間発生する音ではなく、actvivateしたという確率の部分により着目したモデルに修正
+    - 次回やること
+        * 時間方向で最大値を採用することで長時間発生する音ではなく、actvivateしたという確率の部分により着目したモデルに修正
         * Mixupをpytorchの関数としてbatchを入力して(x*2, y*2) -> (x, y)となるように作成する
-        * SpecAugmentationをモデルの外部に移植(モデルをもっとすっきりさせる)
-
+- 12/29(火)
+    - 今日やったこと
+        * mixup実装
+        * randomの結果を確認->metricを25にしたせいで学習中を正しく評価できなくなった
+            * 結果的にはかなり精度は悪化した
+        * v005,v005-red(random=True) center-loss比較
+        * v009,v009-red(random=False) center-loss比較
+        * v009,v010(random=False) mixup比較
+    - 次回やること
+        * transfomerを実装して動かす
+        * v009, v010を提出してスコア記録
 </div></details>
