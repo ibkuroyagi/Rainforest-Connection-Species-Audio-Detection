@@ -9,8 +9,8 @@ n_fold: 5
 #                    PREPROCESS SETTING                   #
 ###########################################################
 sr: 48000
-fft_size: 2048
-hop_size: 512
+fft_size: 4096
+hop_size: 1024
 window: hann
 num_mels: 128
 fmin: 50
@@ -18,15 +18,21 @@ fmax: 16000
 ###########################################################
 #                     NETWORK SETTING                     #
 ###########################################################
-model_type: "ResNext50" # pretrained model's type.
+model_type: "Cnn14_DecisionLevelAtt" # pretrained model's type.
 att_block:
   n_in: 2048
   n_out: 25
   activation: linear
 
 model_params:
-  num_mels: 128
-  classes_num: 25
+  sample_rate: 16000
+  window_size: 1024
+  hop_size: 256
+  mel_bins: 64
+  fmin: 50
+  fmax: 8000
+  classes_num: 527
+  require_prep: False
   is_spec_augmenter: True
 ###########################################################
 #                    TRAINING SETTING                     #
@@ -91,4 +97,4 @@ eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
 #                     OTHER SETTING                       #
 ###########################################################
-n_eval_split: 5
+n_eval_split: 3

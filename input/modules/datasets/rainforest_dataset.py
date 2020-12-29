@@ -205,5 +205,4 @@ class RainForestDataset(Dataset):
             fmin=self.config["fmin"],
             fmax=self.config["fmax"],
         )
-
         return feats

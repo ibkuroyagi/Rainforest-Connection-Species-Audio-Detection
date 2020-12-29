@@ -47,18 +47,20 @@ EOF
 - ~~CenterLoss~~
 - wav2vec
 - ~~SpecAug~~
-- ダイアライゼーションの出力を代入(ラベルがオーバーラップしている)
-- 無音区間予測で精度改善?
+- 発話区間予測 -> EEND-EDN実装
+    * ダイアライゼーションの出力を学習データにして、inferenceも同じ分割にする(trainはランダムに分割するだけ)
 - ~~ResNexst50をtorchvisionから重みをインポートしてファインチューニング(埋め込み層を明示的に作成)~~
-- EENDをconformerで実装
+- conformerでSED実装
 - Mixupを実装
-- Augmentationがデータセット内でできるようにwave形式の入力を受け取るようにdataset, collater_fcに追記
+- ~~Augmentationがデータセット内でできるようにwave形式の入力を受け取るようにdataset, collater_fcに追記~~
 - ~~TimeStretchが0.9, 1.1のmatrix_tpを作成~~
+- TTAでinferenceの汎か性能改善
 
 ## 決定事項
 - 初手のCVの切り方はiterative-stratificationを用いる
 - 推論に使うデータをいい感じにクロップするためにダイアライゼーションコードを作成する
 - augmentationは[dcase2020-task4-1st](http://dcase.community/documents/challenge2020/technical_reports/DCASE2020_Miyazaki_108.pdf)にならって,mixup, time-shiftを導入
+    - Time-shiftはラベリングの難易度が高いため(現在12/29)保留中, comformer, EEND作成後に実装開始
 - time-shiftはASR分野では0.9, 1.1倍にすると実験的に良いという報告(espnet)からその数値を採用
 
 ## 実験結果からの気づき
@@ -200,7 +202,7 @@ EOF
         * waveをデータセット内でfeatsに変換できるためのメソッドを作成
         * waveベースのAugmentationをDataset内で追加できるように
     - 次回やること時間方向で最大値を採用することで長時間発生する音ではなく、actvivateしたという確率の部分により着目したモデルに修正
-        * waveをデータセット内でfeatsに変換できるためのメソッドを作成
-        * waveベースのAugmentationをDataset内で追加できるように
+        * Mixupをpytorchの関数としてbatchを入力して(x*2, y*2) -> (x, y)となるように作成する
+        * SpecAugmentationをモデルの外部に移植(モデルをもっとすっきりさせる)
 
 </div></details>

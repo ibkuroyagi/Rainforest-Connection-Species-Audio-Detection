@@ -53,8 +53,8 @@ l_target: 64
 collater_mode: binary
 random: True
 # dataloader
-accum_grads: 4
-batch_size: 32 # Batch size.
+accum_grads: 8
+batch_size: 16 # Batch size.
 pin_memory: False # Whether to pin memory in Pytorch DataLoader.
 num_workers: 4 # Number of workers in Pytorch DataLoader.
 # trainer

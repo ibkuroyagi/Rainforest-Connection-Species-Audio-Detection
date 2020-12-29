@@ -121,10 +121,9 @@ def main():
         config.get("wave_mode", False)
     ):
         train_keys = ["wave"]
-        eval_keys = ["wave", "matrix_tp"]
     else:
         train_keys = ["feats"]
-        eval_keys = ["feats", "matrix_tp"]
+    eval_keys = ["feats", "matrix_tp"]
     train_tp = pd.read_csv(os.path.join(args.datadir, "train_tp.csv"))
     if config.get("train_dataset_mode", "tp") == "all":
         train_fp = pd.read_csv(os.path.join(args.datadir, "train_fp.csv"))
@@ -167,10 +166,10 @@ def main():
             root_dirs=[os.path.join(args.dumpdirs[0], "train")],
             train_tp=train_tp[~train_tp["use_train"]],
             train_fp=train_fp,
-            keys=train_keys,
+            keys=["feats"],
             mode=config.get("train_dataset_mode", "tp"),
             is_normalize=config.get("is_normalize", False),
-            allow_cache=config.get("allow_cache", False),  # keep compatibility
+            allow_cache=True,  # keep compatibility
             seed=None,
         )
         logging.info(f"The number of development files = {len(dev_dataset)}.")
@@ -182,7 +181,7 @@ def main():
             keys=eval_keys,
             mode="test",
             is_normalize=config.get("is_normalize", False),
-            allow_cache=config.get("allow_cache", False),  # keep compatibility
+            allow_cache=True,  # keep compatibility
             seed=None,
         )
         logging.info(f"The number of evaluation files = {len(eval_dataset)}.")

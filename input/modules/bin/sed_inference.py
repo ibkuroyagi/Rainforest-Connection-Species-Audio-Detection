@@ -119,8 +119,10 @@ def main():
     train_tp = pd.read_csv(os.path.join(args.datadir, "train_tp.csv"))
     # get dataset
     tp_list = train_tp["recording_id"].unique()
-    columns = ["recording_id"] + [f"s{i}" for i in range(24)]
-    ground_truth = pd.DataFrame(np.zeros((len(tp_list), 25)), columns=columns)
+    columns = ["recording_id"] + [f"s{i}" for i in range(config["n_target"])]
+    ground_truth = pd.DataFrame(
+        np.zeros((len(tp_list), config["n_class"])), columns=columns
+    )
     ground_truth["recording_id"] = tp_list
     for i, recording_id in enumerate(train_tp["recording_id"].values):
         ground_truth.iloc[
@@ -249,7 +251,7 @@ def main():
         )
         # inference validation data
         oof_dict = trainer.inference(mode="valid")
-        oof_clip[valid_idx] = oof_dict["y_clip"]
+        oof_clip[valid_idx] = oof_dict["y_clip"][:, :, : config["n_target"]]
         oof_frame[valid_idx] = oof_dict["y_frame"]
         scores.append(oof_dict["score"])
         logging.info(f"Fold:{fold}, lwlrap:{oof_dict['score']:.6f}")
@@ -312,7 +314,7 @@ def main():
         )
         # inference test data
         pred_dict = trainer.inference(mode="test")
-        pred_clip[fold] = pred_dict["y_clip"]
+        pred_clip[fold] = pred_dict["y_clip"][:, :, : config["n_target"]]
         pred_frame[fold] = pred_dict["y_frame"]
         logging.info(f"Fold:{fold}, Successfully inference test data.")
 
