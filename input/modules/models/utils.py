@@ -91,26 +91,3 @@ def do_mixup(x, mixup_lambda):
         + x[1::2].transpose(0, -1) * mixup_lambda[1::2]
     ).transpose(0, -1)
     return out
-
-
-def original_mixup(batch: torch.tensor, mixup_alpha=0.2, device="cup"):
-    """Original mixup function
-
-    Args:
-        batch (torch.tensor): batch {X:(B*2, ...), y_frame:(B*2, ...), y_clip:(B*2, ...)}
-        mixup_alpha (float, optional): Parameter of beta distribution. Defaults to 0.2.
-        device (str, optional): Cuda device. Defaults to "cup".
-    Returns:
-        batch (torch.tensor): batch {X:(B, ...), y_frame:(B, ...), y_clip:(B, ...)}
-    """
-    for i, (key, value) in enumerate(batch.items()):
-        if i == 0:
-            batch_size = value.shape[0] // 2
-            lambda_arr = torch.tensor(
-                np.random.beta(mixup_alpha, mixup_alpha, batch_size)
-            ).to(device)
-        batch[key] = (
-            value[:batch_size].transpose(0, -1) * lambda_arr
-            + value[batch_size : batch_size * 2].transpose(0, -1) * (1 - lambda_arr)
-        ).transpose(0, -1)
-    return batch

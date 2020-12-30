@@ -13,6 +13,7 @@ import sys
 import h5py
 import librosa
 import numpy as np
+import torch
 
 
 def find_files(root_dir, query="*.wav", include_root_dir=True):
@@ -299,6 +300,29 @@ def get_concat_down_frame(y_frame, l_original=5626, max_frames=512):
         avg_frame[beginning:endding] += 1
     down_concat_frame = down_concat_frame / avg_frame
     return down_concat_frame
+
+
+def original_mixup(batch: torch.tensor, mixup_alpha=0.2, device="cpu"):
+    """Original mixup function
+
+    Args:
+        batch (torch.tensor): batch {X:(B*2, ...), y_frame:(B*2, ...), y_clip:(B*2, ...)}
+        mixup_alpha (float, optional): Parameter of beta distribution. Defaults to 0.2.
+        device (str, optional): Cuda device. Defaults to "cup".
+    Returns:
+        batch (torch.tensor): batch {X:(B, ...), y_frame:(B, ...), y_clip:(B, ...)}
+    """
+    for i, (key, value) in enumerate(batch.items()):
+        if i == 0:
+            batch_size = value.shape[0] // 2
+            lambda_arr = torch.tensor(
+                np.random.beta(mixup_alpha, mixup_alpha, batch_size).astype(np.float32)
+            ).to(device)
+        batch[key] = (
+            value[:batch_size].transpose(0, -1) * lambda_arr
+            + value[batch_size : batch_size * 2].transpose(0, -1) * (1 - lambda_arr)
+        ).transpose(0, -1)
+    return batch
 
 
 if __name__ == "__main__":
