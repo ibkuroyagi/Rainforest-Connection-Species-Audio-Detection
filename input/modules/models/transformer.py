@@ -1,0 +1,306 @@
+# -*- coding: utf-8 -*-
+
+# Copyright 2020 Human Dataware Lab. Co., Ltd.
+# Created by Tomoki Hayashi
+
+"""Transformer-based auto encoder modules."""
+
+import logging
+import math
+
+import numpy as np
+import torch
+import torch.nn as nn
+
+
+class RandomCutCollater(object):
+    """Collater to cut the sequence randomly."""
+
+    def __init__(self, min_length, max_length=None, return_mask=True):
+        """Initialize RandomCutCollater module."""
+        self.min_length = min_length
+        self.max_length = max_length
+        self.return_mask = return_mask
+
+    def __call__(self, batch):
+        """Cut the length of each item in batch randomly."""
+        if self.max_length is None:
+            self.max_length = batch[0].shape[0]
+        assert self.max_length <= batch[0].shape[0]
+        assert self.min_length <= batch[0].shape[0]
+        lengths = sorted(
+            np.random.randint(self.min_length, self.max_length, len(batch))
+        )
+        new_batch = []
+        for x, length in zip(batch, lengths):
+            start_idx = np.random.randint(0, x.shape[0] - length)
+            new_batch += [torch.from_numpy(x[start_idx : start_idx + length]).float()]
+        new_batch = self._pad_list_of_tensors(new_batch)
+
+        if not self.return_mask:
+            return new_batch
+        else:
+            mask = self._make_mask_from_list_of_lengths(lengths)
+            return new_batch, mask
+
+    @staticmethod
+    def _make_mask_from_list_of_lengths(list_of_lengths):
+        """Make mask from the list of lengths.
+        Examples:
+            >>> lengths = [1, 2, 3, 4]
+            >>> _make_mask_from_list_of_lengths(lengths)
+            tensor([[True, False, False, False],
+                    [True, True,  False, False],
+                    [True, True,  True,  False],
+                    [True, True,  True,  True]])
+        """
+        batch_size = int(len(list_of_lengths))
+        maxlen = int(max(list_of_lengths))
+        seq_range = torch.arange(0, maxlen, dtype=torch.int64)
+        seq_range_expand = seq_range.unsqueeze(0).expand(batch_size, maxlen)
+        seq_length_expand = seq_range_expand.new(list_of_lengths).unsqueeze(-1)
+        return seq_range_expand < seq_length_expand
+
+    @staticmethod
+    def _pad_list_of_tensors(list_of_tensors, pad_value=0.0):
+        """Perform padding for the list of tensors.
+        Examples:
+            >>> list_of_tensors = [torch.ones(4), torch.ones(2), torch.ones(1)]
+            >>> list_of_tensors
+            [tensor([1., 1., 1., 1.]), tensor([1., 1.]), tensor([1.])]
+            >>> _pad_list_of_tensors(list_of_tensors, 0)
+            tensor([[1., 1., 1., 1.],
+                    [1., 1., 0., 0.],
+                    [1., 0., 0., 0.]])
+        """
+        batch_size = len(list_of_tensors)
+        maxlen = max(x.size(0) for x in list_of_tensors)
+        padded_tensor = (
+            list_of_tensors[0]
+            .new(batch_size, maxlen, *list_of_tensors[0].size()[1:])
+            .fill_(pad_value)
+        )
+        for i in range(batch_size):
+            padded_tensor[i, : list_of_tensors[i].size(0)] = list_of_tensors[i]
+        return padded_tensor
+
+
+class TransformerAutoEncoderAlgorithm(nn.Module):
+    """Transformer-based AutoEncoder algorithm."""
+
+    def __init__(
+        self,
+        name: str = "TransformerAutoEncoder",
+        num_features: int = 1,
+        sequence_length: int = 300,
+        input_layer: str = "linear",
+        num_blocks: int = 4,
+        num_heads: int = 4,
+        num_hidden_units: int = 64,
+        num_feedforward_units: int = 128,
+        num_latent_units: int = 8,
+        num_embeddings: int = 0,
+        embedding_dim: int = 0,
+        concat_embedding: bool = False,
+        activation: str = "relu",
+        dropout: float = 0.1,
+        use_position_encode: bool = False,
+        max_position_encode_length: int = 512,
+        use_multi_gmm: bool = False,
+    ):
+        super().__init__()
+
+        self.use_embedding = embedding_dim > 0
+        assert self.use_embedding == (num_embeddings > 0)
+        self.name = "Embedding" + name if self.use_embedding else name
+
+        self.name = name
+        self.use_multi_gmm = use_multi_gmm
+        num_features = num_features - 1 if self.use_multi_gmm else num_features
+        self.module = TransformerAutoEncoder(
+            num_features=num_features,
+            sequence_length=sequence_length,
+            input_layer=input_layer,
+            num_blocks=num_blocks,
+            num_heads=num_heads,
+            num_hidden_units=num_hidden_units,
+            num_feedforward_units=num_feedforward_units,
+            num_latent_units=num_latent_units,
+            num_embeddings=num_embeddings,
+            embedding_dim=embedding_dim,
+            concat_embedding=concat_embedding,
+            activation=activation,
+            use_position_encode=use_position_encode,
+            max_position_encode_length=max_position_encode_length,
+            dropout=dropout,
+        )
+
+    def forward(self, batch, keepdims=True, details=False):
+        """Calculate forward propagation."""
+        if self.use_multi_gmm and not self.use_embedding:
+            batch = batch[..., :-1]
+        output = self.module(batch)
+        if self.use_embedding:
+            batch = batch[..., :-1]
+        if not keepdims:
+            return nn.L1Loss(reduction="sum")(output, batch)
+        else:
+            error = nn.L1Loss(reduction="none")(output, batch)
+        if details:
+            return error, output
+        return error
+
+
+class TransformerAutoEncoder(nn.Module):
+    """Transformer-based AutoEncoder module."""
+
+    def __init__(
+        self,
+        num_features: int,
+        sequence_length: int,
+        input_layer: str = "linear",
+        num_blocks: int = 4,
+        num_heads: int = 4,
+        num_hidden_units: int = 64,
+        num_feedforward_units: int = 128,
+        num_latent_units: int = 8,
+        num_embeddings=0,
+        embedding_dim=0,
+        concat_embedding=False,
+        activation: str = "relu",
+        use_position_encode: bool = False,
+        max_position_encode_length: int = 512,
+        dropout: float = 0.1,
+    ):
+        super().__init__()
+        self.use_embedding = embedding_dim > 0
+        num_features = num_features - 1 if self.use_embedding else num_features
+        self.concat_embedding = concat_embedding
+
+        self.use_position_encode = use_position_encode
+
+        # Build encoder.
+        if input_layer == "linear":
+            self.input_layer = nn.Linear(num_features, num_hidden_units)
+        else:
+            raise NotImplementedError(f"{input_layer} is not supported.")
+        if use_position_encode:
+            self.position_encode = PositionalEncoding(
+                d_model=num_hidden_units,
+                dropout=dropout,
+                maxlen=max_position_encode_length,
+            )
+        transformer_encoder_layer = nn.TransformerEncoderLayer(
+            d_model=num_hidden_units,
+            nhead=num_heads,
+            dim_feedforward=num_feedforward_units,
+            dropout=dropout,
+            activation=activation,
+        )
+        self.encoder_transformer = nn.TransformerEncoder(
+            encoder_layer=transformer_encoder_layer,
+            num_layers=num_blocks,
+        )
+        self.encoder_projection = nn.Sequential(
+            nn.Linear(num_hidden_units, num_latent_units),
+            nn.ReLU(inplace=True),
+        )
+
+        # Build decoder.
+        if self.use_embedding:
+            self.embed_layer = nn.Embedding(num_embeddings, embedding_dim)
+            if self.concat_embedding:
+                decoder_input_units = num_latent_units + embedding_dim
+            else:
+                if num_latent_units != embedding_dim:
+                    logging.warning(
+                        f"embedding_dim is modified from {embedding_dim} to {num_latent_units}."
+                    )
+                    embedding_dim = num_latent_units
+                decoder_input_units = num_latent_units
+        else:
+            decoder_input_units = num_latent_units
+        self.decoder_projection = nn.Linear(decoder_input_units, num_hidden_units)
+        transformer_decoder_layer = nn.TransformerEncoderLayer(
+            d_model=num_hidden_units,
+            nhead=num_heads,
+            dim_feedforward=num_feedforward_units,
+            dropout=dropout,
+            activation=activation,
+        )
+        self.decoder_transformer = nn.TransformerEncoder(
+            encoder_layer=transformer_decoder_layer,
+            num_layers=num_blocks,
+        )
+        self.final_layer = nn.Linear(num_hidden_units, num_features)
+
+    def forward(self, x, mask=None, return_latent=False):
+        """Calcualte forward propagation.
+        Args:
+            x (Tensor): Input tensor (batch_size, sequence_length, num_features).
+            mask (Tensor): Mask tensor (batch_size, sequence_length).
+            return_latent (bool): Whether to return latest variables.
+        Returns:
+            Tensor: Reconstructed inputs (batch_size, sequence_length, num_features).
+            Tensor: Latent variables (batch_size, sequence_length, num_hidden_units) if return_latent = True.
+        """
+        if self.use_embedding:
+            id_ = x[:, :, -1].long()
+            x = x[:, :, :-1]
+        enc = self.input_layer(x)
+        if self.use_position_encode:
+            enc = self.position_encode(enc)
+        enc = self.encoder_transformer(
+            enc.transpose(0, 1),
+            src_key_padding_mask=~mask if mask is not None else None,
+        )
+        enc = self.encoder_projection(enc.transpose(0, 1))
+        if self.use_embedding:
+            id_emb = self.embed_layer(id_)
+            if self.concat_embedding:
+                enc = torch.cat((enc, id_emb), dim=2)
+            else:
+                enc = enc + id_emb
+        dec = self.decoder_projection(enc)
+        dec = self.decoder_transformer(
+            dec.transpose(0, 1),
+            src_key_padding_mask=~mask if mask is not None else None,
+        )
+        reconstructed_sequence = self.final_layer(dec.transpose(0, 1))
+        if return_latent:
+            return reconstructed_sequence, enc
+        return reconstructed_sequence
+
+
+class PositionalEncoding(torch.nn.Module):
+    """Positional encoding module."""
+
+    def __init__(self, d_model, dropout=0.0, maxlen=512):
+        super(PositionalEncoding, self).__init__()
+        self.d_model = d_model
+        self.dropout = torch.nn.Dropout(p=dropout)
+        self.maxlen = maxlen
+        self.xscale = math.sqrt(self.d_model)
+        self._initialize_positional_encoding()
+
+    def _initialize_positional_encoding(self):
+        pe = torch.zeros(self.maxlen, self.d_model)
+        position = torch.arange(0, self.maxlen, dtype=torch.float32).unsqueeze(1)
+        div_term = torch.exp(
+            torch.arange(0, self.d_model, 2, dtype=torch.float32)
+            * -(math.log(10000.0) / self.d_model)
+        )
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0)
+        self.register_buffer("pe", pe)
+
+    def forward(self, x: torch.Tensor):
+        """Add positional encoding.
+        Args:
+            x (Tensor): Input tensor (B, T, `*`).
+        Returns:
+            Tensor: Encoded tensor (B, T, `*`).
+        """
+        x = x * self.xscale + self.pe[:, : x.size(1)]
+        return self.dropout(x)
