@@ -215,4 +215,13 @@ EOF
     - 次回やること
         * transfomerを実装して動かす
         * v009, v010を提出してスコア記録
+- 12/30(水)
+    - 今日やったこと
+        * mixupバグ修正
+        * v005,v005-red(random=True) center-loss比較
+        * v009,v009-red(random=False) center-loss比較
+        * v009,v010(random=False) mixup比較
+    - 次回やること
+        * transfomerを実装して動かす
+        * v009, v010を提出してスコア記録
 </div></details>

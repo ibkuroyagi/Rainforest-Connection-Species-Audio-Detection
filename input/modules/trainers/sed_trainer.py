@@ -423,14 +423,16 @@ class SEDTrainer(object):
                 logging.info(
                     f"Epochs: {self.epochs}, BEST score was updated {self.best_score:.6f}."
                 )
-                self.save_checkpoint(
-                    os.path.join(
-                        self.config["outdir"],
-                        "best_score",
-                        f"best_score{self.save_name}.pkl",
-                    )
+                save_path = os.path.join(
+                    self.config["outdir"],
+                    "best_score",
+                    f"best_score{self.save_name}.pkl",
                 )
-                logging.info(f"Best model was updated @ {self.steps} steps.")
+                self.save_checkpoint(save_path)
+                logging.info(
+                    f"Best model was updated @ {self.steps} steps."
+                    f"Saved at {save_path}"
+                )
             self._write_to_tensorboard(self.eval_metric)
             self.eval_metric = defaultdict(float)
         # record
