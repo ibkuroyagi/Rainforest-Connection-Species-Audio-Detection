@@ -18,18 +18,19 @@ fmax: 16000
 ###########################################################
 #                     NETWORK SETTING                     #
 ###########################################################
-model_type: "TransformerEncoderDecoder"
+model_type: "ConformerEncoderDecoder"
 model_params:
   num_features: 128
   num_classes: 25
   sequence_length: -1 # use entire sequence as the input
   num_blocks: 4
-  num_hidden_units: 128
-  num_feedforward_units: 256
+  num_channels: 144
   num_heads: 4
-  num_latent_units: 32
+  kernel_size: 31
+  num_latent_units: 64
   dropout: 0.1
-  use_position_encode: true
+  bias: true
+  use_bottleneck: true
   use_reconstruct: false
 ###########################################################
 #                    TRAINING SETTING                     #

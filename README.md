@@ -50,11 +50,14 @@ EOF
 - 発話区間予測 -> EEND-EDN実装
     * ダイアライゼーションの出力を学習データにして、inferenceも同じ分割にする(trainはランダムに分割するだけ)
 - ~~ResNexst50をtorchvisionから重みをインポートしてファインチューニング(埋め込み層を明示的に作成)~~
+- transformerでSED実装
 - conformerでSED実装
-- Mixupを実装
+- ~~Mixupを実装~~
 - ~~Augmentationがデータセット内でできるようにwave形式の入力を受け取るようにdataset, collater_fcに追記~~
 - ~~TimeStretchが0.9, 1.1のmatrix_tpを作成~~
 - TTAでinferenceの汎か性能改善
+- transformerで2048くらいのイメージをインプットにして動かす
+    * 動かなければ1dconvで半分にダウンサンプリングする
 
 ## 決定事項
 - 初手のCVの切り方はiterative-stratificationを用いる
@@ -227,7 +230,9 @@ EOF
 - 12/31(木)
     - 今日やったこと
         * v009, v010を提出してスコア記録
-    - 次回やること
         * transformerを実装して動かす
+            * 弱ラベルに対応するようにclsシンボルを時系列の先頭に追加する
+    - 次回やること
+        * cosformerを実装して動かす
             * 弱ラベルに対応するようにclsシンボルを時系列の先頭に追加する
 </div></details>
