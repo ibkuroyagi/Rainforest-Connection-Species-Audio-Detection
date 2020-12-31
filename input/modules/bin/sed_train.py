@@ -253,27 +253,25 @@ def main():
             # keep compatibility
             config.get("model_type", "Cnn14_DecisionLevelAtt"),
         )
-        model = model_class(training=True, **config["model_params"]).to(device)
+
         if (len(args.cache_path) != 0) and (
             config["model_type"] == "Cnn14_DecisionLevelAtt"
         ):
+            model = model_class(training=True, **config["model_params"]).to(device)
             weights = torch.load(args.cache_path)
             model.load_state_dict(weights["model"])
             logging.info(f"Successfully load weight from {args.cache_path}")
-        if config.get("model_type" "Cnn14_DecisionLevelAtt") in [
-            "ResNet38Double",
-            "ResNet38Att",
-        ]:
             conv_params = []
             fc_param = []
             for name, param in model.named_parameters():
-                if "conv_layer" in name:
-                    conv_params.append(param)
-                else:
+                if name.startswith(("fc1", "att_block")):
                     fc_param.append(param)
+                elif name.startswith(("conv_block")):
+                    conv_params.append(param)
         elif config["model_type"] == "ResNext50":
             from models import AttBlock
 
+            model = model_class(training=True, **config["model_params"]).to(device)
             model.bn0 = nn.BatchNorm2d(config["num_mels"])
             model.att_block = AttBlock(**config["att_block"])
             nn.init.xavier_uniform_(model.att_block.att.weight)
@@ -286,6 +284,8 @@ def main():
                     fc_param.append(param)
                 else:
                     conv_params.append(param)
+        else:
+            model = model_class(**config["model_params"]).to(device)
         loss_class = getattr(
             losses,
             # keep compatibility
@@ -311,13 +311,16 @@ def main():
             optimizer = optimizer_class(
                 model.parameters(), **config["optimizer_params"]
             )
-
-        scheduler_class = getattr(
-            torch.optim.lr_scheduler,
-            # keep compatibility
-            config.get("scheduler_type", "StepLR"),
-        )
-        scheduler = scheduler_class(optimizer=optimizer, **config["scheduler_params"])
+        scheduler = None
+        if config.get("scheduler_type", None) is not None:
+            scheduler_class = getattr(
+                torch.optim.lr_scheduler,
+                # keep compatibility
+                config.get("scheduler_type", "StepLR"),
+            )
+            scheduler = scheduler_class(
+                optimizer=optimizer, **config["scheduler_params"]
+            )
         if fold == 0:
             logging.info(model)
         # define trainer

@@ -86,7 +86,7 @@ EOF
 - res/v003(aug)
 - cnn/v005
 - cnn/v005-red
-- cnn/v008(mel128hop1024)
+- cnn/v008(mel128hop1024,aug)
 - cnn/v009
 - cnn/v009-red
 - cnn/v010
@@ -248,7 +248,10 @@ EOF
         * v011,v010 reduction:mean,sumで比較(frameの重要性を比較)
         * transformerを実装して動かす
             * 弱ラベルに対応するようにclsシンボルを時系列の先頭に追加する
-    - 次回やること
         * cosformerを実装して動かす
             * 弱ラベルに対応するようにclsシンボルを時系列の先頭に追加する
+        * res/v002を回収
+    - 次回やること
+        * v005,red,v009,red,v010提出
+        * transformer関連のバグ取り
 </div></details>

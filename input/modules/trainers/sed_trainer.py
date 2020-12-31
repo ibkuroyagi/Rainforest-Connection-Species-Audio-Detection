@@ -74,7 +74,12 @@ class SEDTrainer(object):
                 config.get("optimizer_type", "Adam"),
             )
             self.optimizer_centloss = optimizer_class(
-                self.center_loss.parameters(), **config["center_loss_optimizer_params"]
+                [
+                    {
+                        "params": self.center_loss.parameters(),
+                        **config["center_loss_optimizer_params"],
+                    }
+                ]
             )
             self.train_label_epoch = np.empty(0)
             self.dev_label_epoch = np.empty(0)
