@@ -80,6 +80,21 @@ EOF
 - 学習がゆっくり進むようにmax_frame2048, batch_size128がほどよい
 - PANNs事前学習の重みはかなり効果的
 - たぶん、ゴミラベルがまぎれている気がする(何度聞いても全く認識できない鳥の音声がある)
+### submit待ちモデルたち
+- cnn/v007(aug)
+- res/v002
+- res/v003(aug)
+- cnn/v005
+- cnn/v005-red
+- cnn/v008(mel128hop1024)
+- cnn/v009
+- cnn/v009-red
+- cnn/v010
+- cnn/v011
+- tra/v000
+- con/v000
+
+
 <details><summary>kaggle日記</summary><div>
 
 - 11/29(日)
@@ -230,6 +245,7 @@ EOF
 - 12/31(木)
     - 今日やったこと
         * v009, v010を提出してスコア記録
+        * v011,v010 reduction:mean,sumで比較(frameの重要性を比較)
         * transformerを実装して動かす
             * 弱ラベルに対応するようにclsシンボルを時系列の先頭に追加する
     - 次回やること

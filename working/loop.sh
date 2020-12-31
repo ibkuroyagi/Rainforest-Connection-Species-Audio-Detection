@@ -2,18 +2,19 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v011 #v002-clip065-2
-model=Cnn14_DecisionLevelAtt
+No=v002 #v002-clip065-2
+# model=Cnn14_DecisionLevelAtt
+# model=conformer
 type=wave
 
-# model=ResNext50
+model=ResNext50
 # type=mel128hop1024
 
 stage=2
 stop_stage=100
 # for No in v010 v009; do
 # for No in v005 v005-red v009-red; do
-# for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000; do
+# for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000 checkpoint-5000; do
 resume=""
 # for fold in {0..4}; do
 #     resume+="exp/${type}/${model}/${No}/checkpoint-3000/checkpoint-3000fold${fold}.pkl "
@@ -26,7 +27,7 @@ sbatch -J "${type}/${No}" ./run.sh \
     --type "${type}" \
     --cal_type "0" \
     --resume "${resume}" \
-    --verbose 1
-# --checkpoint "${checkpoint}"
+    --verbose 1 \
+    --checkpoint "${checkpoint}"
 # done
 # done
