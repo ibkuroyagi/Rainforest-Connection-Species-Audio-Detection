@@ -271,7 +271,7 @@ def main():
                     conv_params.append(param)
                 else:
                     fc_param.append(param)
-        else:
+        elif config["model_type"] == "ResNext50":
             from models import AttBlock
 
             model.bn0 = nn.BatchNorm2d(config["num_mels"])
@@ -297,12 +297,20 @@ def main():
             # keep compatibility
             config.get("optimizer_type", "Adam"),
         )
-        optimizer = optimizer_class(
-            [
-                {"params": conv_params, "lr": config["optimizer_params"]["conv_lr"]},
-                {"params": fc_param, "lr": config["optimizer_params"]["fc_lr"]},
-            ]
-        )
+        if config.get("optimizer_type", "Adam") == "Adam":
+            optimizer = optimizer_class(
+                [
+                    {
+                        "params": conv_params,
+                        "lr": config["optimizer_params"]["conv_lr"],
+                    },
+                    {"params": fc_param, "lr": config["optimizer_params"]["fc_lr"]},
+                ]
+            )
+        else:
+            optimizer = optimizer_class(
+                model.parameters(), **config["optimizer_params"]
+            )
 
         scheduler_class = getattr(
             torch.optim.lr_scheduler,

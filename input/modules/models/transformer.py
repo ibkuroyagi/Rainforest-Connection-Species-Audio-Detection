@@ -85,78 +85,13 @@ class RandomCutCollater(object):
         return padded_tensor
 
 
-class TransformerAutoEncoderAlgorithm(nn.Module):
-    """Transformer-based AutoEncoder algorithm."""
-
-    def __init__(
-        self,
-        name: str = "TransformerAutoEncoder",
-        num_features: int = 1,
-        sequence_length: int = 300,
-        input_layer: str = "linear",
-        num_blocks: int = 4,
-        num_heads: int = 4,
-        num_hidden_units: int = 64,
-        num_feedforward_units: int = 128,
-        num_latent_units: int = 8,
-        num_embeddings: int = 0,
-        embedding_dim: int = 0,
-        concat_embedding: bool = False,
-        activation: str = "relu",
-        dropout: float = 0.1,
-        use_position_encode: bool = False,
-        max_position_encode_length: int = 512,
-        use_multi_gmm: bool = False,
-    ):
-        super().__init__()
-
-        self.use_embedding = embedding_dim > 0
-        assert self.use_embedding == (num_embeddings > 0)
-        self.name = "Embedding" + name if self.use_embedding else name
-
-        self.name = name
-        self.use_multi_gmm = use_multi_gmm
-        num_features = num_features - 1 if self.use_multi_gmm else num_features
-        self.module = TransformerAutoEncoder(
-            num_features=num_features,
-            sequence_length=sequence_length,
-            input_layer=input_layer,
-            num_blocks=num_blocks,
-            num_heads=num_heads,
-            num_hidden_units=num_hidden_units,
-            num_feedforward_units=num_feedforward_units,
-            num_latent_units=num_latent_units,
-            num_embeddings=num_embeddings,
-            embedding_dim=embedding_dim,
-            concat_embedding=concat_embedding,
-            activation=activation,
-            use_position_encode=use_position_encode,
-            max_position_encode_length=max_position_encode_length,
-            dropout=dropout,
-        )
-
-    def forward(self, batch, keepdims=True, details=False):
-        """Calculate forward propagation."""
-        if self.use_multi_gmm and not self.use_embedding:
-            batch = batch[..., :-1]
-        output = self.module(batch)
-        if self.use_embedding:
-            batch = batch[..., :-1]
-        if not keepdims:
-            return nn.L1Loss(reduction="sum")(output, batch)
-        else:
-            error = nn.L1Loss(reduction="none")(output, batch)
-        if details:
-            return error, output
-        return error
-
-
-class TransformerAutoEncoder(nn.Module):
-    """Transformer-based AutoEncoder module."""
+class TransformerEncoderDecoder(nn.Module):
+    """Transformer-based Encoder Decoder module."""
 
     def __init__(
         self,
         num_features: int,
+        num_classes: int,
         sequence_length: int,
         input_layer: str = "linear",
         num_blocks: int = 4,
@@ -171,6 +106,7 @@ class TransformerAutoEncoder(nn.Module):
         use_position_encode: bool = False,
         max_position_encode_length: int = 512,
         dropout: float = 0.1,
+        use_reconstruct: bool = False,
     ):
         super().__init__()
         self.use_embedding = embedding_dim > 0
@@ -178,6 +114,8 @@ class TransformerAutoEncoder(nn.Module):
         self.concat_embedding = concat_embedding
 
         self.use_position_encode = use_position_encode
+        self.num_classes = num_classes
+        self.use_reconstruct = use_reconstruct
 
         # Build encoder.
         if input_layer == "linear":
@@ -232,17 +170,20 @@ class TransformerAutoEncoder(nn.Module):
             encoder_layer=transformer_decoder_layer,
             num_layers=num_blocks,
         )
-        self.final_layer = nn.Linear(num_hidden_units, num_features)
+        self.frame_layer = nn.Linear(num_hidden_units, num_classes)
+        if use_reconstruct:
+            self.reconstruct_layer = nn.Linear(num_hidden_units, num_features)
 
-    def forward(self, x, mask=None, return_latent=False):
+    def forward(self, x, mask=None):
         """Calcualte forward propagation.
         Args:
-            x (Tensor): Input tensor (batch_size, sequence_length, num_features).
+            x (Tensor): Input tensor (batch_size, 1+sequence_length, num_features).
+                If you use waek label, you have to input weak label idx 0.
             mask (Tensor): Mask tensor (batch_size, sequence_length).
-            return_latent (bool): Whether to return latest variables.
         Returns:
-            Tensor: Reconstructed inputs (batch_size, sequence_length, num_features).
-            Tensor: Latent variables (batch_size, sequence_length, num_hidden_units) if return_latent = True.
+            Tensor: y_clip (batch_size, num_class).
+            Tensor: y_frame (batch_size, sequence_length, num_class).
+            Tensor: reconstructed inputs (batch_size, sequence_length, num_features).
         """
         if self.use_embedding:
             id_ = x[:, :, -1].long()
@@ -266,10 +207,11 @@ class TransformerAutoEncoder(nn.Module):
             dec.transpose(0, 1),
             src_key_padding_mask=~mask if mask is not None else None,
         )
-        reconstructed_sequence = self.final_layer(dec.transpose(0, 1))
-        if return_latent:
-            return reconstructed_sequence, enc
-        return reconstructed_sequence
+        out = self.frame_layer(dec.transpose(0, 1))
+        y_ = {"y_clip": out[:, 0, :], "y_frame": out[:, 1:, :]}
+        if self.use_reconstruct:
+            y_["reconstructed"] = self.reconstruct_layer(dec.transpose(0, 1))
+        return y_
 
 
 class PositionalEncoding(torch.nn.Module):

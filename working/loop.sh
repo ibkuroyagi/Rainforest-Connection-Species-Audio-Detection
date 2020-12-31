@@ -2,7 +2,7 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v010 #v002-clip065-2
+No=v011 #v002-clip065-2
 model=Cnn14_DecisionLevelAtt
 type=wave
 

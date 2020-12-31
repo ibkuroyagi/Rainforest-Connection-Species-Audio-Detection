@@ -73,6 +73,8 @@ optimizer_type: "Adam"
 optimizer_params:
   conv_lr: 0.0001 # convolution layer's learning rate.
   fc_lr: 0.0005 # full connection layer's learning rate.
+center_loss_optimizer_params:
+  lr: 0.0001
 scheduler_type: "CosineAnnealingLR"
 scheduler_params:
   T_max: 1000 # scheduler step size.

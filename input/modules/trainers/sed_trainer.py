@@ -74,12 +74,7 @@ class SEDTrainer(object):
                 config.get("optimizer_type", "Adam"),
             )
             self.optimizer_centloss = optimizer_class(
-                [
-                    {
-                        "params": self.center_loss.parameters(),
-                        "lr": config["optimizer_params"]["conv_lr"],
-                    }
-                ]
+                self.center_loss.parameters(), **config["center_loss_optimizer_params"]
             )
             self.train_label_epoch = np.empty(0)
             self.dev_label_epoch = np.empty(0)
@@ -168,9 +163,23 @@ class SEDTrainer(object):
         """Train model one step."""
         if self.mixup_alpha is not None:
             batch = original_mixup(batch, self.mixup_alpha)  # (B*2,...) -> (B,...)
-        x = batch["X"].to(self.device)
+        x = batch["X"].to(self.device)  # (B, mel, T')
         y_frame = batch["y_frame"].to(self.device)
         y_clip = batch["y_clip"].to(self.device)
+        if self.config["model_type"] in [
+            "TransformerEncoderDecoder",
+            "ConformerEncoderDecoder",
+        ]:
+            # Add waek label frame and transpose (B, mel, T') to (B, 1+T', mel).
+            x = torch.cat(
+                [
+                    torch.ones((x.shape[0], x.shape[1], 1), dtypr=torch.float32).to(
+                        self.device
+                    ),
+                    x,
+                ],
+                axis=2,
+            ).transpose(2, 1)
         y_ = self.model(x)  # {y_frame: (B, T', n_class), y_clip: (B, n_class)}
         logging.debug(
             f"y_frame:{y_frame[0]}, y_clip:{y_clip[0]}, y_frame:{y_['y_frame'][0]}, y_clip:{y_['y_clip'][0]}"
@@ -412,27 +421,27 @@ class SEDTrainer(object):
             logging.info(
                 f"(Epoch: {self.epochs}) {key} = {self.epoch_eval_loss[key]:.6f}."
             )
+        if self.epoch_eval_loss["dev/epoch_lwlrap"] > self.best_score:
+            self.best_score = self.epoch_eval_loss["dev/epoch_lwlrap"]
+            logging.info(
+                f"Epochs: {self.epochs}, BEST score was updated {self.best_score:.6f}."
+            )
+            save_path = os.path.join(
+                self.config["outdir"],
+                "best_score",
+                f"best_score{self.save_name}.pkl",
+            )
+            self.save_checkpoint(save_path)
+            logging.info(
+                f"Best model was updated @ {self.steps} steps." f"Saved at {save_path}"
+            )
+
         logging.info(f"(Steps: {self.steps}) Start eval data's evaluation.")
         if self.epochs % self.config["eval_interval_epochs"] == 0:
             items = self.inference(mode="valid")
             logging.info(
                 f"Inference (Epochs: {self.epochs}) lwlrap: {items['score']:.6f}"
             )
-            if items["score"] > self.best_score:
-                self.best_score = items["score"]
-                logging.info(
-                    f"Epochs: {self.epochs}, BEST score was updated {self.best_score:.6f}."
-                )
-                save_path = os.path.join(
-                    self.config["outdir"],
-                    "best_score",
-                    f"best_score{self.save_name}.pkl",
-                )
-                self.save_checkpoint(save_path)
-                logging.info(
-                    f"Best model was updated @ {self.steps} steps."
-                    f"Saved at {save_path}"
-                )
             self._write_to_tensorboard(self.eval_metric)
             self.eval_metric = defaultdict(float)
         # record

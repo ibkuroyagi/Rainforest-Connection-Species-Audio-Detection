@@ -1,4 +1,4 @@
-# frame=2048, random, augmentation
+# n_class25, ps0.9,1.1, mixup
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -9,8 +9,8 @@ n_fold: 5
 #                    PREPROCESS SETTING                   #
 ###########################################################
 sr: 48000
-fft_size: 4096
-hop_size: 1024
+fft_size: 2048
+hop_size: 512
 window: hann
 num_mels: 128
 fmin: 50
@@ -38,25 +38,22 @@ model_params:
 #                    TRAINING SETTING                     #
 ###########################################################
 # augmentation
-wave_mode: True
-augmentation_params:
-  PinkNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
-  GaussianNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
-  VolumeControl: { always_apply: False, p: 0.5, db_limit: 10, mode: cosine }
+wave_mode: False
+mixup_alpha: 0.2
 # dataset
 train_dataset_mode: tp
-allow_cache: False # Whether to allow cache in dataset. If true, it requires cpu memory.
+allow_cache: True # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: False
 # collater_fc
-max_frames: 2048
-l_target: 64
+max_frames: 1024
+l_target: 32
 collater_mode: binary
-random: True
+random: False
 # dataloader
-accum_grads: 8
-batch_size: 16 # Batch size.
-pin_memory: False # Whether to pin memory in Pytorch DataLoader.
-num_workers: 4 # Number of workers in Pytorch DataLoader.
+accum_grads: 4
+batch_size: 64 # Batch size.
+pin_memory: True # Whether to pin memory in Pytorch DataLoader.
+num_workers: 2 # Number of workers in Pytorch DataLoader.
 # trainer
 use_center_loss: True
 ###########################################################
@@ -65,11 +62,11 @@ use_center_loss: True
 loss_type: FrameClipLoss
 loss_params:
   clip_ratio: 0.50
-  reduction: mean
+  reduction: sum
 
 center_loss_alpha: 5.0e-4
 center_loss_params:
-  num_classes: 25
+  num_classes: 24
   feat_dim: 2048
 
 tsne_params:
@@ -93,10 +90,10 @@ scheduler_params:
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
-train_max_steps: 5000 # Number of training steps.
+train_max_steps: 4000 # Number of training steps.
 save_interval_steps: 1000 # Interval steps to save checkpoint.
 eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
 #                     OTHER SETTING                       #
 ###########################################################
-n_eval_split: 3
+n_eval_split: 10

@@ -76,7 +76,7 @@ EOF
 - CenterLossの正則化を強くしすぎると過学習を起こしてしまい、悪化する -> noiseクラスを許す(random=True)とinferenceとの差がなくなるので効果的
 - 学習がゆっくり進むようにmax_frame2048, batch_size128がほどよい
 - PANNs事前学習の重みはかなり効果的
-- 
+- たぶん、ゴミラベルがまぎれている気がする(何度聞いても全く認識できない鳥の音声がある)
 <details><summary>kaggle日記</summary><div>
 
 - 11/29(日)
@@ -213,7 +213,7 @@ EOF
         * v009,v009-red(random=False) center-loss比較
         * v009,v010(random=False) mixup比較
     - 次回やること
-        * transfomerを実装して動かす
+        * transformerを実装して動かす
         * v009, v010を提出してスコア記録
 - 12/30(水)
     - 今日やったこと
@@ -222,6 +222,12 @@ EOF
         * v009,v009-red(random=False) center-loss比較
         * v009,v010(random=False) mixup比較
     - 次回やること
-        * transfomerを実装して動かす
+        * transformerを実装して動かす
         * v009, v010を提出してスコア記録
+- 12/31(木)
+    - 今日やったこと
+        * v009, v010を提出してスコア記録
+    - 次回やること
+        * transformerを実装して動かす
+            * 弱ラベルに対応するようにclsシンボルを時系列の先頭に追加する
 </div></details>
