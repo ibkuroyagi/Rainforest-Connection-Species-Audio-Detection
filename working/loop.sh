@@ -12,10 +12,10 @@ type=wave
 
 stage=2
 stop_stage=100
-# for model in conformer transformer; do
-for No in v012 v012-sum v013-sum v013; do
+for model in conformer transformer; do
+    # for No in v013-sum v013; do
     # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
-    resume=""
+    # resume="exp/${type}/${model}/v012-sum/checkpoint-4000/checkpoint-4000fold0.pkl exp/${type}/${model}/v012-sum/checkpoint-4000/checkpoint-4000fold1.pkl exp/${type}/${model}/v012-sum/checkpoint-4000/checkpoint-4000fold2.pkl exp/${type}/${model}/v012-sum/checkpoint-1000/checkpoint-1000fold3.pkl exp/${type}/${model}/v012-sum/checkpoint-1000/checkpoint-1000fold4.pkl"
     # for fold in {0..4}; do
     #     resume+="exp/${type}/${model}/${No}/checkpoint-3000/checkpoint-3000fold${fold}.pkl "
     # done

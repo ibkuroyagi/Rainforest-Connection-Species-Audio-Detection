@@ -47,7 +47,7 @@ l_target: 512
 collater_mode: binary
 random: False
 # dataloader
-accum_grads: 8
+accum_grads: 16
 batch_size: 64 # Batch size.
 pin_memory: True # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
@@ -59,7 +59,7 @@ use_center_loss: false
 loss_type: FrameClipLoss
 loss_params:
   clip_ratio: 0.50
-  reduction: sum
+  reduction: mean
 
 tsne_params:
   n_components: 2
@@ -83,4 +83,4 @@ eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
 #                     OTHER SETTING                       #
 ###########################################################
-n_eval_split: 10
+n_eval_split: 20

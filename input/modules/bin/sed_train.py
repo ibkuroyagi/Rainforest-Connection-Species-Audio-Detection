@@ -342,7 +342,7 @@ def main():
         )
         # resume from checkpoint
         if len(args.resume) != 0:
-            trainer.load_checkpoint(args.resume[fold], load_only_params=True)
+            trainer.load_checkpoint(args.resume[fold], load_only_params=False)
             logging.info(f"Successfully resumed from {args.resume[fold]}.")
         # run training loop
         try:

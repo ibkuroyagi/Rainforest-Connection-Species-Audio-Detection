@@ -514,6 +514,21 @@ class SEDTrainer(object):
                     )
                 x_batchs = [batch[key].to(self.device) for key in keys_list]
                 for i in range(self.n_eval_split):
+                    if self.config["model_type"] in [
+                        "TransformerEncoderDecoder",
+                        "ConformerEncoderDecoder",
+                    ]:
+                        # Add waek label frame and transpose (B, mel, T') to (B, 1+T', mel).
+                        x_batchs[i] = torch.cat(
+                            [
+                                torch.ones(
+                                    (x_batchs[i].shape[0], x_batchs[i].shape[1], 1),
+                                    dtype=torch.float32,
+                                ).to(self.device),
+                                x_batchs[i],
+                            ],
+                            axis=2,
+                        ).transpose(2, 1)
                     y_batch_ = self.model(x_batchs[i])
                     y_clip[i] = torch.cat(
                         [y_clip[i], y_batch_["y_clip"][:, : self.n_target]], dim=0
