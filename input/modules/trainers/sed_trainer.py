@@ -178,13 +178,14 @@ class SEDTrainer(object):
             # Add waek label frame and transpose (B, mel, T') to (B, 1+T', mel).
             x = torch.cat(
                 [
-                    torch.ones((x.shape[0], x.shape[1], 1), dtypr=torch.float32).to(
+                    torch.ones((x.shape[0], x.shape[1], 1), dtype=torch.float32).to(
                         self.device
                     ),
                     x,
                 ],
                 axis=2,
             ).transpose(2, 1)
+            logging.info(f"{x.shape}")
         y_ = self.model(x)  # {y_frame: (B, T', n_class), y_clip: (B, n_class)}
         logging.debug(
             f"y_frame:{y_frame[0]}, y_clip:{y_clip[0]}, y_frame:{y_['y_frame'][0]}, y_clip:{y_['y_clip'][0]}"

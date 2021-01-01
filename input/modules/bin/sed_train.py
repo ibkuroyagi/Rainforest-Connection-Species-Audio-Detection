@@ -261,6 +261,8 @@ def main():
             weights = torch.load(args.cache_path)
             model.load_state_dict(weights["model"])
             logging.info(f"Successfully load weight from {args.cache_path}")
+            model.bn0 = nn.BatchNorm2d(config["num_mels"])
+            model.att_block = models.AttBlock(**config["att_block"])
             conv_params = []
             fc_param = []
             for name, param in model.named_parameters():
@@ -269,11 +271,9 @@ def main():
                 elif name.startswith(("conv_block")):
                     conv_params.append(param)
         elif config["model_type"] == "ResNext50":
-            from models import AttBlock
-
             model = model_class(training=True, **config["model_params"]).to(device)
             model.bn0 = nn.BatchNorm2d(config["num_mels"])
-            model.att_block = AttBlock(**config["att_block"])
+            model.att_block = models.AttBlock(**config["att_block"])
             nn.init.xavier_uniform_(model.att_block.att.weight)
             nn.init.xavier_uniform_(model.att_block.cla.weight)
             logging.info("Successfully initialize custom weight.")

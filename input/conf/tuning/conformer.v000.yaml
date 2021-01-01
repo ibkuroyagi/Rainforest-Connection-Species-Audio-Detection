@@ -22,7 +22,6 @@ model_type: "ConformerEncoderDecoder"
 model_params:
   num_features: 128
   num_classes: 25
-  sequence_length: -1 # use entire sequence as the input
   num_blocks: 4
   num_channels: 144
   num_heads: 4
@@ -43,12 +42,12 @@ train_dataset_mode: tp
 allow_cache: True # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: False
 # collater_fc
-max_frames: 1024
-l_target: 1024
+max_frames: 512
+l_target: 512
 collater_mode: binary
 random: False
 # dataloader
-accum_grads: 4
+accum_grads: 8
 batch_size: 64 # Batch size.
 pin_memory: True # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
@@ -70,7 +69,7 @@ tsne_params:
 ###########################################################
 #              OPTIMIZER & SCHEDULER SETTING              #
 ###########################################################
-optimizer: Noam
+optimizer_type: Noam
 optimizer_params:
   model_size: 144
   factor: 1.0

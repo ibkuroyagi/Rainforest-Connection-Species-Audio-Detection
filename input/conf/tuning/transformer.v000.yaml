@@ -29,7 +29,7 @@ model_params:
   num_heads: 4
   num_latent_units: 32
   dropout: 0.1
-  use_position_encode: true
+  use_position_encode: false
   use_reconstruct: false
 ###########################################################
 #                    TRAINING SETTING                     #
@@ -42,12 +42,12 @@ train_dataset_mode: tp
 allow_cache: True # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: False
 # collater_fc
-max_frames: 1024
-l_target: 1024
+max_frames: 512
+l_target: 512
 collater_mode: binary
 random: False
 # dataloader
-accum_grads: 4
+accum_grads: 8
 batch_size: 64 # Batch size.
 pin_memory: True # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
@@ -69,7 +69,7 @@ tsne_params:
 ###########################################################
 #              OPTIMIZER & SCHEDULER SETTING              #
 ###########################################################
-optimizer: Noam
+optimizer_type: Noam
 optimizer_params:
   model_size: 144
   factor: 1.0
