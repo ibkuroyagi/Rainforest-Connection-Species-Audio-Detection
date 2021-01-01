@@ -12,8 +12,8 @@ type=wave
 
 stage=2
 stop_stage=100
-for model in conformer transformer; do
-    # for No in v005 v005-red v009-red v009; do
+# for model in conformer transformer; do
+for No in v012 v012-sum v013-sum v013; do
     # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
     resume=""
     # for fold in {0..4}; do

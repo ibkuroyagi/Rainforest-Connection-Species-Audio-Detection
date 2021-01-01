@@ -185,7 +185,6 @@ class SEDTrainer(object):
                 ],
                 axis=2,
             ).transpose(2, 1)
-            logging.info(f"{x.shape}")
         y_ = self.model(x)  # {y_frame: (B, T', n_class), y_clip: (B, n_class)}
         logging.debug(
             f"y_frame:{y_frame[0]}, y_clip:{y_clip[0]}, y_frame:{y_['y_frame'][0]}, y_clip:{y_['y_clip'][0]}"
@@ -340,6 +339,20 @@ class SEDTrainer(object):
     def _eval_step(self, batch):
         """Evaluate model one step."""
         x = batch["X"].to(self.device)
+        if self.config["model_type"] in [
+            "TransformerEncoderDecoder",
+            "ConformerEncoderDecoder",
+        ]:
+            # Add waek label frame and transpose (B, mel, T') to (B, 1+T', mel).
+            x = torch.cat(
+                [
+                    torch.ones((x.shape[0], x.shape[1], 1), dtype=torch.float32).to(
+                        self.device
+                    ),
+                    x,
+                ],
+                axis=2,
+            ).transpose(2, 1)
         y_frame = batch["y_frame"].to(self.device)
         y_clip = batch["y_clip"][:, : self.n_target].to(self.device)
         y_ = self.model(x)
