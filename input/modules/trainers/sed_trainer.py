@@ -237,7 +237,12 @@ class SEDTrainer(object):
         else:
             logging.warn("Loss contain NaN. Don't back-poropagated.")
 
-        if self.config["model_type"] in ["Cnn14_DecisionLevelAtt", "ResNext50"]:
+        if self.config["model_type"] in [
+            "Cnn14_DecisionLevelAtt",
+            "ResNext50",
+            "TransformerEncoderDecoder",
+            "ConformerEncoderDecoder",
+        ]:
             self.train_pred_frame_epoch = torch.cat(
                 [self.train_pred_frame_epoch, y_["y_frame"]], dim=0
             )
@@ -278,10 +283,10 @@ class SEDTrainer(object):
                 return
         try:
             logging.debug(
-                f"Epoch train pred frame:{self.train_pred_frame_epoch.sum():.4f}\n"
-                f"Epoch train    y frame:{self.train_y_frame_epoch.sum()}\n"
-                f"Epoch train  pred clip:{self.train_pred_epoch.sum():.4f}\n"
-                f"Epoch train     y clip:{self.train_y_epoch.sum()}\n"
+                f"Epoch train pred frame:{self.train_pred_frame_epoch.shape}{self.train_pred_frame_epoch.sum():.4f}\n"
+                f"Epoch train    y frame:{self.train_y_frame_epoch.shape}{self.train_y_frame_epoch.sum()}\n"
+                f"Epoch train  pred clip:{self.train_pred_epoch.shape}{self.train_pred_epoch.sum():.4f}\n"
+                f"Epoch train     y clip:{self.train_y_epoch.shape}{self.train_y_epoch.sum()}\n"
             )
             if self.config["loss_type"] == "FrameClipLoss":
                 self.epoch_train_loss["train/epoch_loss"] = self.criterion(
@@ -370,7 +375,12 @@ class SEDTrainer(object):
                 * self.config["center_loss_alpha"]
             )
         # add to total eval loss
-        if self.config["model_type"] in ["Cnn14_DecisionLevelAtt", "ResNext50"]:
+        if self.config["model_type"] in [
+            "Cnn14_DecisionLevelAtt",
+            "ResNext50",
+            "TransformerEncoderDecoder",
+            "ConformerEncoderDecoder",
+        ]:
             self.dev_pred_frame_epoch = torch.cat(
                 [self.dev_pred_frame_epoch, y_["y_frame"]], dim=0
             )
