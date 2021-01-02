@@ -82,17 +82,23 @@ EOF
 - たぶん、ゴミラベルがまぎれている気がする(何度聞いても全く認識できない鳥の音声がある)
 ### submit待ちモデルたち
 - cnn/v007(aug)
-- res/v002
+- ~~res/v002~~
 - res/v003(aug)
-- cnn/v005
-- cnn/v005-red
+- ~~cnn/v005~~
+- ~~cnn/v005-red~~
 - cnn/v008(mel128hop1024,aug)
-- cnn/v009
-- cnn/v009-red
-- cnn/v010
-- cnn/v011
+- ~~cnn/v009~~
+- ~~cnn/v009-red~~
+- ~~cnn/v010~~
+- ~~cnn/v011~~
+- ~~cnn/v012~~
+- cnn/v012-sum
+- cnn/v013
+- cnn/v013-sum
 - tra/v000
 - con/v000
+- tra/v000-sum
+- con/v000-sum
 
 
 <details><summary>kaggle日記</summary><div>
@@ -254,4 +260,24 @@ EOF
     - 次回やること
         * v005,red,v009,red,v010提出
         * transformer関連のバグ取り
+- 1/1(金)
+    - 今日やったこと
+        * v005,red,v009,red,v010提出
+        * transformer関連のバグ取り
+    - 次回やること
+        * conformer関連バグとり
+        * v012提出(frame512確認)
+- 1/2(土)
+    - 今日やったこと
+        * conformer関連バグとり
+        * v012提出(frame512確認)
+    - 次回やること
+        * v012での25を見てpost-processを工夫
+        * その他モデルを提出
+- 1/3(日)
+    - 今日やったこと
+        * v012での25を見てpost-processを工夫
+        * その他モデルを提出
+    - 次回やること
+        * 
 </div></details>

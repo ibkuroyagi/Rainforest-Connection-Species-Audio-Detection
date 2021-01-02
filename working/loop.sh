@@ -2,7 +2,7 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v000
+No=v011
 model=Cnn14_DecisionLevelAtt
 # model=conformer
 type=wave
@@ -10,12 +10,12 @@ verbose=1
 # model=ResNext50
 # type=mel128hop1024
 
-stage=2
+stage=3
 stop_stage=100
-for model in conformer transformer; do
-    # for No in v013-sum v013; do
-    # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
-    # resume="exp/${type}/${model}/v012/checkpoint-4000/checkpoint-4000fold0.pkl exp/${type}/${model}/v012/checkpoint-4000/checkpoint-4000fold1.pkl exp/${type}/${model}/v012/checkpoint-4000/checkpoint-4000fold2.pkl exp/${type}/${model}/v012/checkpoint-1000/checkpoint-1000fold0.pkl exp/${type}/${model}/v012/checkpoint-1000/checkpoint-1000fold0.pkl"
+# for model in conformer transformer; do
+# for No in v013-sum v013; do
+for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
+    # resume="exp/${type}/${model}/v012-sum/checkpoint-4000/checkpoint-4000fold0.pkl exp/${type}/${model}/v012-sum/checkpoint-3000/checkpoint-3000fold1.pkl exp/${type}/${model}/v012-sum/checkpoint-1000/checkpoint-1000fold0.pkl exp/${type}/${model}/v012-sum/checkpoint-1000/checkpoint-1000fold0.pkl exp/${type}/${model}/v012-sum/checkpoint-1000/checkpoint-1000fold0.pkl"
     resume=""
     # for fold in {0..4}; do
     #     resume+="exp/${type}/${model}/${No}/checkpoint-3000/checkpoint-3000fold${fold}.pkl "
@@ -28,7 +28,7 @@ for model in conformer transformer; do
         --type "${type}" \
         --cal_type "0" \
         --resume "${resume}" \
-        --verbose "${verbose}"
-    # --checkpoint "${checkpoint}"
-    #     done
+        --verbose "${verbose}" \
+        --checkpoint "${checkpoint}"
 done
+# done
