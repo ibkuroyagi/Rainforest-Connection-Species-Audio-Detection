@@ -93,12 +93,17 @@ EOF
 - ~~cnn/v011~~
 - ~~cnn/v012~~
 - cnn/v012-sum
-- cnn/v013
-- cnn/v013-sum
+- ~~cnn/v013~~
+- ~~cnn/v013-sum~~
+- cnn/v002-clip065(check for sp0.9,1.1)
 - tra/v000
 - con/v000
 - tra/v000-sum
 - con/v000-sum
+- tra/v001(check for mixup)
+- con/v001(check for mixup)
+- tra/v002(check for n_class=24)
+- con/v002(check for n_class=24)
 
 
 <details><summary>kaggle日記</summary><div>
@@ -276,8 +281,9 @@ EOF
         * その他モデルを提出
 - 1/3(日)
     - 今日やったこと
-        * v012での25を見てpost-processを工夫
+        * v012での25を見てスコアが低くなってしまって原因を探る
         * その他モデルを提出
     - 次回やること
-        * 
+        * v012モデルで発話区間推定の活用を探る
+        * transformer,conformerにSpecAugを実装
 </div></details>

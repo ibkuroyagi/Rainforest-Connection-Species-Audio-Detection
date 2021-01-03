@@ -1,9 +1,9 @@
-# n_class25, ps0.9,1.1, No-mixup
+# n_class25, ps0.9,1.1, mixup, n_class=24
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
 seed: 1
-n_class: 25
+n_class: 24
 n_fold: 5
 ###########################################################
 #                    PREPROCESS SETTING                   #
@@ -21,7 +21,7 @@ fmax: 16000
 model_type: "ConformerEncoderDecoder"
 model_params:
   num_features: 128
-  num_classes: 25
+  num_classes: 24
   num_blocks: 4
   num_channels: 144
   num_heads: 4
@@ -36,6 +36,7 @@ model_params:
 ###########################################################
 # augmentation
 wave_mode: False
+mixup_alpha: 0.2
 # dataset
 train_dataset_mode: tp
 allow_cache: True # Whether to allow cache in dataset. If true, it requires cpu memory.
@@ -47,7 +48,7 @@ collater_mode: binary
 random: False
 # dataloader
 accum_grads: 16
-batch_size: 32 # Batch size.
+batch_size: 64 # Batch size.
 pin_memory: True # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
 # trainer

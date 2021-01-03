@@ -191,8 +191,8 @@ class SEDTrainer(object):
         )
         if self.config["loss_type"] == "FrameClipLoss":
             loss = self.criterion(
-                y_["y_frame"],
-                y_frame,
+                y_["y_frame"][:, :, : self.n_target],
+                y_frame[:, :, : self.n_target],
                 y_["y_clip"][:, : self.n_target],
                 y_clip[:, : self.n_target],
             )
@@ -359,14 +359,19 @@ class SEDTrainer(object):
                 axis=2,
             ).transpose(2, 1)
         y_frame = batch["y_frame"].to(self.device)
-        y_clip = batch["y_clip"][:, : self.n_target].to(self.device)
+        y_clip = batch["y_clip"].to(self.device)
         y_ = self.model(x)
-        if self.config["n_class"] != self.n_target:
-            y_["y_clip"] = y_["y_clip"][:, : self.n_target]
         if self.config["loss_type"] == "FrameClipLoss":
-            loss = self.criterion(y_["y_frame"], y_frame, y_["y_clip"], y_clip)
+            loss = self.criterion(
+                y_["y_frame"][:, :, : self.n_target],
+                y_frame[:, :, : self.n_target],
+                y_["y_clip"][:, : self.n_target],
+                y_clip[:, : self.n_target],
+            )
         elif self.config["loss_type"] == "BCEWithLogitsLoss":
-            loss = self.criterion(y_["y_clip"], y_clip)
+            loss = self.criterion(
+                y_["y_clip"][:, : self.n_target], y_clip[:, : self.n_target]
+            )
 
         if self.use_center_loss:
             center_loss_label = self._get_center_loss_label(y_clip[:, : self.n_target])
