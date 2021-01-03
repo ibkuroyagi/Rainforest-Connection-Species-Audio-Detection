@@ -2,7 +2,7 @@
 
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
-No=v011
+No=v001
 model=Cnn14_DecisionLevelAtt
 # model=conformer
 type=wave
@@ -10,11 +10,11 @@ verbose=1
 # model=ResNext50
 # type=mel128hop1024
 
-stage=3
+stage=2
 stop_stage=100
-# for model in conformer transformer; do
-# for No in v013-sum v013; do
-for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
+for model in conformer transformer; do
+    # for No in v013-sum v013; do
+    # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
     # resume="exp/${type}/${model}/v012-sum/checkpoint-4000/checkpoint-4000fold0.pkl exp/${type}/${model}/v012-sum/checkpoint-3000/checkpoint-3000fold1.pkl exp/${type}/${model}/v012-sum/checkpoint-1000/checkpoint-1000fold0.pkl exp/${type}/${model}/v012-sum/checkpoint-1000/checkpoint-1000fold0.pkl exp/${type}/${model}/v012-sum/checkpoint-1000/checkpoint-1000fold0.pkl"
     resume=""
     # for fold in {0..4}; do
@@ -28,7 +28,7 @@ for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 che
         --type "${type}" \
         --cal_type "0" \
         --resume "${resume}" \
-        --verbose "${verbose}" \
-        --checkpoint "${checkpoint}"
+        --verbose "${verbose}"
+    # --checkpoint "${checkpoint}"
 done
 # done

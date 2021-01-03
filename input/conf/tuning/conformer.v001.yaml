@@ -1,0 +1,85 @@
+# n_class25, ps0.9,1.1, No-mixup
+###########################################################
+#                      GLOBAL SETTING                     #
+###########################################################
+seed: 1
+n_class: 25
+n_fold: 5
+###########################################################
+#                    PREPROCESS SETTING                   #
+###########################################################
+sr: 48000
+fft_size: 2048
+hop_size: 512
+window: hann
+num_mels: 128
+fmin: 50
+fmax: 16000
+###########################################################
+#                     NETWORK SETTING                     #
+###########################################################
+model_type: "ConformerEncoderDecoder"
+model_params:
+  num_features: 128
+  num_classes: 25
+  num_blocks: 4
+  num_channels: 144
+  num_heads: 4
+  kernel_size: 31
+  num_latent_units: 64
+  dropout: 0.1
+  bias: true
+  use_bottleneck: true
+  use_reconstruct: false
+###########################################################
+#                    TRAINING SETTING                     #
+###########################################################
+# augmentation
+wave_mode: False
+# dataset
+train_dataset_mode: tp
+allow_cache: True # Whether to allow cache in dataset. If true, it requires cpu memory.
+is_normalize: False
+# collater_fc
+max_frames: 512
+l_target: 512
+collater_mode: binary
+random: False
+# dataloader
+accum_grads: 8
+batch_size: 64 # Batch size.
+pin_memory: True # Whether to pin memory in Pytorch DataLoader.
+num_workers: 2 # Number of workers in Pytorch DataLoader.
+# trainer
+use_center_loss: false
+###########################################################
+#                       LOSS SETTING                      #
+###########################################################
+loss_type: FrameClipLoss
+loss_params:
+  clip_ratio: 0.50
+  reduction: mean
+
+tsne_params:
+  n_components: 2
+  random_state: 0
+  perplexity: 30
+  n_iter: 1000
+###########################################################
+#              OPTIMIZER & SCHEDULER SETTING              #
+###########################################################
+optimizer_type: Noam
+optimizer_params:
+  model_size: 144
+  factor: 1.0
+  warmup: 4000
+###########################################################
+#                    INTERVAL SETTING                     #
+###########################################################
+train_max_steps: 4000 # Number of training steps.
+save_interval_steps: 1000 # Interval steps to save checkpoint.
+eval_interval_epochs: 5 # Interval epochs to evaluate the network.
+###########################################################
+#                     OTHER SETTING                       #
+###########################################################
+n_eval_split: 20
