@@ -7,6 +7,7 @@
 import logging
 
 import torch
+from torchlibrosa.augmentation import SpecAugmentation
 
 
 class ConformerEncoderDecoder(torch.nn.Module):
@@ -28,6 +29,8 @@ class ConformerEncoderDecoder(torch.nn.Module):
         bias=True,
         use_bottleneck=True,
         use_reconstruct=False,
+        is_spec_augmenter=False,
+        training=False,
     ):
         super().__init__()
         self.use_bottleneck = use_bottleneck
@@ -36,6 +39,14 @@ class ConformerEncoderDecoder(torch.nn.Module):
         self.concat_embedding = concat_embedding
         self.use_reconstruct = use_reconstruct
         self.num_classes = num_classes
+        self.training = training
+        if is_spec_augmenter:
+            self.spec_augmenter = SpecAugmentation(
+                time_drop_width=80,
+                time_stripes_num=2,
+                freq_drop_width=20,
+                freq_stripes_num=2,
+            )
 
         self.input_layer = torch.nn.Conv1d(num_features, num_channels, 1, bias=bias)
         encoder_blocks = []
@@ -104,6 +115,10 @@ class ConformerEncoderDecoder(torch.nn.Module):
         if self.use_embedding:
             id_ = x[:, :, -1].long()
             x = x[:, :, :-1]
+        if self.training and self.is_spec_augmenter:
+            x = x.unsqueeze(1)
+            x[:, :, 1:, :] = self.spec_augmenter(x[:, :, 1:, :])  # (B, 1, T', mels)
+            x = x.unsqueeze(1)  # (B, T', mels)
         enc = self.input_layer(x.transpose(1, 2))
         enc = self.encoder_block(enc)
         if self.use_bottleneck:

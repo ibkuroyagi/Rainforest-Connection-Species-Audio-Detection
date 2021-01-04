@@ -96,15 +96,20 @@ EOF
 - ~~cnn/v013~~
 - ~~cnn/v013-sum~~
 - cnn/v002-clip065(check for sp0.9,1.1)
+- cnn/v002-ckup065(check for spなし(モデルの変更が悪さをしたのか))
 - tra/v000
 - con/v000
-- tra/v000-sum
-- con/v000-sum
-- tra/v001(check for mixup)
-- con/v001(check for mixup)
+- tra/v000-sum -> sumの方がいい
+- con/v000-sum -> meanの方がいい
+- tra/v001(check for mixup) -> mixupは過学習対策にかなり効果があることを確認
+- con/v001(check for mixup) -> mixupは過学習対策にかなり効果があることを確認
 - tra/v002(check for n_class=24)
 - con/v002(check for n_class=24)
-
+### 今の課題は何?
+- v002の時代はCV,PLともに0.80のオーダーだったが、sp0.9,1,1に変更orモデルのクラスを25に変更にしたことでPLのスコアが下がった
+- 原因を探るために、
+    - v002-clip065(n_class=24, sp0.9,1.1)で実験
+    - v002-clip065(n_class=24, spなし)
 
 <details><summary>kaggle日記</summary><div>
 
@@ -286,4 +291,12 @@ EOF
     - 次回やること
         * v012モデルで発話区間推定の活用を探る
         * transformer,conformerにSpecAugを実装
+- 1/4(月s)
+    - 今日やったこと
+        * v012での25を見てスコアが低くなってしまって原因を探る
+        * transformer,conformerにSpecAugを実装
+        * v002-clip065で対象実験をしてspかモデルかを判断
+    - 次回やること
+        * v012モデルで発話区間推定の活用を探る
+        * 
 </div></details>

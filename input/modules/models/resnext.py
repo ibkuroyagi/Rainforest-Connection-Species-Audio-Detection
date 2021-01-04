@@ -4,10 +4,8 @@ import torchvision
 import torch.nn.functional as F
 from torchlibrosa.augmentation import SpecAugmentation
 from .cnn import AttBlock
-from .utils import Mixup
 from .utils import init_bn
 from .utils import init_layer
-from .utils import do_mixup
 
 
 class ResNext50(nn.Module):
@@ -17,7 +15,6 @@ class ResNext50(nn.Module):
         classes_num=25,
         training=False,
         is_spec_augmenter=False,
-        mixup_lambda=None,
     ):
 
         super(self.__class__, self).__init__()
@@ -39,9 +36,6 @@ class ResNext50(nn.Module):
                 freq_drop_width=20,
                 freq_stripes_num=2,
             )
-        self.mixup_lambda = mixup_lambda
-        if mixup_lambda is not None:
-            self.mixup = Mixup(mixup_alpha=mixup_lambda, device="cuda")
 
     def init_weight(self):
         init_bn(self.bn0)
@@ -51,15 +45,10 @@ class ResNext50(nn.Module):
         """Input: (batch_size, mels, T')"""
 
         x = input.unsqueeze(3)
-        x = self.bn0(x)
-        x = x.transpose(1, 3)
+        x = self.bn0(x)  # (B, mels, T', 1)
+        x = x.transpose(1, 3)  # (B, 1, T', mels)
         if self.training and self.is_spec_augmenter:
             x = self.spec_augmenter(x)
-
-        # Mixup on spectrogram
-        if self.training and self.mixup_lambda is not None:
-            mixup_lambda_list = self.mixup.get_lambda(batch_size=x.size(0))
-            x = do_mixup(x, mixup_lambda_list)
         x = self.conv0(x)
         x = self.resnext50.conv1(x)
         x = self.resnext50.bn1(x)

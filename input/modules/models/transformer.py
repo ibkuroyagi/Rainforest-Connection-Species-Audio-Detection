@@ -11,6 +11,7 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
+from torchlibrosa.augmentation import SpecAugmentation
 
 
 class RandomCutCollater(object):
@@ -107,6 +108,8 @@ class TransformerEncoderDecoder(nn.Module):
         max_position_encode_length: int = 512,
         dropout: float = 0.1,
         use_reconstruct: bool = False,
+        is_spec_augmenter=False,
+        training=False,
     ):
         super().__init__()
         self.use_embedding = embedding_dim > 0
@@ -116,6 +119,14 @@ class TransformerEncoderDecoder(nn.Module):
         self.use_position_encode = use_position_encode
         self.num_classes = num_classes
         self.use_reconstruct = use_reconstruct
+        self.training = training
+        if is_spec_augmenter:
+            self.spec_augmenter = SpecAugmentation(
+                time_drop_width=80,
+                time_stripes_num=2,
+                freq_drop_width=20,
+                freq_stripes_num=2,
+            )
 
         # Build encoder.
         if input_layer == "linear":
@@ -188,6 +199,10 @@ class TransformerEncoderDecoder(nn.Module):
         if self.use_embedding:
             id_ = x[:, :, -1].long()
             x = x[:, :, :-1]
+        if self.training and self.is_spec_augmenter:
+            x = x.unsqueeze(1)
+            x[:, :, 1:, :] = self.spec_augmenter(x[:, :, 1:, :])  # (B, 1, T', mels)
+            x = x.unsqueeze(1)  # (B, T', mels)
         enc = self.input_layer(x)
         if self.use_position_encode:
             enc = self.position_encode(enc)

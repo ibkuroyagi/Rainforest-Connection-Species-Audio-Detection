@@ -285,7 +285,7 @@ def main():
                 else:
                     conv_params.append(param)
         else:
-            model = model_class(**config["model_params"]).to(device)
+            model = model_class(training=True, **config["model_params"]).to(device)
         loss_class = getattr(
             losses,
             # keep compatibility

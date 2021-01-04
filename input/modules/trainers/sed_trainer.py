@@ -244,10 +244,11 @@ class SEDTrainer(object):
             "ConformerEncoderDecoder",
         ]:
             self.train_pred_frame_epoch = torch.cat(
-                [self.train_pred_frame_epoch, y_["y_frame"]], dim=0
+                [self.train_pred_frame_epoch, y_["y_frame"][:, :, : self.n_target]],
+                dim=0,
             )
             self.train_y_frame_epoch = torch.cat(
-                [self.train_y_frame_epoch, y_frame], dim=0
+                [self.train_y_frame_epoch, y_frame[:, :, : self.n_target]], dim=0
             )
             self.train_pred_epoch = np.concatenate(
                 [
@@ -387,9 +388,11 @@ class SEDTrainer(object):
             "ConformerEncoderDecoder",
         ]:
             self.dev_pred_frame_epoch = torch.cat(
-                [self.dev_pred_frame_epoch, y_["y_frame"]], dim=0
+                [self.dev_pred_frame_epoch, y_["y_frame"][:, :, : self.n_target]], dim=0
             )
-            self.dev_y_frame_epoch = torch.cat([self.dev_y_frame_epoch, y_frame], dim=0)
+            self.dev_y_frame_epoch = torch.cat(
+                [self.dev_y_frame_epoch, y_frame[:, :, : self.n_target]], dim=0
+            )
             self.dev_pred_epoch = np.concatenate(
                 [
                     self.dev_pred_epoch,

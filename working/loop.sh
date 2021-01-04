@@ -22,12 +22,13 @@ resume=""
 # done
 sbatch -J "${type}/${No}" ./run.sh \
     --conf "conf/tuning/${model}.${No}.yaml" \
-    --tag "${type}/${model}/${No}" \
+    --tag "${type}/${model}/${No}-noaug" \
     --stage "${stage}" \
     --stop_stage "${stop_stage}" \
     --type "${type}" \
     --cal_type "0" \
     --resume "${resume}" \
+    --speed_facters "" \
     --verbose "${verbose}"
 # --checkpoint "${checkpoint}"
 # done
