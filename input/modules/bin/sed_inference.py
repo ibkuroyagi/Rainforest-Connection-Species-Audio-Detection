@@ -118,7 +118,7 @@ def main():
     tp_list = train_tp["recording_id"].unique()
     columns = ["recording_id"] + [f"s{i}" for i in range(config["n_target"])]
     ground_truth = pd.DataFrame(
-        np.zeros((len(tp_list), config["n_class"])), columns=columns
+        np.zeros((len(tp_list), config["n_target"] + 1)), columns=columns
     )
     ground_truth["recording_id"] = tp_list
     for i, recording_id in enumerate(train_tp["recording_id"].values):

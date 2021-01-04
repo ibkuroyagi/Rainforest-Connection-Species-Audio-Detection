@@ -87,9 +87,7 @@ class FeatTrainCollater(object):
             if self.random:
                 clip_batch[-1][24] = (~clip_batch[-1][:24].any()).astype(np.float32)
             if self.use_dializer:
-                frame_mask_batch.append(
-                    embedded_frame[:, :, :24].any().astype(np.float32)[:, :, np.newaxis]
-                )
+                frame_mask_batch.append(embedded_frame[:, :24].any().astype(np.float32))
             # logging.debug(
             #     f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
             # )
@@ -113,7 +111,9 @@ class FeatTrainCollater(object):
         batch["y_clip"] = torch.tensor(clip_batch, dtype=torch.float)
         if self.use_dializer:
             # (B, l_target, 1)
-            batch["frame_mask"] = torch.tensor(frame_mask_batch, dtype=torch.float)
+            batch["frame_mask"] = torch.tensor(
+                frame_mask_batch, dtype=torch.float
+            ).unsqueeze(2)
         return batch
 
 
