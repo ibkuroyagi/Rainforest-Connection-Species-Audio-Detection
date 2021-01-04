@@ -1,4 +1,4 @@
-# n_class25, ps0.9,1.1, mixup, n_class=24
+# n_class25, ps0.9,1.1, mixup, n_class=24, frame_mask
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -54,7 +54,7 @@ pin_memory: True # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
 # trainer
 use_center_loss: false
-use_dializer: false
+use_dializer: true
 ###########################################################
 #                       LOSS SETTING                      #
 ###########################################################
@@ -63,6 +63,10 @@ loss_params:
   clip_ratio: 0.50
   reduction: mean
 
+dializer_loss_alpha: 0.5
+dializer_loss_type: BCEWithLogitsLoss
+dializer_loss_params:
+  reduction: mean
 ###########################################################
 #              OPTIMIZER & SCHEDULER SETTING              #
 ###########################################################

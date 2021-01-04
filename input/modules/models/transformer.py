@@ -108,6 +108,7 @@ class TransformerEncoderDecoder(nn.Module):
         max_position_encode_length: int = 512,
         dropout: float = 0.1,
         use_reconstruct: bool = False,
+        use_dializer=False,
         is_spec_augmenter=False,
         training=False,
     ):
@@ -119,7 +120,9 @@ class TransformerEncoderDecoder(nn.Module):
         self.use_position_encode = use_position_encode
         self.num_classes = num_classes
         self.use_reconstruct = use_reconstruct
+        self.use_dializer = use_dializer
         self.training = training
+        self.is_spec_augmenter = is_spec_augmenter
         if is_spec_augmenter:
             self.spec_augmenter = SpecAugmentation(
                 time_drop_width=80,
@@ -184,6 +187,8 @@ class TransformerEncoderDecoder(nn.Module):
         self.frame_layer = nn.Linear(num_hidden_units, num_classes)
         if use_reconstruct:
             self.reconstruct_layer = nn.Linear(num_hidden_units, num_features)
+        if use_dializer:
+            self.dialize_layer = nn.Linear(num_hidden_units, 1)
 
     def forward(self, x, mask=None):
         """Calcualte forward propagation.
@@ -194,6 +199,7 @@ class TransformerEncoderDecoder(nn.Module):
         Returns:
             Tensor: y_clip (batch_size, num_class).
             Tensor: y_frame (batch_size, sequence_length, num_class).
+            Tensor: frame_mask (batch_size, sequence_length, 1).
             Tensor: reconstructed inputs (batch_size, sequence_length, num_features).
         """
         if self.use_embedding:
@@ -202,7 +208,7 @@ class TransformerEncoderDecoder(nn.Module):
         if self.training and self.is_spec_augmenter:
             x = x.unsqueeze(1)
             x[:, :, 1:, :] = self.spec_augmenter(x[:, :, 1:, :])  # (B, 1, T', mels)
-            x = x.unsqueeze(1)  # (B, T', mels)
+            x = x.squeeze(1)  # (B, T', mels)
         enc = self.input_layer(x)
         if self.use_position_encode:
             enc = self.position_encode(enc)
@@ -223,7 +229,14 @@ class TransformerEncoderDecoder(nn.Module):
             src_key_padding_mask=~mask if mask is not None else None,
         )
         out = self.frame_layer(dec.transpose(0, 1))
-        y_ = {"y_clip": out[:, 0, :], "y_frame": out[:, 1:, :]}
+        y_ = {}
+        if self.use_dializer:
+            frame_mask = self.dialize_layer(dec.transpose(0, 1))[:, 1:, :]
+            out[:, 1:, :] = out[:, 1:, :] * torch.sigmoid(frame_mask)
+            out[:, 0, :] = out[:, 0, :] + out[:, 1:, :].max(dim=1)[0]
+            y_["frame_mask"] = frame_mask
+        y_["y_clip"] = out[:, 0, :]
+        y_["y_frame"] = out[:, 1:, :]
         if self.use_reconstruct:
             y_["reconstructed"] = self.reconstruct_layer(dec.transpose(0, 1))
         return y_

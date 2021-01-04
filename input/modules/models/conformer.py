@@ -29,6 +29,7 @@ class ConformerEncoderDecoder(torch.nn.Module):
         bias=True,
         use_bottleneck=True,
         use_reconstruct=False,
+        use_dializer=False,
         is_spec_augmenter=False,
         training=False,
     ):
@@ -38,8 +39,10 @@ class ConformerEncoderDecoder(torch.nn.Module):
         num_features = num_features - 1 if self.use_embedding else num_features
         self.concat_embedding = concat_embedding
         self.use_reconstruct = use_reconstruct
+        self.use_dializer = use_dializer
         self.num_classes = num_classes
         self.training = training
+        self.is_spec_augmenter = is_spec_augmenter
         if is_spec_augmenter:
             self.spec_augmenter = SpecAugmentation(
                 time_drop_width=80,
@@ -102,6 +105,8 @@ class ConformerEncoderDecoder(torch.nn.Module):
             self.reconstruct_layer = torch.nn.Conv1d(
                 num_channels, num_features, 1, bias=bias
             )
+        if use_dializer:
+            self.dialize_layer = torch.nn.Conv1d(num_channels, 1, 1, bias=bias)
 
     def forward(self, x):
         """Calcualte forward propagation.
@@ -110,6 +115,7 @@ class ConformerEncoderDecoder(torch.nn.Module):
         Returns:
             Tensor: y_clip (batch_size, num_class).
             Tensor: y_frame (batch_size, sequence_length, num_class).
+            Tensor: frame_mask (batch_size, sequence_length, 1).
             Tensor: reconstructed inputs (batch_size, sequence_length, num_features).
         """
         if self.use_embedding:
@@ -118,7 +124,7 @@ class ConformerEncoderDecoder(torch.nn.Module):
         if self.training and self.is_spec_augmenter:
             x = x.unsqueeze(1)
             x[:, :, 1:, :] = self.spec_augmenter(x[:, :, 1:, :])  # (B, 1, T', mels)
-            x = x.unsqueeze(1)  # (B, T', mels)
+            x = x.squeeze(1)  # (B, T', mels)
         enc = self.input_layer(x.transpose(1, 2))
         enc = self.encoder_block(enc)
         if self.use_bottleneck:
@@ -134,7 +140,14 @@ class ConformerEncoderDecoder(torch.nn.Module):
         else:
             dec = enc
         out = self.frame_layer(dec).transpose(1, 2)
-        y_ = {"y_clip": out[:, 0, :], "y_frame": out[:, 1:, :]}
+        y_ = {}
+        if self.use_dializer:
+            frame_mask = self.dialize_layer(dec).transpose(1, 2)[:, 1:, :]
+            out[:, 1:, :] = out[:, 1:, :] * torch.sigmoid(frame_mask)
+            out[:, 0, :] = out[:, 0, :] + out[:, 1:, :].max(dim=1)[0]
+            y_["frame_mask"] = frame_mask
+        y_["y_clip"] = out[:, 0, :]
+        y_["y_frame"] = out[:, 1:, :]
         if self.use_reconstruct:
             y_["reconstructed"] = self.reconstruct_layer(dec).transpose(1, 2)
 

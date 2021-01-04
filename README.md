@@ -58,6 +58,8 @@ EOF
 - TTAでinferenceの汎か性能改善
 - transformerで2048くらいのイメージをインプットにして動かす
     * 動かなければ1dconvで半分にダウンサンプリングする
+- frameの予測は別のlayerで行い、そこはそこでBCEで最適化する.
+    - その出力に対してsigmoidかけたものをマスク的扱いにしてクラスのframeの予測に反映させる
 
 ## 決定事項
 - 初手のCVの切り方はiterative-stratificationを用いる
@@ -76,8 +78,10 @@ EOF
     - つまり、周波数方向の情報が重要な要素となっているので、その活用が効くと推測
 - embeddingから直接clipwise_outputを求めると精度劇的に悪化する -> 時間成分を考慮しない(外部環境音のみで識別する)モデルになるため推論時に超悪さする
 - lrは1.0e-4のオーダーが良く効く
-- CenterLossの正則化を強くしすぎると過学習を起こしてしまい、悪化する -> noiseクラスを許す(random=True)とinferenceとの差がなくなるので効果的
+- CenterLossの正則化を強くしすぎると過学習を起こしてしまい、悪化する -> noiseクラスを許す(random=True)と~~inferenceとの差がなくなるので効果的~~
+    - ↑ノイズを学習させるとinferenceで劇的な悪化を起こす
 - 学習がゆっくり進むようにmax_frame2048, batch_size128がほどよい
+    - max_frameは小さいほうがCVとPLでスコアが高い->局所的な動きを学習しやすいからだと推測
 - PANNs事前学習の重みはかなり効果的
 - たぶん、ゴミラベルがまぎれている気がする(何度聞いても全く認識できない鳥の音声がある)
 ### submit待ちモデルたち
@@ -105,6 +109,7 @@ EOF
 - con/v001(check for mixup) -> mixupは過学習対策にかなり効果があることを確認
 - tra/v002(check for n_class=24)
 - con/v002(check for n_class=24)
+- con/v003(check for n_class24, frame_mask)
 ### 今の課題は何?
 - v002の時代はCV,PLともに0.80のオーダーだったが、sp0.9,1,1に変更orモデルのクラスを25に変更にしたことでPLのスコアが下がった
 - 原因を探るために、

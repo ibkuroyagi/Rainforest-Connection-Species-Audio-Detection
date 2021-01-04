@@ -19,7 +19,9 @@ from utils import down_sampler  # noqa: E402
 class FeatTrainCollater(object):
     """Customized collater for Pytorch DataLoader for feat form data in training."""
 
-    def __init__(self, max_frames=512, l_target=16, mode="sum", random=False):
+    def __init__(
+        self, max_frames=512, l_target=16, mode="sum", random=False, use_dializer=False
+    ):
         """Initialize customized collater for PyTorch DataLoader.
 
         Args:
@@ -27,11 +29,13 @@ class FeatTrainCollater(object):
             l_target (int): Length of embedding time frame.
             mode (str): Mode of down sampler. ["sum" or "binary"]
             random (bool): Use simple random frame which may contain only noise(as same sa inference condition).
+            use_dializer (bool): Use frame mask for dialization.
         """
         self.max_frames = max_frames
         self.mode = mode
         self.l_target = l_target
         self.random = random
+        self.use_dializer = use_dializer
 
     def __call__(self, batch):
         """Convert into batch tensors.
@@ -50,6 +54,8 @@ class FeatTrainCollater(object):
         logmel_batch = []
         frame_batch = []
         clip_batch = []
+        if self.use_dializer:
+            frame_mask_batch = []
         # select start point
         # cnt = 0
         for logmel, matrix_tp, time_list in zip(logmels, matrix_tp_list, all_time_list):
@@ -80,6 +86,10 @@ class FeatTrainCollater(object):
             )
             if self.random:
                 clip_batch[-1][24] = (~clip_batch[-1][:24].any()).astype(np.float32)
+            if self.use_dializer:
+                frame_mask_batch.append(
+                    embedded_frame[:, :, :24].any().astype(np.float32)[:, :, np.newaxis]
+                )
             # logging.debug(
             #     f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
             # )
@@ -94,17 +104,17 @@ class FeatTrainCollater(object):
             #     plt.close()
             # cnt += 1
         # convert each batch to tensor, assume that each item in batch has the same length
+        batch = {}
         # (B, mel, max_frames)
-        logmel_batch = torch.tensor(logmel_batch, dtype=torch.float).transpose(2, 1)
+        batch["X"] = torch.tensor(logmel_batch, dtype=torch.float).transpose(2, 1)
         # (B, l_target, n_class)
-        frame_batch = torch.tensor(frame_batch, dtype=torch.float)
+        batch["y_frame"] = torch.tensor(frame_batch, dtype=torch.float)
         # (B, n_class)
-        clip_batch = torch.tensor(clip_batch, dtype=torch.float)
-        return {
-            "X": logmel_batch,
-            "y_frame": frame_batch,
-            "y_clip": clip_batch,
-        }
+        batch["y_clip"] = torch.tensor(clip_batch, dtype=torch.float)
+        if self.use_dializer:
+            # (B, l_target, 1)
+            batch["frame_mask"] = torch.tensor(frame_mask_batch, dtype=torch.float)
+        return batch
 
 
 class FeatEvalCollater(object):

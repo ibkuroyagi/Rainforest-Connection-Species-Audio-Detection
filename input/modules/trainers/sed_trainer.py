@@ -12,6 +12,7 @@ from tensorboardX import SummaryWriter
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
+import losses  # noqa: E402
 import optimizers  # noqa: E402
 from losses import CenterLoss  # noqa: E402
 from utils import lwlrap  # noqa: E402
@@ -34,6 +35,7 @@ class SEDTrainer(object):
         device=torch.device("cpu"),
         train=False,
         use_center_loss=False,
+        use_dializer=False,
         save_name="",
     ):
         """Initialize trainer.
@@ -66,6 +68,7 @@ class SEDTrainer(object):
         if train:
             self.writer = SummaryWriter(config["outdir"])
         self.use_center_loss = use_center_loss
+        self.use_dializer = use_dializer
         self.save_name = save_name
         if use_center_loss:
             self.center_loss = CenterLoss(device=device, **config["center_loss_params"])
@@ -90,6 +93,24 @@ class SEDTrainer(object):
                 (0, config["center_loss_params"]["feat_dim"])
             )
             self.tsne = TSNE(**config["tsne_params"])
+        if use_dializer:
+            loss_class = getattr(
+                losses,
+                config.get("dializer_loss_type", "BCEWithLogitsLoss"),
+            )
+            self.dializer_loss = loss_class(**config["dializer_loss_params"])
+            self.train_pred_frame_mask_epoch = torch.empty(
+                (0, config["l_target"], 1)
+            ).to(device)
+            self.train_y_frame_mask_epoch = torch.empty((0, config["l_target"], 1)).to(
+                device
+            )
+            self.dev_pred_frame_mask_epoch = torch.empty((0, config["l_target"], 1)).to(
+                device
+            )
+            self.dev_y_frame_mask_epoch = torch.empty((0, config["l_target"], 1)).to(
+                device
+            )
 
         self.finish_train = False
         self.best_score = 0
@@ -211,6 +232,12 @@ class SEDTrainer(object):
                 f"loss:{loss.item()}, center:{center_loss.item()}, clip:{loss.item()-center_loss.item()}"
             )
             self.optimizer_centloss.zero_grad()
+        if self.use_dializer:
+            frame_mask = batch["frame_mask"].to(self.device)
+            loss += (
+                self.dializer_loss(y_["frame_mask"], frame_mask)
+                * self.config["dializer_loss_alpha"]
+            )
         if not torch.isnan(loss):
             loss = loss / self.config["accum_grads"]
             loss.backward()
@@ -268,6 +295,15 @@ class SEDTrainer(object):
             self.train_embedding_epoch = np.concatenate(
                 [self.train_embedding_epoch, y_["embedding"].detach().cpu().numpy()]
             )
+        if self.use_dializer:
+            self.train_pred_frame_epoch = torch.cat(
+                [self.train_pred_frame_epoch, y_["frame_mask"]],
+                dim=0,
+            )
+            self.train_y_frame_mask_epoch = torch.cat(
+                [self.train_y_frame_mask_epoch, frame_mask],
+                dim=0,
+            )
 
     def _train_epoch(self):
         """Train model one epoch."""
@@ -290,17 +326,41 @@ class SEDTrainer(object):
                 f"Epoch train     y clip:{self.train_y_epoch.shape}{self.train_y_epoch.sum()}\n"
             )
             if self.config["loss_type"] == "FrameClipLoss":
-                self.epoch_train_loss["train/epoch_loss"] = self.criterion(
+                self.epoch_train_loss["train/epoch_main_loss"] = self.criterion(
                     self.train_pred_frame_epoch,
                     self.train_y_frame_epoch,
                     torch.tensor(self.train_pred_epoch).to(self.device),
                     torch.tensor(self.train_y_epoch).to(self.device),
                 ).item()
             elif self.config["loss_type"] == "BCEWithLogitsLoss":
-                self.epoch_train_loss["train/epoch_loss"] = self.criterion(
+                self.epoch_train_loss["train/epoch_main_loss"] = self.criterion(
                     torch.tensor(self.train_pred_epoch).to(self.device),
                     torch.tensor(self.train_y_epoch).to(self.device),
                 ).item()
+            self.epoch_train_loss["train/epoch_loss"] = self.epoch_train_loss[
+                "train/epoch_main_loss"
+            ]
+            if self.use_center_loss:
+                self.epoch_train_loss["train/epoch_center_loss"] = (
+                    self.center_loss(
+                        torch.tensor(self.train_embedding_epoch).to(self.device),
+                        torch.tensor(self.train_label_epoch).to(self.device),
+                    ).item()
+                    * self.config["center_loss_alpha"]
+                )
+                self.epoch_train_loss["train/epoch_loss"] += self.epoch_train_loss[
+                    "train/epoch_center_loss"
+                ]
+            if self.use_dializer:
+                self.epoch_train_loss["train/epoch_dializer_loss"] = (
+                    self.dializer_loss(
+                        self.train_pred_frame_mask_epoch, self.train_y_frame_mask_epoch
+                    ).item()
+                    * self.config["dializer_loss_alpha"]
+                )
+                self.epoch_train_loss["train/epoch_loss"] += self.epoch_train_loss[
+                    "train/epoch_dializer_loss"
+                ]
             self.epoch_train_loss["train/epoch_lwlrap"] = lwlrap(
                 self.train_y_epoch[:, :24], self.train_pred_epoch[:, :24]
             )
@@ -318,7 +378,7 @@ class SEDTrainer(object):
                 f"(Epoch: {self.epochs}) {key} = {self.epoch_train_loss[key]:.6f}."
             )
         self._write_to_tensorboard(self.epoch_train_loss)
-        if self.use_center_loss and (self.epochs % 5 == 0):
+        if self.use_center_loss and (self.epochs % 10 == 0):
             self.plot_embedding(
                 self.train_embedding_epoch, self.train_label_epoch, name="train"
             )
@@ -340,6 +400,13 @@ class SEDTrainer(object):
                 (0, self.config["center_loss_params"]["feat_dim"])
             )
             self.train_label_epoch = np.empty(0)
+        if self.use_dializer:
+            self.train_pred_frame_mask_epoch = torch.empty(
+                (0, self.config["l_target"], 1)
+            ).to(self.device)
+            self.train_y_frame_mask_epoch = torch.empty(
+                (0, self.config["l_target"], 1)
+            ).to(self.device)
 
     @torch.no_grad()
     def _eval_step(self, batch):
@@ -373,12 +440,17 @@ class SEDTrainer(object):
             loss = self.criterion(
                 y_["y_clip"][:, : self.n_target], y_clip[:, : self.n_target]
             )
-
         if self.use_center_loss:
             center_loss_label = self._get_center_loss_label(y_clip[:, : self.n_target])
             loss += (
                 self.center_loss(y_["embedding"], center_loss_label)
                 * self.config["center_loss_alpha"]
+            )
+        if self.use_dializer:
+            frame_mask = batch["frame_mask"].to(self.device)
+            loss += (
+                self.dializer_loss(y_["frame_mask"], frame_mask)
+                * self.config["dializer_loss_alpha"]
             )
         # add to total eval loss
         if self.config["model_type"] in [
@@ -411,6 +483,15 @@ class SEDTrainer(object):
             self.dev_embedding_epoch = np.concatenate(
                 [self.dev_embedding_epoch, y_["embedding"].detach().cpu().numpy()]
             )
+        if self.use_dializer:
+            self.dev_pred_frame_epoch = torch.cat(
+                [self.dev_pred_frame_epoch, y_["frame_mask"]],
+                dim=0,
+            )
+            self.dev_y_frame_mask_epoch = torch.cat(
+                [self.dev_y_frame_mask_epoch, frame_mask],
+                dim=0,
+            )
 
     def _eval_epoch(self):
         """Evaluate model one epoch."""
@@ -432,17 +513,41 @@ class SEDTrainer(object):
                 f"Epoch dev    y_clip:{self.dev_y_epoch.sum()}\n"
             )
             if self.config["loss_type"] == "FrameClipLoss":
-                self.epoch_eval_loss["dev/epoch_loss"] = self.criterion(
+                self.epoch_eval_loss["dev/epoch_main_loss"] = self.criterion(
                     self.dev_pred_frame_epoch,
                     self.dev_y_frame_epoch,
                     torch.tensor(self.dev_pred_epoch).to(self.device),
                     torch.tensor(self.dev_y_epoch).to(self.device),
                 ).item()
             elif self.config["loss_type"] == "BCEWithLogitsLoss":
-                self.epoch_train_loss["train/epoch_loss"] = self.criterion(
-                    torch.tensor(self.train_pred_epoch).to(self.device),
-                    torch.tensor(self.train_y_epoch).to(self.device),
+                self.epoch_train_loss["dev/epoch_main_loss"] = self.criterion(
+                    torch.tensor(self.dev_pred_epoch).to(self.device),
+                    torch.tensor(self.dev_y_epoch).to(self.device),
                 ).item()
+            self.epoch_train_loss["dev/epoch_loss"] = self.epoch_train_loss[
+                "dev/epoch_main_loss"
+            ]
+            if self.use_center_loss:
+                self.epoch_dev_loss["dev/epoch_center_loss"] = (
+                    self.center_loss(
+                        torch.tensor(self.dev_embedding_epoch).to(self.device),
+                        torch.tensor(self.dev_label_epoch).to(self.device),
+                    ).item()
+                    * self.config["center_loss_alpha"]
+                )
+                self.epoch_dev_loss["dev/epoch_loss"] += self.epoch_dev_loss[
+                    "dev/epoch_center_loss"
+                ]
+            if self.use_dializer:
+                self.epoch_dev_loss["dev/epoch_dializer_loss"] = (
+                    self.dializer_loss(
+                        self.dev_pred_frame_mask_epoch, self.dev_y_frame_mask_epoch
+                    ).item()
+                    * self.config["dializer_loss_alpha"]
+                )
+                self.epoch_dev_loss["dev/epoch_loss"] += self.epoch_dev_loss[
+                    "dev/epoch_dializer_loss"
+                ]
             self.epoch_eval_loss["dev/epoch_lwlrap"] = lwlrap(
                 self.dev_y_epoch[:, :24], self.dev_pred_epoch[:, :24]
             )
@@ -505,6 +610,13 @@ class SEDTrainer(object):
                 (0, self.config["center_loss_params"]["feat_dim"])
             )
             self.dev_label_epoch = np.empty(0)
+        if self.use_dializer:
+            self.dev_pred_frame_mask_epoch = torch.empty(
+                (0, self.config["l_target"], 1)
+            ).to(self.device)
+            self.dev_y_frame_mask_epoch = torch.empty(
+                (0, self.config["l_target"], 1)
+            ).to(self.device)
         # restore mode
         self.model.train()
 

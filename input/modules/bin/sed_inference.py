@@ -240,6 +240,7 @@ def main():
             device=device,
             train=False,
             use_center_loss=config.get("use_center_loss", False),
+            use_dializer=config.get("use_dializer", False),
             save_name=f"fold{fold}",
         )
         trainer.load_checkpoint(args.checkpoints[fold])
@@ -303,6 +304,7 @@ def main():
             device=device,
             train=False,
             use_center_loss=config.get("use_center_loss", False),
+            use_dializer=config.get("use_dializer", False),
             save_name=f"fold{fold}",
         )
         trainer.load_checkpoint(args.checkpoints[fold])

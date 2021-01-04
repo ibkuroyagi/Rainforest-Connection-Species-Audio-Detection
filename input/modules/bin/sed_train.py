@@ -216,6 +216,7 @@ def main():
                 l_target=config.get("l_target", 16),
                 mode=config.get("collater_mode", "sum"),
                 random=config.get("random", False),
+                use_dializer=config.get("use_dializer", False),
             )
         data_loader = {
             "train": DataLoader(
@@ -338,6 +339,7 @@ def main():
             device=device,
             train=fold == 0,
             use_center_loss=config.get("use_center_loss", False),
+            use_dializer=config.get("use_dializer", False),
             save_name=f"fold{fold}",
         )
         # resume from checkpoint
