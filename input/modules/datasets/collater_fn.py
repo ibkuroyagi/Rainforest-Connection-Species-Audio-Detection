@@ -6,10 +6,12 @@
 """Collater function modules."""
 import sys
 import random
-import logging
+
+# import logging
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
+
+# import matplotlib.pyplot as plt
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
@@ -87,7 +89,9 @@ class FeatTrainCollater(object):
             if self.random:
                 clip_batch[-1][24] = (~clip_batch[-1][:24].any()).astype(np.float32)
             if self.use_dializer:
-                frame_mask_batch.append(embedded_frame[:, :24].any().astype(np.float32))
+                frame_mask_batch.append(
+                    embedded_frame[:, :24].any(axis=1).astype(np.float32)
+                )
             # logging.debug(
             #     f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
             # )

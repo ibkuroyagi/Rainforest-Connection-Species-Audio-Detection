@@ -31,6 +31,7 @@ model_params:
   bias: true
   use_bottleneck: true
   use_reconstruct: false
+  use_dializer: false
   is_spec_augmenter: false
 ###########################################################
 #                    TRAINING SETTING                     #
