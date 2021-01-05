@@ -113,8 +113,9 @@ EOF
 ### 今の課題は何?
 - v002の時代はCV,PLともに0.80のオーダーだったが、sp0.9,1,1に変更orモデルのクラスを25に変更にしたことでPLのスコアが下がった
 - 原因を探るために、
-    - v002-clip065(n_class=24, sp0.9,1.1)で実験
+    - v002-clip065(n_class=24, sp0.9,1.1)で実験->過学習対策にgood
     - v002-clip065(n_class=24, spなし)
+- n_class24の方がPLが明らかに改善したので、n_class24で実験を進める
 
 <details><summary>kaggle日記</summary><div>
 

@@ -142,10 +142,12 @@ class ConformerEncoderDecoder(torch.nn.Module):
         out = self.frame_layer(dec).transpose(1, 2)
         y_ = {}
         if self.use_dializer:
-            frame_mask = self.dialize_layer(dec).transpose(1, 2)[:, 1:, :]
-            out[:, 1:, :] = out[:, 1:, :] * torch.sigmoid(frame_mask)
-            out[:, 0, :] = out[:, 0, :] + out[:, 1:, :].max(dim=1)[0]
-            y_["frame_mask"] = frame_mask
+            # frame_mask = self.dialize_layer(dec).transpose(1, 2)[:, 1:, :]
+            # out[:, 1:, :] = out[:, 1:, :] * torch.sigmoid(frame_mask)
+            # out[:, 0, :] = out[:, 0, :] + out[:, 1:, :].max(dim=1)[0]
+            frame_mask = self.dialize_layer(dec).transpose(1, 2)
+            out = out * torch.sigmoid(frame_mask)
+            y_["frame_mask"] = frame_mask[:, 1:]
         y_["y_clip"] = out[:, 0, :]
         y_["y_frame"] = out[:, 1:, :]
         if self.use_reconstruct:
