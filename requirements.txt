@@ -20,3 +20,4 @@ torchlibrosa
 torchvision
 ipywidgets
 colorednoise
+efficientnet_pytorch

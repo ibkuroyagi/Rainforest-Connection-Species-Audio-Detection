@@ -30,6 +30,7 @@ class ConformerEncoderDecoder(torch.nn.Module):
         use_bottleneck=True,
         use_reconstruct=False,
         use_dializer=False,
+        use_mask=False,
         is_spec_augmenter=False,
         training=False,
     ):
@@ -40,6 +41,7 @@ class ConformerEncoderDecoder(torch.nn.Module):
         self.concat_embedding = concat_embedding
         self.use_reconstruct = use_reconstruct
         self.use_dializer = use_dializer
+        self.use_mask = use_mask
         self.num_classes = num_classes
         self.training = training
         self.is_spec_augmenter = is_spec_augmenter
@@ -146,7 +148,8 @@ class ConformerEncoderDecoder(torch.nn.Module):
             # out[:, 1:, :] = out[:, 1:, :] * torch.sigmoid(frame_mask)
             # out[:, 0, :] = out[:, 0, :] + out[:, 1:, :].max(dim=1)[0]
             frame_mask = self.dialize_layer(dec).transpose(1, 2)
-            out = out * torch.sigmoid(frame_mask)
+            if self.use_mask:
+                out = out * torch.sigmoid(frame_mask)
             y_["frame_mask"] = frame_mask[:, 1:]
         y_["y_clip"] = out[:, 0, :]
         y_["y_frame"] = out[:, 1:, :]

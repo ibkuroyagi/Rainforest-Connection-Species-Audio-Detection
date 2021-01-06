@@ -32,7 +32,7 @@ model_params:
   use_bottleneck: true
   use_reconstruct: false
   use_dializer: true
-  use_mask: true
+  use_mask: false
   is_spec_augmenter: false
 ###########################################################
 #                    TRAINING SETTING                     #

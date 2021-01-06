@@ -4,7 +4,7 @@
 # Created by Ibuki Kuroyanagi
 # No=v002-clip065
 # model=Cnn14_DecisionLevelAtt
-model=transformer
+model=conformer
 type=wave
 verbose=1
 # model=ResNext50
@@ -12,11 +12,11 @@ verbose=1
 
 stage=2
 stop_stage=100
-No=v002
+No=v004
 # for model in conformer transformer; do
 # for No in v002 v003; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
-# resume="exp/${type}/${model}/v002-clip065/checkpoint-2000/checkpoint-2000fold0.pkl exp/${type}/${model}/v012-sum/checkpoint-3000/checkpoint-3000fold1.pkl exp/${type}/${model}/v012-sum/checkpoint-1000/checkpoint-1000fold0.pkl exp/${type}/${model}/v012-sum/checkpoint-1000/checkpoint-1000fold0.pkl exp/${type}/${model}/v012-sum/checkpoint-1000/checkpoint-1000fold0.pkl"
+# resume="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl no_model no_model  no_model no_model"
 resume=""
 # for fold in {0..4}; do
 #     resume+="exp/${type}/${model}/${No}/checkpoint-2000/checkpoint-2000fold${fold}.pkl "

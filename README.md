@@ -60,6 +60,15 @@ EOF
     * 動かなければ1dconvで半分にダウンサンプリングする
 - frameの予測は別のlayerで行い、そこはそこでBCEで最適化する.
     - その出力に対してsigmoidかけたものをマスク的扱いにしてクラスのframeの予測に反映させる
+- shunmuraさんの手法と大きく差はないが、スコアに乖離がある。すべて同じ条件にして足並みをそろえる。
+    - [https://www.kaggle.com/c/rfcx-species-audio-detection/discussion/208830](https://www.kaggle.com/c/rfcx-species-audio-detection/discussion/208830)
+    - PANNs SED architecture
+    - BCE Loss
+    - Random 10sec clip
+    - Using only tp file
+    - MixUp
+    - The base model is EfficientNet
+    - 
 
 ## 決定事項
 - 初手のCVの切り方はiterative-stratificationを用いる
