@@ -551,9 +551,16 @@ class SEDTrainer(object):
                 self.epoch_eval_loss["dev/epoch_loss"] += self.epoch_eval_loss[
                     "dev/epoch_dializer_loss"
                 ]
-            self.epoch_eval_loss["dev/epoch_lwlrap"] = lwlrap(
+            self.epoch_eval_loss["dev/epoch_lwlrap_clip"] = lwlrap(
                 self.dev_y_epoch[:, :24], self.dev_pred_epoch[:, :24]
             )
+            self.epoch_eval_loss["dev/epoch_lwlrap_frame"] = lwlrap(
+                self.dev_y_epoch[:, :24], self.dev_pred_frame_epoch.max(axis=1)[:, :24]
+            )
+            self.epoch_eval_loss["dev/epoch_lwlrap"] = (
+                self.epoch_eval_loss["dev/epoch_lwlrap_clip"]
+                + self.epoch_eval_loss["dev/epoch_lwlrap_frame"]
+            ) / 2.0
         except ValueError:
             logging.warning("Raise ValueError: May be contain NaN in y_pred.")
             pass
@@ -680,7 +687,13 @@ class SEDTrainer(object):
         )
         if mode == "valid":
             y_clip_true = y_clip_true.numpy()
-            score = lwlrap(y_clip_true[:, :24], y_clip.max(axis=1)[:, :24])
+            clip_score = lwlrap(y_clip_true[:, :24], y_clip.max(axis=1)[:, :24])
+            self.eval_metric["eval_metric/lwlrap_clip"] = clip_score
+            frame_score = lwlrap(
+                y_clip_true[:, :24], y_frame.max(axis=1).max(axis=1)[:, :24]
+            )
+            self.eval_metric["eval_metric/lwlrap_clip"] = frame_score
+            score = (clip_score + frame_score) / 2.0
             self.eval_metric["eval_metric/lwlrap"] = score
             return {
                 "y_clip": y_clip,
