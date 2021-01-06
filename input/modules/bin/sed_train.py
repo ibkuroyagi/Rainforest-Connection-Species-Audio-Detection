@@ -298,7 +298,7 @@ def main():
             # keep compatibility
             config.get("optimizer_type", "Adam"),
         )
-        if config.get("optimizer_type", "Adam") == "Adam":
+        if config["model_type"] in ["Cnn14_DecisionLevelAtt", "ResNext50"]:
             optimizer = optimizer_class(
                 [
                     {

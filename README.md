@@ -306,12 +306,26 @@ EOF
     - 次回やること
         * v012モデルで発話区間推定の活用を探る
         * transformer,conformerにSpecAugを実装
-- 1/4(月s)
+- 1/4(月)
     - 今日やったこと
         * v012での25を見てスコアが低くなってしまって原因を探る
         * transformer,conformerにSpecAugを実装
         * v002-clip065で対象実験をしてspかモデルかを判断
     - 次回やること
         * v012モデルで発話区間推定の活用を探る
-        * 
+- 1/5(火)
+    - 今日やったこと
+        * dialization-loss,clip-loss,frame-loss,center-lossのそれぞれを監視できるように修正
+    - 次回やること
+        * shinmura0さんのディスカッションの手法で実験
+- 1/6(水)
+    - 今日やったこと
+        * efficientnet-b0, mobilenetv2を追加
+        * shinmura0さんのディスカッションの手法で実験
+            * v000 -> efficientnet-b0 attention (BCE weal-label, wave, 10sec)
+            * v001 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec)
+            * v002 -> efficientnet-b0 attention (BCE weal-label, wave, 10sec)
+            * v003 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec)
+    - 次回やること
+        * v012モデルで発話区間推定の活用を探る
 </div></details>

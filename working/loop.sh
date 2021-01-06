@@ -4,17 +4,17 @@
 # Created by Ibuki Kuroyanagi
 # No=v002-clip065
 # model=Cnn14_DecisionLevelAtt
-model=conformer
-type=wave
+# model=conformer
+model=EfficientNet
+# type=wave
 verbose=1
-# model=ResNext50
-# type=mel128hop1024
+type=mel128hop1024
 
 stage=2
 stop_stage=100
-No=v004
+No=v003
 # for model in conformer transformer; do
-# for No in v002 v003; do
+# for No in v000 v001; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
 # resume="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl no_model no_model  no_model no_model"
 resume=""
@@ -29,7 +29,7 @@ sbatch -J "${type}/${No}" ./run.sh \
     --type "${type}" \
     --cal_type "0" \
     --resume "${resume}" \
-    --speed_facters "0.9 1.1" \
+    --speed_facters "" \
     --verbose "${verbose}"
 # --checkpoint "${checkpoint}"
 # done

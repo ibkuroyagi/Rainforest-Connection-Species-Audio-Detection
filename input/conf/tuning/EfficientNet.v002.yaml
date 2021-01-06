@@ -4,7 +4,7 @@
 # Random 10sec clip
 # Using only tp file
 # MixUp
-# The base model is EfficientNet_b
+# The base model is EfficientNet_simple
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -24,7 +24,7 @@ fmax: 16000
 ###########################################################
 #                     NETWORK SETTING                     #
 ###########################################################
-model_type: "EfficientNet_b" # pretrained model's type.
+model_type: "EfficientNet_simple" # pretrained model's type.
 model_params:
   classes_num: 24
   efficient_net_name: efficientnet-b0

@@ -269,6 +269,10 @@ class SEDTrainer(object):
             "ResNext50",
             "TransformerEncoderDecoder",
             "ConformerEncoderDecoder",
+            "EfficientNet_simple",
+            "EfficientNet_b",
+            "MobileNetV2",
+            "MobileNetV2_simple",
         ]:
             self.train_pred_frame_epoch = torch.cat(
                 [self.train_pred_frame_epoch, y_["y_frame"][:, :, : self.n_target]],
@@ -364,9 +368,17 @@ class SEDTrainer(object):
                 self.epoch_train_loss["train/epoch_loss"] += self.epoch_train_loss[
                     "train/epoch_dializer_loss"
                 ]
-            self.epoch_train_loss["train/epoch_lwlrap"] = lwlrap(
+            self.epoch_train_loss["train/epoch_lwlrap_clip"] = lwlrap(
                 self.train_y_epoch[:, :24], self.train_pred_epoch[:, :24]
             )
+            self.epoch_train_loss["train/epoch_lwlrap_frame"] = lwlrap(
+                self.train_y_epoch[:, :24],
+                self.train_pred_frame_epoch.detach().cpu().numpy().max(axis=1)[:, :24],
+            )
+            self.epoch_train_loss["train/epoch_lwlrap"] = (
+                self.epoch_train_loss["train/epoch_lwlrap_clip"]
+                + self.epoch_train_loss["train/epoch_lwlrap_frame"]
+            ) / 2.0
             self.epoch_train_loss["train/lr"] = self.optimizer.param_groups[0]["lr"]
         except ValueError:
             logging.warning("Raise ValueError: May be contain NaN in y_pred.")
@@ -461,6 +473,10 @@ class SEDTrainer(object):
             "ResNext50",
             "TransformerEncoderDecoder",
             "ConformerEncoderDecoder",
+            "EfficientNet_simple",
+            "EfficientNet_b",
+            "MobileNetV2",
+            "MobileNetV2_simple",
         ]:
             self.dev_pred_frame_epoch = torch.cat(
                 [self.dev_pred_frame_epoch, y_["y_frame"][:, :, : self.n_target]], dim=0
@@ -555,7 +571,8 @@ class SEDTrainer(object):
                 self.dev_y_epoch[:, :24], self.dev_pred_epoch[:, :24]
             )
             self.epoch_eval_loss["dev/epoch_lwlrap_frame"] = lwlrap(
-                self.dev_y_epoch[:, :24], self.dev_pred_frame_epoch.max(axis=1)[:, :24]
+                self.dev_y_epoch[:, :24],
+                self.dev_pred_frame_epoch.detach().cpu().numpy().max(axis=1)[:, :24],
             )
             self.epoch_eval_loss["dev/epoch_lwlrap"] = (
                 self.epoch_eval_loss["dev/epoch_lwlrap_clip"]
