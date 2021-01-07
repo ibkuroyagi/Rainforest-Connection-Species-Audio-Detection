@@ -108,7 +108,7 @@ class FeatTrainCollater(object):
             )
             logging.debug(f"{clip_batch[-1]}")
             if clip_batch[-1].sum() != 1:
-                idx = torch.where(clip_batch[-1])
+                idx = np.where(clip_batch[-1])
                 plt.figure()
                 plt.imshow(matrix_tp.T, aspect="auto")
                 plt.colorbar()
