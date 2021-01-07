@@ -105,11 +105,11 @@ EOF
 - ~~cnn/v010~~
 - ~~cnn/v011~~
 - ~~cnn/v012~~
-- cnn/v012-sum
+- ~~cnn/v012-sum~~
 - ~~cnn/v013~~
 - ~~cnn/v013-sum~~
-- cnn/v002-clip065(check for sp0.9,1.1)
-- cnn/v002-ckup065(check for spなし(モデルの変更が悪さをしたのか))
+- ~~cnn/v002-clip065(check for sp0.9,1.1)~~
+- ~~cnn/v002-ckup065(check for spなし(モデルの変更が悪さをしたのか))~~
 - tra/v000
 - con/v000
 - tra/v000-sum -> sumの方がいい
@@ -119,10 +119,15 @@ EOF
 - tra/v002(check for n_class=24)
 - con/v002(check for n_class=24)
 - con/v003(check for n_class24, frame_mask)
-- eff/v000 -> efficientnet-b0 attention (BCE weal-label, wave, 10sec)
-- eff/v001 -> efficientnet-b0 attention (BCE weal-label, mel128hop1024, 10sec)
-- eff/v002 -> efficientnet-b0 simple (BCE weal-label, wave, 10sec)
-- eff/v003 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec)
+- ~~eff/v000 -> efficientnet-b0 attention (BCE weal-label, wave, 10sec)~~
+- ~~eff/v001 -> efficientnet-b0 attention (BCE weal-label, mel128hop1024, 10sec)~~~
+- ~~eff/v002 -> efficientnet-b0 simple (BCE weal-label, wave, 10sec)~~
+- ~~eff/v003 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec)~~
+- ~~v004 -> efficientnet-b0 simple (BCE weal-label, wave, 10sec, lr=1.0e-3) compair by v000~~
+- ~~v005 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec, lr=1.0e-3) compair by v000~~
+- ~~v006(lr:0.005),v007(lr:0.01)efficientnet-b0 simple,wave -> 最適なlrにあたりをつけるために調査~~
+- v008 wave,sp0.9,1.1 collater_fcの分割方法を変更-> 1フレームあたりに含まれる正解音の幅をよりランダムに近くする(1/4)
+- v009 mel128hop1024,sp0.9,1.1 collater_fcの分割方法を変更-> 1フレームあたりに含まれる正解音の幅をよりランダムに近くする(1/4)
 ### 今の課題は何?
 - v002の時代はCV,PLともに0.80のオーダーだったが、sp0.9,1,1に変更orモデルのクラスを25に変更にしたことでPLのスコアが下がった
 - 原因を探るために、
@@ -331,6 +336,7 @@ EOF
             * v002 -> efficientnet-b0 simple (BCE weal-label, wave, 10sec)
             * v003 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec)
             * v004 -> efficientnet-b0 simple (BCE weal-label, wave, 10sec, lr=1.0e-3) compair by v000
+            * v005 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec, lr=1.0e-3) compair by v000
     - 次回やること
         * v012モデルで発話区間推定の活用を探る
 </div></details>

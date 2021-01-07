@@ -238,8 +238,6 @@ def down_sampler(source, l_target=16, mode="sum"):
             new_source[i] = source[t_start:t_end].sum(axis=0) / l_effect
         elif mode == "binary":
             new_source[i] = (source[t_start:t_end] > 0).any(axis=0).astype(np.int64)
-            if n_class == 25:
-                new_source[i, 24] = int(~(new_source[i, :24] > 0).any(axis=0))
     return new_source
 
 

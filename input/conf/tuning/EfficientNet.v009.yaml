@@ -1,4 +1,4 @@
-# intrepolate shumamura0-san stgategy by efficent net b0.(without mixup)
+# intrepolate shumamura0-san stgategy by efficent net b0.(without mixup), fix-collater_fc
 # PANNs SED architecture
 # BCE Loss
 # Random 10sec clip

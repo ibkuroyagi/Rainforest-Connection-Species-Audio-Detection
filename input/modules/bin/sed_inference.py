@@ -11,6 +11,7 @@ import os
 import sys
 
 import matplotlib
+from matplotlib.pyplot import axis
 import numpy as np
 import pandas as pd
 import torch
@@ -46,9 +47,10 @@ def main():
         help="root data directory.",
     )
     parser.add_argument(
-        "--dumpdir",
-        default=None,
+        "--dumpdirs",
+        default=[],
         type=str,
+        nargs="+",
         help="root dump directory.",
     )
     parser.add_argument(
@@ -106,6 +108,7 @@ def main():
     # load and save config
     with open(args.config) as f:
         config = yaml.load(f, Loader=yaml.Loader)
+    config["n_TTA"] = len(args.dumpdirs)
     config.update(vars(args))
     config["n_target"] = 24
     config["trained_model_fold"] = []
@@ -179,12 +182,7 @@ def main():
             config.get("model_type", "Cnn14_DecisionLevelAtt"),
         )
         model = model_class(training=False, **config["model_params"]).to(device)
-        if config.get("model_type" "Cnn14_DecisionLevelAtt") in [
-            "ResNet38Double",
-            "ResNet38Att",
-        ]:
-            pass
-        elif config["model_type"] in ["ResNext50", "Cnn14_DecisionLevelAtt"]:
+        if config["model_type"] in ["ResNext50", "Cnn14_DecisionLevelAtt"]:
             from models import AttBlock
 
             model.bn0 = nn.BatchNorm2d(config["num_mels"])
@@ -216,118 +214,161 @@ def main():
                 n_split=config.get("n_eval_split", 20),
                 is_label=True,
             )
-        valid_dataset = RainForestDataset(
-            files=[
-                os.path.join(args.dumpdir, "train", f"{recording_id}.h5")
-                for recording_id in tp_list[valid_idx]
-            ],
-            keys=eval_keys,
-            mode="test",
-            is_normalize=config.get("is_normalize", False),
-            allow_cache=False,
-            seed=None,
-        )
-        logging.info(f"The number of validation files = {len(valid_dataset)}.")
-
-        data_loader = {
-            "eval": DataLoader(
-                valid_dataset,
-                batch_size=config["batch_size"],
-                shuffle=False,
-                collate_fn=eval_collater,
-                num_workers=config["num_workers"],
-                pin_memory=config["pin_memory"],
-            ),
-        }
-        # define valid trainer
-        trainer = SEDTrainer(
-            steps=0,
-            epochs=0,
-            data_loader=data_loader,
-            model=model.to(device),
-            criterion={},
-            optimizer={},
-            scheduler={},
-            config=config,
-            device=device,
-            train=False,
-            use_center_loss=config.get("use_center_loss", False),
-            use_dializer=config.get("use_dializer", False),
-            save_name=f"fold{fold}",
-        )
-        trainer.load_checkpoint(args.checkpoints[fold])
-        logging.info(
-            f"Successfully resumed from {args.checkpoints[fold]}.(Epochs:{trainer.epochs}, Steps:{trainer.steps})"
-        )
-        # inference validation data
-        oof_dict = trainer.inference(mode="valid")
-        oof_clip[valid_idx] = oof_dict["y_clip"][:, :, : config["n_target"]]
-        oof_frame[valid_idx] = oof_dict["y_frame"]
-        scores.append(oof_dict["score"])
-        logging.info(f"Fold:{fold}, lwlrap:{oof_dict['score']:.6f}")
-
-        # initialize test data
-        test_dataset = RainForestDataset(
-            root_dirs=[os.path.join(args.dumpdir, "test")],
-            keys=["feats"],
-            mode="test",
-            is_normalize=config.get("is_normalize", False),
-            allow_cache=False,
-            seed=None,
-        )
-        logging.info(f"The number of test files = {len(test_dataset)}.")
-        if config["model_params"].get("require_prep", False):
-            # from datasets import WaveEvalCollater
-
-            # eval_collater = WaveEvalCollater(
-            #     sf=config["sampling_rate"],
-            #     sec=config.get("sec", 10),
-            #     n_split=config.get("n_eval_split", 3),
-            # )
-            pass
-        else:
-            from datasets import FeatEvalCollater
-
-            eval_collater = FeatEvalCollater(
-                max_frames=config.get("max_frames", 512),
-                n_split=config.get("n_eval_split", 20),
-                is_label=False,
+        tta_oof_clip = np.zeros(
+            (
+                config["n_TTA"],
+                len(valid_idx),
+                config["n_eval_split"],
+                config["n_target"],
             )
-        data_loader = {
-            "eval": DataLoader(
-                test_dataset,
-                batch_size=config["batch_size"],
-                shuffle=False,
-                collate_fn=eval_collater,
-                num_workers=config["num_workers"],
-                pin_memory=config["pin_memory"],
-            ),
-        }
-        # define valid trainer
-        trainer = SEDTrainer(
-            steps=0,
-            epochs=0,
-            data_loader=data_loader,
-            model=model.to(device),
-            criterion={},
-            optimizer={},
-            scheduler={},
-            config=config,
-            device=device,
-            train=False,
-            use_center_loss=config.get("use_center_loss", False),
-            use_dializer=config.get("use_dializer", False),
-            save_name=f"fold{fold}",
         )
-        trainer.load_checkpoint(args.checkpoints[fold])
-        logging.info(
-            f"Successfully resumed from {args.checkpoints[fold]}.(Epochs:{trainer.epochs}, Steps:{trainer.steps})"
+        tta_oof_frame = np.zeros(
+            (
+                config["n_TTA"],
+                len(valid_idx),
+                config["n_eval_split"],
+                config["l_target"],
+                config["n_class"],
+            )
         )
-        # inference test data
-        pred_dict = trainer.inference(mode="test")
-        pred_clip[fold] = pred_dict["y_clip"][:, :, : config["n_target"]]
-        pred_frame[fold] = pred_dict["y_frame"]
-        logging.info(f"Fold:{fold}, Successfully inference test data.")
+        tta_scores = np.zeros(config["n_TTA"])
+        # Initialize each fold prediction.
+        tta_pred_clip = np.zeros(
+            (
+                config["n_TTA"],
+                len(sub),
+                config["n_eval_split"],
+                config["n_target"],
+            )
+        )
+        tta_pred_frame = np.zeros(
+            (
+                config["n_TTA"],
+                len(sub),
+                config["n_eval_split"],
+                config["l_target"],
+                config["n_class"],
+            )
+        )
+        for i, dumpdir in enumerate(args.dumpdirs):
+            valid_dataset = RainForestDataset(
+                files=[
+                    os.path.join(dumpdir, "train", f"{recording_id}.h5")
+                    for recording_id in tp_list[valid_idx]
+                ],
+                keys=eval_keys,
+                mode="test",
+                is_normalize=config.get("is_normalize", False),
+                allow_cache=False,
+                seed=None,
+            )
+            logging.info(f"The number of validation files = {len(valid_dataset)}.")
+
+            data_loader = {
+                "eval": DataLoader(
+                    valid_dataset,
+                    batch_size=config["batch_size"],
+                    shuffle=False,
+                    collate_fn=eval_collater,
+                    num_workers=config["num_workers"],
+                    pin_memory=config["pin_memory"],
+                ),
+            }
+            # define valid trainer
+            trainer = SEDTrainer(
+                steps=0,
+                epochs=0,
+                data_loader=data_loader,
+                model=model.to(device),
+                criterion={},
+                optimizer={},
+                scheduler={},
+                config=config,
+                device=device,
+                train=False,
+                use_center_loss=config.get("use_center_loss", False),
+                use_dializer=config.get("use_dializer", False),
+                save_name=f"fold{fold}",
+            )
+            trainer.load_checkpoint(args.checkpoints[fold])
+            logging.info(
+                f"Successfully resumed from {args.checkpoints[fold]}.(Epochs:{trainer.epochs}, Steps:{trainer.steps})"
+            )
+            # inference validation data
+            oof_dict = trainer.inference(mode="valid")
+            tta_oof_clip[i] = oof_dict["y_clip"][:, :, : config["n_target"]]
+            tta_oof_frame[i] = oof_dict["y_frame"]
+            tta_scores[i] = oof_dict["score"]
+            logging.info(f"Fold:{fold},TTA:{i} lwlrap:{tta_scores[i]:.6f}")
+            # initialize test data
+            test_dataset = RainForestDataset(
+                root_dirs=[os.path.join(dumpdir, "test")],
+                keys=["feats"],
+                mode="test",
+                is_normalize=config.get("is_normalize", False),
+                allow_cache=False,
+                seed=None,
+            )
+            logging.info(f"The number of test files = {len(test_dataset)}.")
+            if config["model_params"].get("require_prep", False):
+                # from datasets import WaveEvalCollater
+
+                # eval_collater = WaveEvalCollater(
+                #     sf=config["sampling_rate"],
+                #     sec=config.get("sec", 10),
+                #     n_split=config.get("n_eval_split", 3),
+                # )
+                pass
+            else:
+                from datasets import FeatEvalCollater
+
+                eval_collater = FeatEvalCollater(
+                    max_frames=config.get("max_frames", 512),
+                    n_split=config.get("n_eval_split", 20),
+                    is_label=False,
+                )
+            data_loader = {
+                "eval": DataLoader(
+                    test_dataset,
+                    batch_size=config["batch_size"],
+                    shuffle=False,
+                    collate_fn=eval_collater,
+                    num_workers=config["num_workers"],
+                    pin_memory=config["pin_memory"],
+                ),
+            }
+            # define valid trainer
+            trainer = SEDTrainer(
+                steps=0,
+                epochs=0,
+                data_loader=data_loader,
+                model=model.to(device),
+                criterion={},
+                optimizer={},
+                scheduler={},
+                config=config,
+                device=device,
+                train=False,
+                use_center_loss=config.get("use_center_loss", False),
+                use_dializer=config.get("use_dializer", False),
+                save_name=f"fold{fold}",
+            )
+            trainer.load_checkpoint(args.checkpoints[fold])
+            logging.info(
+                f"Successfully resumed from {args.checkpoints[fold]}.(Epochs:{trainer.epochs}, Steps:{trainer.steps})"
+            )
+            # inference test data
+            pred_dict = trainer.inference(mode="test")
+            tta_pred_clip[i] = pred_dict["y_clip"][:, :, : config["n_target"]]
+            tta_pred_frame[i] = pred_dict["y_frame"]
+
+            logging.info(f"Fold:{fold},TTA:{i} Successfully inference test data.")
+        oof_clip[valid_idx] = tta_oof_clip.mean(axis=0)
+        oof_frame[valid_idx] = tta_oof_frame.mean(axis=0)
+        scores.append(tta_scores.mean())
+        logging.info(f"Fold:{fold}, lwlrap:{scores[-1]:.6f}")
+        pred_clip[fold] = tta_pred_clip.mean(axis=0)
+        pred_frame[fold] = tta_pred_frame.mean(axis=0)
 
     # save inference results
     write_hdf5(

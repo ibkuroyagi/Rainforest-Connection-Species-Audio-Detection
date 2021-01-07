@@ -7,11 +7,11 @@
 import sys
 import random
 
-# import logging
+import logging
 import numpy as np
 import torch
 
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 sys.path.append("../../")
 sys.path.append("../input/modules")
@@ -22,7 +22,13 @@ class FeatTrainCollater(object):
     """Customized collater for Pytorch DataLoader for feat form data in training."""
 
     def __init__(
-        self, max_frames=512, l_target=16, mode="sum", random=False, use_dializer=False
+        self,
+        max_frames=512,
+        l_target=16,
+        mode="sum",
+        random=False,
+        use_dializer=False,
+        split=8,
     ):
         """Initialize customized collater for PyTorch DataLoader.
 
@@ -32,12 +38,14 @@ class FeatTrainCollater(object):
             mode (str): Mode of down sampler. ["sum" or "binary"]
             random (bool): Use simple random frame which may contain only noise(as same sa inference condition).
             use_dializer (bool): Use frame mask for dialization.
+            split (int): Ratio of contain ground truth sound.
         """
         self.max_frames = max_frames
         self.mode = mode
         self.l_target = l_target
         self.random = random
         self.use_dializer = use_dializer
+        self.split = split
 
     def __call__(self, batch):
         """Convert into batch tensors.
@@ -59,7 +67,7 @@ class FeatTrainCollater(object):
         if self.use_dializer:
             frame_mask_batch = []
         # select start point
-        # cnt = 0
+        cnt = 0
         for logmel, matrix_tp, time_list in zip(logmels, matrix_tp_list, all_time_list):
             l_spec = len(logmel)
             if self.random:
@@ -70,10 +78,13 @@ class FeatTrainCollater(object):
                 time_start = int(l_spec * time_list[idx][0] / 60)
                 time_end = int(l_spec * time_list[idx][1] / 60)
                 center = np.round((time_start + time_end) / 2)
-                beginning = center - self.max_frames / 2
+                quarter = ((time_end - time_start) // self.split) * (
+                    self.split // 2 - 1
+                )
+                beginning = center - self.max_frames - quarter
                 if beginning < 0:
                     beginning = 0
-                beginning = random.randrange(beginning, center)
+                beginning = random.randrange(beginning, center + quarter)
             ending = beginning + self.max_frames
             if ending > l_spec:
                 ending = l_spec
@@ -92,19 +103,22 @@ class FeatTrainCollater(object):
                 frame_mask_batch.append(
                     embedded_frame[:, :24].any(axis=1).astype(np.float32)
                 )
-            # logging.debug(
-            #     f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
-            # )
-            # logging.debug(f"{clip_batch[-1]}")
-            # if clip_batch[-1].sum() == 1:
-            #     plt.figure()
-            #     plt.imshow(matrix_tp.T, aspect="auto")
-            #     plt.colorbar()
-            #     plt.title(f"{time_start},{time_end}: {l_spec}: {beginning},{ending}")
-            #     plt.tight_layout()
-            #     plt.savefig(f"tmp/cnt{cnt}.png")
-            #     plt.close()
-            # cnt += 1
+            logging.debug(
+                f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
+            )
+            logging.debug(f"{clip_batch[-1]}")
+            if clip_batch[-1].sum() != 1:
+                idx = torch.where(clip_batch[-1])
+                plt.figure()
+                plt.imshow(matrix_tp.T, aspect="auto")
+                plt.colorbar()
+                plt.title(
+                    f"{idx}{time_start},{time_end}: {l_spec}: {beginning},{ending}"
+                )
+                plt.tight_layout()
+                plt.savefig(f"tmp/cnt{cnt}.png")
+                plt.close()
+            cnt += 1
         # convert each batch to tensor, assume that each item in batch has the same length
         batch = {}
         # (B, mel, max_frames)

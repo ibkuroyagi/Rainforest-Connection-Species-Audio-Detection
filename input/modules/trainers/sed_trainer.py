@@ -652,8 +652,7 @@ class SEDTrainer(object):
         # evaluate
         keys_list = [f"X{i}" for i in range(self.n_eval_split)]
         y_clip = [
-            torch.empty((0, self.n_target)).to(self.device)
-            for _ in range(self.n_eval_split)
+            torch.empty((0, 24)).to(self.device) for _ in range(self.n_eval_split)
         ]
         y_frame = [
             torch.empty((0, self.config["l_target"], self.config["n_class"])).to(
@@ -661,13 +660,13 @@ class SEDTrainer(object):
             )
             for _ in range(self.n_eval_split)
         ]
-        y_clip_true = torch.empty((0, self.n_target))
+        y_clip_true = torch.empty((0, 24))
         self.model.eval()
         with torch.no_grad():
             for batch in tqdm(self.data_loader["eval"]):
                 if mode == "valid":
                     y_clip_true = torch.cat(
-                        [y_clip_true, batch["y_clip"][:, : self.n_target]], dim=0
+                        [y_clip_true, batch["y_clip"][:, :24]], dim=0
                     )
                 x_batchs = [batch[key].to(self.device) for key in keys_list]
                 for i in range(self.n_eval_split):
@@ -688,7 +687,7 @@ class SEDTrainer(object):
                         ).transpose(2, 1)
                     y_batch_ = self.model(x_batchs[i])
                     y_clip[i] = torch.cat(
-                        [y_clip[i], y_batch_["y_clip"][:, : self.n_target]], dim=0
+                        [y_clip[i], y_batch_["y_clip"][:, :24]], dim=0
                     )
                     y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
         # (B, n_eval_split, n_target)

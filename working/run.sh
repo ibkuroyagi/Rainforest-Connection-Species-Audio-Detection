@@ -111,12 +111,18 @@ if [ "${stage}" -le 3 ] && [ "${stop_stage}" -ge 3 ]; then
             checkpoints+="${outdir}/${checkpoint}fold${fold}.pkl "
         done
     fi
+    dumpdirs="${dumpdir}/${type} "
+    if [ -n "${speed_facters}" ]; then
+        for facter in ${speed_facters}; do
+            dumpdirs+="${dumpdir}/${type}_sp${facter} "
+        done
+    fi
     log "Inference start. See the progress via ${outdir}/sed_inference.log"
     # shellcheck disable=SC2086
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_inference.log" \
         python ../input/modules/bin/sed_inference.py \
         --datadir "${datadir}" \
-        --dumpdir "${dumpdir}/${type}" \
+        --dumpdirs ${dumpdirs} \
         --outdir "${outdir}" \
         --config "${conf}" \
         --checkpoints ${checkpoints} \

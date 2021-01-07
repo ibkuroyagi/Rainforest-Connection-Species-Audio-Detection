@@ -1,10 +1,10 @@
-# intrepolate shumamura0-san stgategy by efficent net b0.(without mixup)
+# intrepolate shumamura0 stgategy by efficent net b0.(without mixup), update lr=0.001, fix collater_fc
 # PANNs SED architecture
 # BCE Loss
 # Random 10sec clip
 # Using only tp file
 # MixUp
-# The base model is EfficientNet
+# The base model is EfficientNet_simple
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -15,8 +15,8 @@ n_fold: 5
 #                    PREPROCESS SETTING                   #
 ###########################################################
 sr: 48000
-fft_size: 4096
-hop_size: 1024
+fft_size: 2048
+hop_size: 512
 window: hann
 num_mels: 128
 fmin: 50
@@ -41,13 +41,13 @@ train_dataset_mode: tp
 allow_cache: True # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: False
 # collater_fc
-max_frames: 512
-l_target: 16
+max_frames: 1024
+l_target: 32
 collater_mode: binary
 random: False
 # dataloader
-accum_grads: 1
-batch_size: 64 # Batch size.
+accum_grads: 2
+batch_size: 32 # Batch size.
 pin_memory: False # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
 # trainer
@@ -78,4 +78,4 @@ eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
 #                     OTHER SETTING                       #
 ###########################################################
-n_eval_split: 6
+n_eval_split: 12

@@ -138,7 +138,7 @@ class RainForestDataset(Dataset):
                 matrix_tp: (ndrray) Matrix of ground truth.
                 time_list: (ndrray) (n_recoding_id, t_max, t_min).
         """
-        if self.allow_cache and len(self.caches[idx]) != 0:
+        if self.allow_cache and (len(self.caches[idx]) != 0):
             return self.caches[idx]
         hdf5_file = h5py.File(self.use_file_list[idx], "r")
         items = {}
