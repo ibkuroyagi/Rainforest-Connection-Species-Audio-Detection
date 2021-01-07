@@ -339,4 +339,17 @@ EOF
             * v005 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec, lr=1.0e-3) compair by v000
     - 次回やること
         * v012モデルで発話区間推定の活用を探る
+- 1/7(木)
+    - 今日やったこと
+        * v000 -> efficientnet-b0 attention (BCE weal-label, wave, 10sec)
+        * v001 -> efficientnet-b0 attention (BCE weal-label, mel128hop1024, 10sec)
+        * v002 -> efficientnet-b0 simple (BCE weal-label, wave, 10sec)
+        * v003 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec)
+        * v004 -> efficientnet-b0 simple (BCE weal-label, wave, 10sec, lr=1.0e-3) compair by v000
+        * v005 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec, lr=1.0e-3) compair by v000
+        - 上記すべて回収したが、結果は悪い。->lrに原因があると考えv008,v007で実験(間違っていた)->best lr: 1e-3
+        - collater_fcに問題があると考え、データの分割条件をより難しくなるように修正
+    - 次回やること
+        - v008,v009の結果を回収し考察
+        - inferenceのTTAを実装完了する 
 </div></details>
