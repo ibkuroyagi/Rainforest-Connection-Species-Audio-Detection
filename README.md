@@ -119,6 +119,10 @@ EOF
 - tra/v002(check for n_class=24)
 - con/v002(check for n_class=24)
 - con/v003(check for n_class24, frame_mask)
+- eff/v000 -> efficientnet-b0 attention (BCE weal-label, wave, 10sec)
+- eff/v001 -> efficientnet-b0 attention (BCE weal-label, mel128hop1024, 10sec)
+- eff/v002 -> efficientnet-b0 simple (BCE weal-label, wave, 10sec)
+- eff/v003 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec)
 ### 今の課題は何?
 - v002の時代はCV,PLともに0.80のオーダーだったが、sp0.9,1,1に変更orモデルのクラスを25に変更にしたことでPLのスコアが下がった
 - 原因を探るために、
@@ -323,9 +327,10 @@ EOF
         * efficientnet-b0, mobilenetv2を追加
         * shinmura0さんのディスカッションの手法で実験
             * v000 -> efficientnet-b0 attention (BCE weal-label, wave, 10sec)
-            * v001 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec)
-            * v002 -> efficientnet-b0 attention (BCE weal-label, wave, 10sec)
+            * v001 -> efficientnet-b0 attention (BCE weal-label, mel128hop1024, 10sec)
+            * v002 -> efficientnet-b0 simple (BCE weal-label, wave, 10sec)
             * v003 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec)
+            * v004 -> efficientnet-b0 simple (BCE weal-label, wave, 10sec, lr=1.0e-3) compair by v000
     - 次回やること
         * v012モデルで発話区間推定の活用を探る
 </div></details>

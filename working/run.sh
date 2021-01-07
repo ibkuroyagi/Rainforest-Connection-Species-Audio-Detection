@@ -31,6 +31,7 @@ cache_path="../input/pretrained/Cnn14_DecisionLevelAtt.pth"
 resume=""
 # evaluation related
 checkpoint="best_score" # path of checkpoint to be used for evaluation
+checkpoints=""
 
 . utils/parse_options.sh || exit 1
 set -euo pipefail
@@ -105,10 +106,11 @@ fi
 if [ "${stage}" -le 3 ] && [ "${stop_stage}" -ge 3 ]; then
     log "Stage 3: Network inference."
     outdir=${expdir}/${tag}/${checkpoint}
-    checkpoints=""
-    for fold in {0..4}; do
-        checkpoints+="${outdir}/${checkpoint}fold${fold}.pkl "
-    done
+    if [ -z "${checkpoints}" ]; then
+        for fold in {0..4}; do
+            checkpoints+="${outdir}/${checkpoint}fold${fold}.pkl "
+        done
+    fi
     log "Inference start. See the progress via ${outdir}/sed_inference.log"
     # shellcheck disable=SC2086
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_inference.log" \

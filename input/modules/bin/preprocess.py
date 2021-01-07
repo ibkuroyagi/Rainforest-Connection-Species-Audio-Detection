@@ -42,7 +42,7 @@ def make_utt_matrix(train_df, recording_id: str, l_spec=5626, n_class=25):
         t_end = int(l_spec * (tmp.loc[i, "t_max"] / 60.0))
         matrix[t_start:t_end, tmp.loc[i, "species_id"]] = 1.0
     if n_class == 25:
-        matrix[:, 24] = (~matrix.any(axis=1)).astype(np.int64)
+        matrix[:, 24] = matrix.any(axis=1).astype(np.int64)
     return matrix
 
 
@@ -117,11 +117,6 @@ def main():
     tp_list = train_tp["recording_id"].unique()
     train_fp = pd.read_csv(os.path.join(args.datadir, "train_fp.csv"))
     fp_list = train_fp["recording_id"].unique()
-    # if args.facter != 1.0:
-    #     train_tp["t_max"] = train_tp["t_max"] / args.facter
-    #     train_tp["t_min"] = train_tp["t_min"] / args.facter
-    #     train_fp["t_max"] = train_fp["t_max"] / args.facter
-    #     train_fp["t_min"] = train_fp["t_min"] / args.facter
     # get dataset
     if (args.datadir is not None) and args.cal_type == 1:
         tmp = np.zeros((len(all_path_list), 2880000))

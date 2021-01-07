@@ -1,4 +1,4 @@
-# intrepolate shumamura0 stgategy by efficent net b0.(without mixup)
+# intrepolate shumamura0 stgategy by efficent net b0.(without mixup), update lr=0.005
 # PANNs SED architecture
 # BCE Loss
 # Random 10sec clip
@@ -64,16 +64,16 @@ loss_params:
 ###########################################################
 optimizer_type: "Adam"
 optimizer_params:
-  lr: 0.0002
-scheduler_type: "CosineAnnealingLR"
+  lr: 0.01
+scheduler_type: "StepLR"
 scheduler_params:
-  T_max: 500 # scheduler step size.
-  eta_min: 1.0e-7
+  step_size: 1000 # scheduler step size.
+  gamma: 0.5
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
 train_max_steps: 3000 # Number of training steps.
-save_interval_steps: 1000 # Interval steps to save checkpoint.
+save_interval_steps: 3000 # Interval steps to save checkpoint.
 eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
 #                     OTHER SETTING                       #

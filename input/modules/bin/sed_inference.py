@@ -108,6 +108,10 @@ def main():
         config = yaml.load(f, Loader=yaml.Loader)
     config.update(vars(args))
     config["n_target"] = 24
+    config["trained_model_fold"] = []
+    for i, checkpoint in enumerate(args.checkpoints):
+        if checkpoint != "no_model":
+            config["trained_model_fold"].append(i)
     with open(os.path.join(args.outdir, "config.yml"), "w") as f:
         yaml.dump(config, f, Dumper=yaml.Dumper)
     for key, value in config.items():
@@ -147,11 +151,16 @@ def main():
     # Initialize each fold prediction.
     sub = pd.read_csv(os.path.join(args.datadir, "sample_submission.csv"))
     pred_clip = np.zeros(
-        (config["n_fold"], len(sub), config["n_eval_split"], config["n_target"])
+        (
+            len(config["trained_model_fold"]),
+            len(sub),
+            config["n_eval_split"],
+            config["n_target"],
+        )
     )
     pred_frame = np.zeros(
         (
-            config["n_fold"],
+            len(config["trained_model_fold"]),
             len(sub),
             config["n_eval_split"],
             config["l_target"],
@@ -161,6 +170,9 @@ def main():
     for fold, (train_idx, valid_idx) in enumerate(kfold.split(y, y)):
         logging.info(f"Start training fold {fold}.")
         # define models and optimizers
+        if fold not in config["trained_model_fold"]:
+            logging.info(f"Skip fold {fold}. Due to not found trained model.")
+            continue
         model_class = getattr(
             models,
             # keep compatibility
@@ -172,7 +184,7 @@ def main():
             "ResNet38Att",
         ]:
             pass
-        else:
+        elif config["model_type"] in ["ResNext50", "Cnn14_DecisionLevelAtt"]:
             from models import AttBlock
 
             model.bn0 = nn.BatchNorm2d(config["num_mels"])
@@ -351,6 +363,7 @@ def main():
     oof_score = lwlrap(ground_truth.iloc[:, 1:].values, oof_sub.iloc[:, 1:].values)
     for i, score in enumerate(scores):
         logging.info(f"Fold:{i} oof score is {score:.6f}")
+        logging.info(f"Average oof score is {np.array(score).mean():.6f}")
     logging.info(f"All oof score is {oof_score:.6f}")
 
     sub.iloc[:, 1:] = pred_clip_mean.max(axis=1)

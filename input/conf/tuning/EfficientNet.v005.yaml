@@ -1,10 +1,10 @@
-# intrepolate shumamura0 stgategy by efficent net b0.(without mixup)
+# intrepolate shumamura0-san stgategy by efficent net b0.(without mixup)
 # PANNs SED architecture
 # BCE Loss
 # Random 10sec clip
 # Using only tp file
 # MixUp
-# The base model is EfficientNet_simple
+# The base model is EfficientNet
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -15,8 +15,8 @@ n_fold: 5
 #                    PREPROCESS SETTING                   #
 ###########################################################
 sr: 48000
-fft_size: 2048
-hop_size: 512
+fft_size: 4096
+hop_size: 1024
 window: hann
 num_mels: 128
 fmin: 50
@@ -41,13 +41,13 @@ train_dataset_mode: tp
 allow_cache: True # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: False
 # collater_fc
-max_frames: 1024
-l_target: 32
+max_frames: 512
+l_target: 16
 collater_mode: binary
 random: False
 # dataloader
-accum_grads: 2
-batch_size: 32 # Batch size.
+accum_grads: 1
+batch_size: 64 # Batch size.
 pin_memory: False # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
 # trainer
@@ -64,11 +64,11 @@ loss_params:
 ###########################################################
 optimizer_type: "Adam"
 optimizer_params:
-  lr: 0.0002
-scheduler_type: "CosineAnnealingLR"
+  lr: 0.001
+scheduler_type: "StepLR"
 scheduler_params:
-  T_max: 500 # scheduler step size.
-  eta_min: 1.0e-7
+  step_size: 1000 # scheduler step size.
+  gamma: 0.5
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
@@ -78,4 +78,4 @@ eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
 #                     OTHER SETTING                       #
 ###########################################################
-n_eval_split: 12
+n_eval_split: 6
