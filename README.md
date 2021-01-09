@@ -126,8 +126,11 @@ EOF
 - ~~v004 -> efficientnet-b0 simple (BCE weal-label, wave, 10sec, lr=1.0e-3) compair by v000~~
 - ~~v005 -> efficientnet-b0 simple (BCE weal-label, mel128hop1024, 10sec, lr=1.0e-3) compair by v000~~
 - ~~v006(lr:0.005),v007(lr:0.01)efficientnet-b0 simple,wave -> 最適なlrにあたりをつけるために調査~~
-- v008 wave,sp0.9,1.1 collater_fcの分割方法を変更-> 1フレームあたりに含まれる正解音の幅をよりランダムに近くする(1/4)
-- v009 mel128hop1024,sp0.9,1.1 collater_fcの分割方法を変更-> 1フレームあたりに含まれる正解音の幅をよりランダムに近くする(1/4)
+- ~~v008 wave,sp0.9,1.1 collater_fcの分割方法を変更-> 1フレームあたりに含まれる正解音の幅をよりランダムに近くする(1/4)PL:0.701~~
+- ~~v009 mel128hop1024,sp0.9,1.1 collater_fcの分割方法を変更-> 1フレームあたりに含まれる正解音の幅をよりランダムに近くする(1/4)PL:0.685~~
+- ~~v010 mixup0.2+v008 -> PL:0.756で多少の回復.(旧モデル程度にスコア回復)~~
+- dropoutが推論時にも効いていることが発覚したため修正eff/v011(モデル埋め込みのmax部分も削除)
+- dropoutが推論時にも効いていることが発覚したため修正cnn/v002-clip065(モデル埋め込みのmax部分も削除)
 ### 今の課題は何?
 - v002の時代はCV,PLともに0.80のオーダーだったが、sp0.9,1,1に変更orモデルのクラスを25に変更にしたことでPLのスコアが下がった
 - 原因を探るために、

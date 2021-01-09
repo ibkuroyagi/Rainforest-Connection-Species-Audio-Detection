@@ -11,7 +11,6 @@ import os
 import sys
 
 import matplotlib
-from matplotlib.pyplot import axis
 import numpy as np
 import pandas as pd
 import torch

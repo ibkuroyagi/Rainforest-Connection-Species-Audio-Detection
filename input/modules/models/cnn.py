@@ -210,15 +210,16 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         )
 
         self.bn0 = nn.BatchNorm2d(64)
-
+        self.dropout = nn.Dropout(p=0.2)
         self.conv_block1 = ConvBlock(in_channels=1, out_channels=64)
         self.conv_block2 = ConvBlock(in_channels=64, out_channels=128)
         self.conv_block3 = ConvBlock(in_channels=128, out_channels=256)
         self.conv_block4 = ConvBlock(in_channels=256, out_channels=512)
         self.conv_block5 = ConvBlock(in_channels=512, out_channels=1024)
         self.conv_block6 = ConvBlock(in_channels=1024, out_channels=2048)
-
+        self.dropout1 = nn.Dropout(p=0.2)
         self.fc1 = nn.Linear(2048, 2048, bias=True)
+        self.dropout2 = nn.Dropout(p=0.2)
         self.att_block = AttBlock(2048, classes_num, activation="sigmoid")
 
         self.init_weight()
@@ -247,31 +248,23 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         if self.training and self.is_spec_augmenter:
             x = self.spec_augmenter(x)
         x = self.conv_block1(x, pool_size=(2, 2), pool_type="avg")
-        x = F.dropout(x, p=0.2, training=self.training)
-        x = self.conv_block2(x, pool_size=(2, 2), pool_type="avg")
-        x = F.dropout(x, p=0.2, training=self.training)
-        x = self.conv_block3(x, pool_size=(2, 2), pool_type="avg")
-        x = F.dropout(x, p=0.2, training=self.training)
-        x = self.conv_block4(x, pool_size=(2, 2), pool_type="avg")
-        x = F.dropout(x, p=0.2, training=self.training)
-        x = self.conv_block5(x, pool_size=(2, 2), pool_type="avg")
-        x = F.dropout(x, p=0.2, training=self.training)
-        x = self.conv_block6(x, pool_size=(1, 1), pool_type="avg")
-        x = F.dropout(x, p=0.2, training=self.training)
+        x = self.conv_block2(self.dropout(x), pool_size=(2, 2), pool_type="avg")
+        x = self.conv_block3(self.dropout(x), pool_size=(2, 2), pool_type="avg")
+        x = self.conv_block4(self.dropout(x), pool_size=(2, 2), pool_type="avg")
+        x = self.conv_block5(self.dropout(x), pool_size=(2, 2), pool_type="avg")
+        x = self.conv_block6(self.dropout(x), pool_size=(1, 1), pool_type="avg")
         # print(f"feature_map:{x.shape}")
-        x = torch.mean(x, dim=3) + torch.max(x, dim=3)[0]
+        x = torch.mean(x, dim=3)  # + torch.max(x, dim=3)[0]
         embedding = torch.mean(x, dim=2)
         # print(f"feature_map: mean-dim3{x.shape}")
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
         x = x1 + x2
-        x = F.dropout(x, p=0.5, training=self.training)
         x = x.transpose(1, 2)
-        x = F.relu_(self.fc1(x))
+        x = F.relu_(self.fc1(self.dropout1(x)))
         x = x.transpose(1, 2)
-        x = F.dropout(x, p=0.5, training=self.training)
         # print(f"pool1d_map: mean-dim3{x.shape}")
-        (clipwise_output, _, segmentwise_output) = self.att_block(x)
+        (clipwise_output, _, segmentwise_output) = self.att_block(self.dropout2(x))
         segmentwise_output = segmentwise_output.transpose(1, 2)
 
         output_dict = {

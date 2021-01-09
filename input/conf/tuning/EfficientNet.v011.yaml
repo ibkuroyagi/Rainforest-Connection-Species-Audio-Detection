@@ -1,4 +1,10 @@
-# clip_ratio 0.65
+# intrepolate shumamura0 stgategy by efficent net b0, update lr=0.001, fix collater_fc and model(sa same as v010)
+# PANNs SED architecture
+# BCE Loss
+# Random 10sec clip
+# Using only tp file
+# MixUp
+# The base model is EfficientNet_simple
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -18,32 +24,25 @@ fmax: 16000
 ###########################################################
 #                     NETWORK SETTING                     #
 ###########################################################
-model_type: "Cnn14_DecisionLevelAtt" # pretrained model's type.
-att_block:
-  n_in: 2048
-  n_out: 24
-  activation: linear
-
+model_type: "EfficientNet_simple" 
 model_params:
-  sample_rate: 16000
-  window_size: 1024
-  hop_size: 256
-  mel_bins: 64
-  fmin: 50
-  fmax: 8000
-  classes_num: 527
-  require_prep: False
-  is_spec_augmenter: True
+  classes_num: 24
+  efficient_net_name: efficientnet-b0
+  feat_dim: 1280
+  is_spec_augmenter: false
 ###########################################################
 #                    TRAINING SETTING                     #
 ###########################################################
+# augmentation
+wave_mode: False
+mixup_alpha: 0.2
 # dataset
 train_dataset_mode: tp
 allow_cache: True # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: False
 # collater_fc
-max_frames: 512
-l_target: 16
+max_frames: 1024
+l_target: 32
 collater_mode: binary
 random: False
 # dataloader
@@ -56,9 +55,8 @@ use_center_loss: False
 ###########################################################
 #                       LOSS SETTING                      #
 ###########################################################
-loss_type: FrameClipLoss
+loss_type: BCEWithLogitsLoss
 loss_params:
-  clip_ratio: 0.65
   reduction: mean
 
 ###########################################################
@@ -66,8 +64,7 @@ loss_params:
 ###########################################################
 optimizer_type: "Adam"
 optimizer_params:
-  conv_lr: 0.0002 # convolution layer's learning rate.
-  fc_lr: 0.001 # full connection layer's learning rate.
+  lr: 0.001
 scheduler_type: "StepLR"
 scheduler_params:
   step_size: 1000 # scheduler step size.

@@ -27,7 +27,9 @@ class EfficientNet_b(nn.Module):
         super(self.__class__, self).__init__()
         self.conv0 = nn.Conv2d(1, 3, 1, 1)
         self.efficientnet = EfficientNet.from_pretrained(efficient_net_name)
+        self.dropout1 = nn.Dropout(p=0.2)
         self.fc1 = nn.Linear(feat_dim, feat_dim, bias=True)
+        self.dropout2 = nn.Dropout(p=0.2)
         self.att_block = AttBlock(feat_dim, classes_num, activation="linear")
 
         self.init_weight()
@@ -55,19 +57,17 @@ class EfficientNet_b(nn.Module):
         x = self.conv0(x)
         x = self.efficientnet.extract_features(x)
         # print(f"feature_map:{x.shape}")
-        x = torch.mean(x, dim=3) + torch.max(x, dim=3)[0]
+        x = torch.mean(x, dim=3)  # + torch.max(x, dim=3)[0]
         embedding = torch.mean(x, dim=2)
         # print(f"feature_map: mean-dim3{x.shape}")
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
         x = x1 + x2
-        x = F.dropout(x, p=0.5, training=self.training)
         x = x.transpose(1, 2)
-        x = F.relu_(self.fc1(x))
+        x = F.relu_(self.fc1(self.dropout1(x)))
         x = x.transpose(1, 2)
-        x = F.dropout(x, p=0.5, training=self.training)
         # print(f"pool1d_map: mean-dim3{x.shape}")
-        (clipwise_output, _, segmentwise_output) = self.att_block(x)
+        (clipwise_output, _, segmentwise_output) = self.att_block(self.dropout2(x))
         segmentwise_output = segmentwise_output.transpose(1, 2)
 
         output_dict = {
@@ -92,7 +92,9 @@ class EfficientNet_simple(nn.Module):
         super(self.__class__, self).__init__()
         self.conv0 = nn.Conv2d(1, 3, 1, 1)
         self.efficientnet = EfficientNet.from_pretrained(efficient_net_name)
+        self.dropout1 = nn.Dropout(p=0.2)
         self.fc1 = nn.Linear(feat_dim, feat_dim, bias=True)
+        self.dropout2 = nn.Dropout(p=0.2)
         self.fc2 = nn.Linear(feat_dim, classes_num, bias=True)
 
         self.init_weight()
@@ -127,11 +129,9 @@ class EfficientNet_simple(nn.Module):
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
         x = x1 + x2
-        x = F.dropout(x, p=0.5, training=self.training)
         x = x.transpose(1, 2)
-        x = F.relu_(self.fc1(x))
-        x = F.dropout(x, p=0.5, training=self.training)
-        segmentwise_output = self.fc2(x)
+        x = F.relu_(self.fc1(self.dropout1(x)))
+        segmentwise_output = self.fc2(self.dropout2(x))
         # print(f"segmentwise_output{segmentwise_output.shape}")
         clipwise_output = segmentwise_output.max(dim=1)[0]
 

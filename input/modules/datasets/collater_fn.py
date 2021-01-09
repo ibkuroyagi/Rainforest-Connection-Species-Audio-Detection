@@ -6,7 +6,6 @@
 """Collater function modules."""
 import sys
 import random
-
 import logging
 import numpy as np
 import torch

@@ -6,13 +6,13 @@
 # model=Cnn14_DecisionLevelAtt
 # model=conformer
 model=EfficientNet
-# type=wave
+type=wave
 verbose=1
-type=mel128hop1024
+# type=mel128hop1024
 
-stage=3
+stage=2
 stop_stage=100
-No=v009
+No=v011
 # for model in conformer transformer; do
 # for No in v006 v007; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do

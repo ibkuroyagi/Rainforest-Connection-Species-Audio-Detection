@@ -22,7 +22,9 @@ class ResNext50(nn.Module):
         self.conv0 = nn.Conv2d(1, 3, 1, 1)
         self.resnext50 = torchvision.models.resnext50_32x4d(pretrained=True)
         self.resnext50.fc = nn.Linear(2048, classes_num, bias=True)
+        self.dropout1 = nn.Dropout(p=0.2)
         self.fc1 = nn.Linear(2048, 2048, bias=True)
+        self.dropout2 = nn.Dropout(p=0.2)
         self.att_block = AttBlock(2048, classes_num, activation="linear")
 
         # self.init_weight()
@@ -66,13 +68,11 @@ class ResNext50(nn.Module):
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
         x = x1 + x2
-        x = F.dropout(x, p=0.5, training=self.training)
         x = x.transpose(1, 2)
-        x = F.relu_(self.fc1(x))
+        x = F.relu_(self.fc1(self.dropout1(x)))
         x = x.transpose(1, 2)
-        x = F.dropout(x, p=0.5, training=self.training)
         # print(f"pool1d_map: mean-dim3{x.shape}")
-        (clipwise_output, _, segmentwise_output) = self.att_block(x)
+        (clipwise_output, _, segmentwise_output) = self.att_block(self.dropout2(x))
         segmentwise_output = segmentwise_output.transpose(1, 2)
 
         output_dict = {
