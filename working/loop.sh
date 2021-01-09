@@ -10,7 +10,7 @@ model=EfficientNet
 verbose=1
 type=mel128hop1024
 
-stage=2
+stage=3
 stop_stage=100
 No=v009
 # for model in conformer transformer; do

@@ -200,7 +200,7 @@ def main():
         if config["model_params"].get("require_prep", False):
             # from datasets import WaveEvalCollater
 
-            # eval_collater = WaveEvalCollater(
+            # dev_collater = WaveEvalCollater(
             #     sf=config["sampling_rate"],
             #     sec=config.get("sec", 10),
             #     n_split=config.get("n_eval_split", 3),
@@ -209,7 +209,7 @@ def main():
         else:
             from datasets import FeatEvalCollater
 
-            eval_collater = FeatEvalCollater(
+            dev_collater = FeatEvalCollater(
                 max_frames=config.get("max_frames", 512),
                 n_split=config.get("n_eval_split", 20),
                 is_label=True,
@@ -269,7 +269,7 @@ def main():
                     valid_dataset,
                     batch_size=config["batch_size"],
                     shuffle=False,
-                    collate_fn=eval_collater,
+                    collate_fn=dev_collater,
                     num_workers=config["num_workers"],
                     pin_memory=config["pin_memory"],
                 ),
@@ -404,7 +404,7 @@ def main():
     oof_score = lwlrap(ground_truth.iloc[:, 1:].values, oof_sub.iloc[:, 1:].values)
     for i, score in enumerate(scores):
         logging.info(f"Fold:{i} oof score is {score:.6f}")
-        logging.info(f"Average oof score is {np.array(score).mean():.6f}")
+    logging.info(f"Average oof score is {np.array(scores).mean():.6f}")
     logging.info(f"All oof score is {oof_score:.6f}")
 
     sub.iloc[:, 1:] = pred_clip_mean.max(axis=1)
