@@ -106,13 +106,25 @@ class FeatTrainCollater(object):
                 f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
             )
             logging.debug(f"{clip_batch[-1]}")
-            if clip_batch[-1].sum() != 1:
+            if matrix_tp.any(axis=0).sum() != 1:
                 idx = np.where(clip_batch[-1])
-                plt.figure()
+                plt.figure(figsize=(12, 6))
+                plt.subplot(2, 1, 1)
+                plt.imshow(logmel.T, aspect="auto")
+                plt.axvline(x=beginning, c="r")
+                plt.axvline(x=ending, c="r")
+                plt.axvline(x=time_start, c="y")
+                plt.axvline(x=time_end, c="y")
+                plt.colorbar()
+                plt.subplot(2, 1, 2)
                 plt.imshow(matrix_tp.T, aspect="auto")
+                plt.axvline(x=beginning, c="r")
+                plt.axvline(x=ending, c="r")
+                plt.axvline(x=time_start, c="y")
+                plt.axvline(x=time_end, c="y")
                 plt.colorbar()
                 plt.title(
-                    f"{idx}{time_start},{time_end}: {l_spec}: {beginning},{ending}"
+                    f"l:{l_spec}:{beginning},{ending},{idx}{time_start},{time_end}"
                 )
                 plt.tight_layout()
                 plt.savefig(f"tmp/cnt{cnt}.png")

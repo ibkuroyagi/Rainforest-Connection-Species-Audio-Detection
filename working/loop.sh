@@ -12,7 +12,7 @@ verbose=1
 
 stage=2
 stop_stage=100
-No=v011
+No=v012
 # for model in conformer transformer; do
 # for No in v006 v007; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do

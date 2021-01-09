@@ -68,7 +68,8 @@ EOF
     - Using only tp file
     - MixUp
     - The base model is EfficientNet
-    - 
+- もしかしたら、preprocessとのアノテーションのずれが生じている可能性があるため、on the flyで実験をするコードを作成
+    - 10sec -> 48000x10 point -> 938frame x 128melで実験をする(1fold no aug)
 
 ## 決定事項
 - 初手のCVの切り方はiterative-stratificationを用いる
