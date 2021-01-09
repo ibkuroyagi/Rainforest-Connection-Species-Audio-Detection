@@ -157,9 +157,10 @@ def main():
             keys=train_keys,
             mode=config.get("train_dataset_mode", "tp"),
             is_normalize=config.get("is_normalize", False),
-            allow_cache=config.get("allow_cache", False),  # keep compatibility
+            allow_cache=config.get("allow_cache", False),
             seed=None,
             config=config,
+            use_on_the_fly=config.get("use_on_the_fly", False),
         )
         logging.info(f"The number of training files = {len(train_dataset)}.")
         dev_dataset = RainForestDataset(
@@ -169,8 +170,9 @@ def main():
             keys=["feats"],
             mode=config.get("train_dataset_mode", "tp"),
             is_normalize=config.get("is_normalize", False),
-            allow_cache=True,  # keep compatibility
+            allow_cache=not config.get("use_on_the_fly", False),
             seed=None,
+            use_on_the_fly=config.get("use_on_the_fly", False),
         )
         logging.info(f"The number of development files = {len(dev_dataset)}.")
         eval_dataset = RainForestDataset(
@@ -211,13 +213,16 @@ def main():
             )
             from datasets import FeatTrainCollater
 
-            train_collater = FeatTrainCollater(
-                max_frames=config.get("max_frames", 512),
-                l_target=config.get("l_target", 16),
-                mode=config.get("collater_mode", "sum"),
-                random=config.get("random", False),
-                use_dializer=config.get("use_dializer", False),
-            )
+            if config.get("use_on_the_fly", False):
+                train_collater = None
+            else:
+                train_collater = FeatTrainCollater(
+                    max_frames=config.get("max_frames", 512),
+                    l_target=config.get("l_target", 16),
+                    mode=config.get("collater_mode", "sum"),
+                    random=config.get("random", False),
+                    use_dializer=config.get("use_dializer", False),
+                )
         data_loader = {
             "train": DataLoader(
                 dataset=train_dataset,

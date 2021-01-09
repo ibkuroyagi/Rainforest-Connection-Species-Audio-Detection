@@ -3,12 +3,11 @@
 # Copyright 2020 Ibuki Kuroyanagi
 
 import logging
+import random
 import sys
 import h5py
 import numpy as np
 from multiprocessing import Manager
-
-# from torch.utils.data.sampler import BatchSampler
 from torch.utils.data import Dataset
 
 sys.path.append("../../")
@@ -31,6 +30,7 @@ class RainForestDataset(Dataset):
         mode="tp",
         is_normalize=False,
         allow_cache=False,
+        use_on_the_fly=False,
         config={},
         seed=None,
     ):
@@ -42,9 +42,9 @@ class RainForestDataset(Dataset):
             train_fp (DataFrame): train_fp (default: None)
             keys: (list): List of key of dataset.
             mode (list): Mode of dataset. [tp, all, test]
-            is_normalize(bool): flag of normalize
             allow_cache (bool): Whether to allow cache of the loaded files.
-            config (dict): Setting dict for on the fly.
+            use_on_the_fly (bool): Whether to use on the fly proprocess(don't use collater_fc).
+            config (dict): Setting dict for wave_mode.
             seed (int): seed
         """
         # if seed is not None:
@@ -68,7 +68,7 @@ class RainForestDataset(Dataset):
                     # logging.debug(f"{facter}: {file}")
                     use_time_list.append(
                         train_tp[train_tp["recording_id"] == recording_id]
-                        .loc[:, ["t_min", "t_max"]]
+                        .loc[:, ["t_min", "t_max", "species_id"]]
                         .values
                     )
         elif mode == "all":
@@ -82,7 +82,7 @@ class RainForestDataset(Dataset):
                     # logging.debug(f"{facter}: {file}")
                     use_time_list.append(
                         train_tp[train_tp["recording_id"] == recording_id]
-                        .loc[:, ["t_min", "t_max"]]
+                        .loc[:, ["t_min", "t_max", "species_id"]]
                         .values
                     )
                 if recording_id in fp_list:
@@ -90,7 +90,7 @@ class RainForestDataset(Dataset):
                     use_file_list.append(file)
                     use_time_list.append(
                         train_fp[train_fp["recording_id"] == recording_id]
-                        .loc[:, ["t_min", "t_max"]]
+                        .loc[:, ["t_min", "t_max", "species_id"]]
                         .values
                     )
         elif mode == "test":
@@ -102,7 +102,7 @@ class RainForestDataset(Dataset):
         self.use_time_list = use_time_list
         self.mode = mode
         self.allow_cache = allow_cache
-        self.is_normalize = is_normalize
+        self.use_on_the_fly = use_on_the_fly
         self.config = config
         self.transform = None
         if ("wave" in use_file_keys) and (
@@ -145,13 +145,9 @@ class RainForestDataset(Dataset):
         for key in self.use_file_keys[idx]:
             items[key] = hdf5_file[key][()]
         hdf5_file.close()
+        if self.use_on_the_fly:
+            return self._on_the_fly(items["wave"], self.use_time_list[idx], split=8)
 
-        if self.is_normalize and "feats" in self.use_file_keys[idx]:
-            items["feats"] = (
-                items["feats"] - items["feats"].mean(axis=0, keepdims=True)
-            ) / items["feats"].std(axis=0, keepdims=True)
-        if self.is_normalize and "wave" in self.use_file_keys:
-            items["wave"] = (items["wave"] - items["wave"].mean()) / items["wave"].std()
         if self.config.get("wave_mode", False) and ("wave" in self.use_file_keys):
             items["feats"] = self.wave2spec(items["wave"])
             del items["wave"]
@@ -190,3 +186,50 @@ class RainForestDataset(Dataset):
             fmax=self.config["fmax"],
         )
         return feats
+
+    def _on_the_fly(self, wave: np.ndarray, time_list: np.ndarray, split=8):
+        """Return mel-spectrogram and clip-level label.
+
+        Args:
+            wave (np.ndarray): wave form data(y,)
+            time_list (np.ndarray): The number of time to call(n_sample, 2)
+            split (int): split ratio.
+        Returns:
+            item: (dict):
+                feats: (ndarray) Feature (mel, T').
+                y_clip: (ndarray) Clip level targte(T'', n_class).
+                y_frame: (ndarray) Frame level target(n_class,).
+        """
+        l_wave = len(wave)
+        wave_frames = int(self.config["sec"] * self.config["sr"])
+        idx = random.randrange(len(time_list))
+        time_start = int(l_wave * time_list[idx][0] / 60)
+        time_end = int(l_wave * time_list[idx][1] / 60)
+        center = np.round((time_start + time_end) / 2)
+        quarter = ((time_end - time_start) // split) * (split // 2 - 1)
+        beginning = center - wave_frames - quarter
+        if beginning < 0:
+            beginning = 0
+        beginning = random.randrange(beginning, center + quarter)
+        ending = beginning + wave_frames
+        if ending > l_wave:
+            ending = l_wave
+        beginning = ending - wave_frames
+        feat = self.wave2spec(wave[beginning:ending])
+        t_begging = beginning / l_wave * 60
+        t_ending = ending / l_wave * 60
+        y_clip = np.zeros(self.config["n_class"])
+        y_frame = np.zeros((self.config["l_target"], self.config["n_class"]))
+        for i in range(len(time_list)):
+            if time_list[i][0] - self.config["sec"] <= t_begging <= time_list[i][1]:
+                y_clip[int(time_list[i][2])] = 1.0
+                checker = np.linspace(t_begging, t_ending, self.config["l_target"])
+                call_idx = (checker > time_list[i][0]) & (checker < time_list[i][1])
+                y_frame[call_idx, int(time_list[i][2])] = 1.0
+        items = {}
+        items["X"] = feat.T.astype(np.float32)
+        items["y_clip"] = y_clip.astype(np.float32)
+        items["y_frame"] = y_frame.astype(np.float32)
+        if self.config.get("use_dializer", False):
+            items["frame_mask"] = y_frame.any(axis=1).reshape(-1, 1).astype(np.float32)
+        return items
