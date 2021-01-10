@@ -167,11 +167,12 @@ def main():
             root_dirs=[os.path.join(args.dumpdirs[0], "train")],
             train_tp=train_tp[~train_tp["use_train"]],
             train_fp=train_fp,
-            keys=["feats"],
+            keys=train_keys,
             mode=config.get("train_dataset_mode", "tp"),
             is_normalize=config.get("is_normalize", False),
             allow_cache=not config.get("use_on_the_fly", False),
             seed=None,
+            config=config,
             use_on_the_fly=config.get("use_on_the_fly", False),
         )
         logging.info(f"The number of development files = {len(dev_dataset)}.")

@@ -34,7 +34,7 @@ model_params:
 #                    TRAINING SETTING                     #
 ###########################################################
 # augmentation
-wave_mode: false
+wave_mode: true
 # mixup_alpha: 0.2
 # dataset
 train_dataset_mode: tp
