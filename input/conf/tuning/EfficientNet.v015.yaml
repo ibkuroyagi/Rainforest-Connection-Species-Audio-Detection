@@ -1,0 +1,83 @@
+# intrepolate shumamura0 strategy by efficient net b0, update lr=0.0008, on the fly
+# PANNs SED architecture
+# ClipFrame Loss
+# Random 10sec clip
+# Using only tp file
+# MixUp
+# The base model is EfficientNet_simple
+###########################################################
+#                      GLOBAL SETTING                     #
+###########################################################
+seed: 1
+n_class: 24
+n_fold: 5
+###########################################################
+#                    PREPROCESS SETTING                   #
+###########################################################
+sr: 48000
+fft_size: 2048
+hop_size: 512
+window: hann
+num_mels: 128
+fmin: 50
+fmax: 16000
+###########################################################
+#                     NETWORK SETTING                     #
+###########################################################
+model_type: "EfficientNet_simple" 
+model_params:
+  classes_num: 24
+  efficient_net_name: efficientnet-b0
+  feat_dim: 1280
+  is_spec_augmenter: false
+###########################################################
+#                    TRAINING SETTING                     #
+###########################################################
+# augmentation
+wave_mode: true
+mixup_alpha: 0.2
+# dataset
+train_dataset_mode: tp
+allow_cache: false # Whether to allow cache in dataset. If true, it requires cpu memory.
+is_normalize: False
+use_on_the_fly: true
+# collater_fc
+max_frames: 938
+l_target: 30
+collater_mode: binary
+random: False
+# dataloader
+accum_grads: 2
+batch_size: 64 # Batch size.
+pin_memory: False # Whether to pin memory in Pytorch DataLoader.
+num_workers: 2 # Number of workers in Pytorch DataLoader.
+# trainer
+use_center_loss: False
+###########################################################
+#                       LOSS SETTING                      #
+###########################################################
+loss_type: BCEWithLogitsLoss
+loss_params:
+  reduction: mean
+
+###########################################################
+#              OPTIMIZER & SCHEDULER SETTING              #
+###########################################################
+optimizer_type: "Adam"
+optimizer_params:
+  lr: 0.0008
+scheduler_type: "StepLR"
+scheduler_params:
+  step_size: 1000 # scheduler step size.
+  gamma: 0.5
+###########################################################
+#                    INTERVAL SETTING                     #
+###########################################################
+train_max_steps: 3000 # Number of training steps.
+save_interval_steps: 3000 # Interval steps to save checkpoint.
+eval_interval_epochs: 5 # Interval epochs to evaluate the network.
+###########################################################
+#                     OTHER SETTING                       #
+###########################################################
+sec: 10
+n_eval_split: 7

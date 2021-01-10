@@ -223,6 +223,7 @@ def main():
                     mode=config.get("collater_mode", "sum"),
                     random=config.get("random", False),
                     use_dializer=config.get("use_dializer", False),
+                    hop_size=config.get("hop_size", 512),
                 )
         data_loader = {
             "train": DataLoader(

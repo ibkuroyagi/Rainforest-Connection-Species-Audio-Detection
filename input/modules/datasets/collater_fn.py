@@ -28,6 +28,7 @@ class FeatTrainCollater(object):
         random=False,
         use_dializer=False,
         split=8,
+        hop_size=512,
     ):
         """Initialize customized collater for PyTorch DataLoader.
 
@@ -38,6 +39,7 @@ class FeatTrainCollater(object):
             random (bool): Use simple random frame which may contain only noise(as same sa inference condition).
             use_dializer (bool): Use frame mask for dialization.
             split (int): Ratio of contain ground truth sound.
+            hop_size (int): Hop size for FFT.
         """
         self.max_frames = max_frames
         self.mode = mode
@@ -45,6 +47,8 @@ class FeatTrainCollater(object):
         self.random = random
         self.use_dializer = use_dializer
         self.split = split
+        self.sec = max_frames * (60 / (2880000 / hop_size + 1))
+        self.n_class = 24
 
     def __call__(self, batch):
         """Convert into batch tensors.
@@ -89,23 +93,35 @@ class FeatTrainCollater(object):
                 ending = l_spec
             beginning = ending - self.max_frames
             logmel_batch.append(logmel[beginning:ending].astype(np.float32))
-            embedded_frame = down_sampler(
-                matrix_tp[beginning:ending], l_target=self.l_target, mode=self.mode
-            )
-            frame_batch.append(embedded_frame.astype(np.float32))
-            clip_batch.append(
-                matrix_tp[beginning:ending].any(axis=0).astype(np.float32)
-            )
+            # embedded_frame = down_sampler(
+            #     matrix_tp[beginning:ending], l_target=self.l_target, mode=self.mode
+            # )
+            # frame_batch.append(embedded_frame.astype(np.float32))
+            # clip_batch.append(
+            #     matrix_tp[beginning:ending].any(axis=0).astype(np.float32)
+            # )
+            t_begging = beginning / l_spec * 60
+            t_ending = ending / l_spec * 60
+            y_clip = np.zeros(self.n_class)
+            y_frame = np.zeros((self.l_target, self.n_class))
+            for i in range(len(time_list)):
+                if time_list[i][0] - self.sec <= t_begging <= time_list[i][1]:
+                    y_clip[int(time_list[i][2])] = 1.0
+                    checker = np.linspace(t_begging, t_ending, self.l_target)
+                    call_idx = (checker > time_list[i][0]) & (checker < time_list[i][1])
+                    y_frame[call_idx, int(time_list[i][2])] = 1.0
+            frame_batch.append(y_frame.astype(np.float32))
+            clip_batch.append(y_clip.astype(np.float32))
             if self.random:
                 clip_batch[-1][24] = (~clip_batch[-1][:24].any()).astype(np.float32)
             if self.use_dializer:
                 frame_mask_batch.append(
-                    embedded_frame[:, :24].any(axis=1).astype(np.float32)
+                    y_frame.any(axis=1).reshape(-1, 1).astype(np.float32)
                 )
-            logging.debug(
-                f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
-            )
-            logging.debug(f"{clip_batch[-1]}")
+            # logging.debug(
+            #     f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
+            # )
+            # logging.debug(f"{clip_batch[-1]}")
             if matrix_tp.any(axis=0).sum() != 1:
                 idx = np.where(clip_batch[-1])
                 plt.figure(figsize=(12, 6))
