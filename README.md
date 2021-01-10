@@ -139,6 +139,7 @@ EOF
 - eff/v016(fix collater_fc as same as on the fly) BCE
 - eff/v017(fix collater_fc as same as on the fly) FrameClipLoss
 - eff/v018(fix collater_fc as same as on the fly) BCE+MixUP
+- eff/v019(preprocess fix)捨てた周波数に重要な情報が乗っている説
 ### 今の課題は何?
 - v002の時代はCV,PLともに0.80のオーダーだったが、sp0.9,1,1に変更orモデルのクラスを25に変更にしたことでPLのスコアが下がった
 - 原因を探るために、

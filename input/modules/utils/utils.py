@@ -121,7 +121,7 @@ def logmelfilterbank(
     num_mels=80,
     fmin=None,
     fmax=None,
-    eps=1e-10,
+    eps=1e-5,
 ):
     """Compute log-Mel filterbank feature.
 
