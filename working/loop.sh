@@ -12,9 +12,9 @@ verbose=1
 
 stage=2
 stop_stage=100
-No=v019
+No=v022
 # for model in conformer transformer; do
-# for No in v017 v018; do
+# for No in v021 v020; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
 # checkpoints="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl exp/${type}/${model}/${No}/best_score/best_scorefold1.pkl no_model  no_model no_model"
 resume=""

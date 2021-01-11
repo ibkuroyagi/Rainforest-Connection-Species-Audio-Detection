@@ -118,7 +118,6 @@ def main():
         yaml.dump(config, f, Dumper=yaml.Dumper)
     for key, value in config.items():
         logging.info(f"{key} = {value}")
-    eval_keys = ["feats", "matrix_tp"]
     train_tp = pd.read_csv(os.path.join(args.datadir, "train_tp.csv"))
     # get dataset
     tp_list = train_tp["recording_id"].unique()
@@ -255,8 +254,9 @@ def main():
                     os.path.join(dumpdir, "train", f"{recording_id}.h5")
                     for recording_id in tp_list[valid_idx]
                 ],
-                keys=eval_keys,
-                mode="test",
+                keys=["feats"],
+                train_tp=train_tp[~train_tp["use_train"]],
+                mode="valid",
                 is_normalize=config.get("is_normalize", False),
                 allow_cache=False,
                 seed=None,

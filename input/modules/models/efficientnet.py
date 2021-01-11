@@ -22,6 +22,7 @@ class EfficientNet_b(nn.Module):
         feat_dim=1280,
         training=False,
         is_spec_augmenter=False,
+        use_dializer=False,
     ):
 
         super(self.__class__, self).__init__()
@@ -34,6 +35,7 @@ class EfficientNet_b(nn.Module):
 
         self.init_weight()
         self.training = training
+        self.use_dializer = use_dializer
         self.is_spec_augmenter = is_spec_augmenter
         if is_spec_augmenter:
             # Spec augmenter
@@ -43,6 +45,8 @@ class EfficientNet_b(nn.Module):
                 freq_drop_width=20,
                 freq_stripes_num=2,
             )
+        if use_dializer:
+            self.dialize_layer = nn.Linear(classes_num, 1, bias=True)
 
     def init_weight(self):
         init_layer(self.fc1)
@@ -69,12 +73,14 @@ class EfficientNet_b(nn.Module):
         # print(f"pool1d_map: mean-dim3{x.shape}")
         (clipwise_output, _, segmentwise_output) = self.att_block(self.dropout2(x))
         segmentwise_output = segmentwise_output.transpose(1, 2)
-
         output_dict = {
             "y_frame": segmentwise_output,  # (B, T', n_class)
             "y_clip": clipwise_output,  # (B, n_class)
             "embedding": embedding,  # (B, feat_dim)
         }
+        if self.use_dializer:
+            # (B, T', 1)
+            output_dict["frame_mask"] = self.dialize_layer(segmentwise_output)
 
         return output_dict
 

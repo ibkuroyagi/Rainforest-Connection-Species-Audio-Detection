@@ -368,6 +368,9 @@ class SEDTrainer(object):
                 self.epoch_train_loss["train/epoch_loss"] += self.epoch_train_loss[
                     "train/epoch_dializer_loss"
                 ]
+                self.train_pred_frame_epoch *= torch.sigmoid(
+                    self.train_y_frame_mask_epoch
+                )
             self.epoch_train_loss["train/epoch_lwlrap_clip"] = lwlrap(
                 self.train_y_epoch[:, :24], self.train_pred_epoch[:, :24]
             )
@@ -567,6 +570,7 @@ class SEDTrainer(object):
                 self.epoch_eval_loss["dev/epoch_loss"] += self.epoch_eval_loss[
                     "dev/epoch_dializer_loss"
                 ]
+                self.dev_pred_frame_epoch *= torch.sigmoid(self.dev_y_frame_mask_epoch)
             self.epoch_eval_loss["dev/epoch_lwlrap_clip"] = lwlrap(
                 self.dev_y_epoch[:, :24], self.dev_pred_epoch[:, :24]
             )
@@ -689,6 +693,8 @@ class SEDTrainer(object):
                     y_clip[i] = torch.cat(
                         [y_clip[i], y_batch_["y_clip"][:, :24]], dim=0
                     )
+                    if self.use_dializer:
+                        y_batch_["y_frame"] *= torch.sigmoid(y_batch_["frame_mask"])
                     y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
         # (B, n_eval_split, n_target)
         y_clip = (
@@ -708,7 +714,7 @@ class SEDTrainer(object):
             frame_score = lwlrap(
                 y_clip_true[:, :24], y_frame.max(axis=1).max(axis=1)[:, :24]
             )
-            self.eval_metric["eval_metric/lwlrap_clip"] = frame_score
+            self.eval_metric["eval_metric/lwlrap_frame"] = frame_score
             score = (clip_score + frame_score) / 2.0
             self.eval_metric["eval_metric/lwlrap"] = score
             return {

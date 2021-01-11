@@ -123,7 +123,7 @@ def main():
         train_keys = ["wave"]
     else:
         train_keys = ["feats"]
-    eval_keys = ["feats", "matrix_tp"]
+    eval_keys = ["feats"]
     train_tp = pd.read_csv(os.path.join(args.datadir, "train_tp.csv"))
     if config.get("train_dataset_mode", "tp") == "all":
         train_fp = pd.read_csv(os.path.join(args.datadir, "train_fp.csv"))
@@ -182,7 +182,8 @@ def main():
                 for recording_id in tp_list[valid_idx]
             ],
             keys=eval_keys,
-            mode="test",
+            train_tp=train_tp[~train_tp["use_train"]],
+            mode="valid",
             is_normalize=config.get("is_normalize", False),
             allow_cache=True,  # keep compatibility
             seed=None,

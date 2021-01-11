@@ -133,13 +133,13 @@ EOF
 - ~~dropoutが推論時にも効いていることが発覚したため修正eff/v011(モデル埋め込みのmax部分も削除)->0.750~~
 - ~~dropoutが推論時にも効いていることが発覚したため修正cnn/v002-clip065(モデル埋め込みのmax部分も削除)-> PL:0.705~~
 - ~~eff/v012(分割方法を修正)->PL:0.753~~
-- eff/v013(on the fly) BCE
-- eff/v014(on the fly) FrameClipLoss
-- eff/v015(on the fly) BCE+MixUP
-- eff/v016(fix collater_fc as same as on the fly) BCE
-- eff/v017(fix collater_fc as same as on the fly) FrameClipLoss
-- eff/v018(fix collater_fc as same as on the fly) BCE+MixUP
-- eff/v019(preprocess fix)捨てた周波数に重要な情報が乗っている説
+- ~~eff/v013(on the fly) BCE ->中断~~
+- ~~eff/v014(on the fly) FrameClipLoss ->中断~~
+- ~~eff/v015(on the fly) BCE+MixUP ->中断~~
+- ~~eff/v016(fix collater_fc as same as on the fly) BCE->中断~~
+- ~~eff/v017(fix collater_fc as same as on the fly) FrameClipLoss->中断~~
+- ~~eff/v018(fix collater_fc as same as on the fly) BCE+MixUP(v015とまったく同じ~~
+- ~~eff/v019(preprocess fix)捨てた周波数に重要な情報が乗っている説->inferenceのデータもon the flyにする必要あり~~
 ### 今の課題は何?
 - v002の時代はCV,PLともに0.80のオーダーだったが、sp0.9,1,1に変更orモデルのクラスを25に変更にしたことでPLのスコアが下がった
 - 原因を探るために、

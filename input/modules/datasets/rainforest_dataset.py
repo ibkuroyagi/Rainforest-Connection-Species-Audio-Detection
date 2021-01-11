@@ -93,6 +93,18 @@ class RainForestDataset(Dataset):
                         .loc[:, ["t_min", "t_max", "species_id"]]
                         .values
                     )
+        elif mode == "valid":
+            tp_list = train_tp["recording_id"].unique()
+            for file in files:
+                recording_id = file.split("/")[-1].split(".")[0]
+                if recording_id in tp_list:
+                    use_file_keys.append(keys + ["matrix_tp"])
+                    use_file_list.append(file)
+                    use_time_list.append(
+                        train_tp[train_tp["recording_id"] == recording_id]
+                        .loc[:, ["t_min", "t_max", "species_id"]]
+                        .values
+                    )
         elif mode == "test":
             for file in files:
                 use_file_keys.append(keys)
@@ -151,7 +163,7 @@ class RainForestDataset(Dataset):
         if self.config.get("wave_mode", False) and ("wave" in self.use_file_keys):
             items["feats"] = self.wave2spec(items["wave"])
             del items["wave"]
-        if (self.mode == "all") or (self.mode == "tp"):
+        if (self.mode == "all") or (self.mode == "tp") or (self.mode == "valid"):
             items["time_list"] = self.use_time_list[idx]
         if self.allow_cache:
             self.caches[idx] = items

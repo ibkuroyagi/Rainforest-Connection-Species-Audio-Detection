@@ -156,9 +156,7 @@ class FeatTrainCollater(object):
         batch["y_clip"] = torch.tensor(clip_batch, dtype=torch.float)
         if self.use_dializer:
             # (B, l_target, 1)
-            batch["frame_mask"] = torch.tensor(
-                frame_mask_batch, dtype=torch.float
-            ).unsqueeze(2)
+            batch["frame_mask"] = torch.tensor(frame_mask_batch, dtype=torch.float)
         return batch
 
 
@@ -176,6 +174,7 @@ class FeatEvalCollater(object):
         self.max_frames = max_frames
         self.n_split = n_split
         self.is_label = is_label
+        self.n_class = 24
 
     def __call__(self, batch):
         """Convert into batch tensors.
@@ -211,12 +210,11 @@ class FeatEvalCollater(object):
             )  # (B, mel, max_frames)
 
         if self.is_label:
-            matrix_tp_list = [b["matrix_tp"] for b in batch]
-            items["y_clip"] = torch.tensor(
-                [
-                    matrix_tp.any(axis=0).astype(np.float32)
-                    for matrix_tp in matrix_tp_list
-                ],
-                dtype=torch.float,
-            )
+            all_time_list = [b["time_list"] for b in batch]
+            clip_batch = []
+            for time_list in all_time_list:
+                y_clip = np.zeros(self.n_class)
+                y_clip[time_list[:, 2]] = 1.0
+                clip_batch.append(y_clip.astype(np.float32))
+            items["y_clip"] = torch.tensor(clip_batch, dtype=torch.float)
         return items
