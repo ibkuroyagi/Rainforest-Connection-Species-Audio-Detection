@@ -44,7 +44,7 @@ class RainForestDataset(Dataset):
             mode (list): Mode of dataset. [tp, all, test]
             allow_cache (bool): Whether to allow cache of the loaded files.
             use_on_the_fly (bool): Whether to use on the fly proprocess(don't use collater_fc).
-            config (dict): Setting dict for wave_mode.
+            config (dict): Setting dict for requir_prep=True.
             seed (int): seed
         """
         # if seed is not None:
@@ -154,15 +154,16 @@ class RainForestDataset(Dataset):
             return self.caches[idx]
         hdf5_file = h5py.File(self.use_file_list[idx], "r")
         items = {}
+        # feats is dumped files
         for key in self.use_file_keys[idx]:
             items[key] = hdf5_file[key][()]
         hdf5_file.close()
         if self.use_on_the_fly:
+            # Make specrorgram on Dataset.
             return self._on_the_fly(items["wave"], self.use_time_list[idx], split=8)
-
-        if self.config.get("wave_mode", False) and ("wave" in self.use_file_keys):
-            items["feats"] = self.wave2spec(items["wave"])
-            del items["wave"]
+        if self.transform is not None:
+            # Make specrorgram on Model.
+            items["wave"] = self.transform(items["wave"])
         if (self.mode == "all") or (self.mode == "tp") or (self.mode == "valid"):
             items["time_list"] = self.use_time_list[idx]
         if self.allow_cache:

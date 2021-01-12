@@ -118,7 +118,7 @@ def main():
     for key, value in config.items():
         logging.info(f"{key} = {value}")
     if (config["model_params"].get("require_prep", False)) or (
-        config.get("wave_mode", False)
+        config.get("use_on_the_fly", False)
     ):
         train_keys = ["wave"]
     else:
@@ -191,20 +191,24 @@ def main():
         logging.info(f"The number of evaluation files = {len(eval_dataset)}.")
         # get data loader
         if config["model_params"].get("require_prep", False):
-            # from datasets import WaveEvalCollater
+            from datasets import WaveEvalCollater
 
-            # eval_collater = WaveEvalCollater(
-            #     sf=config["sampling_rate"],
-            #     sec=config.get("sec", 10),
-            #     n_split=config.get("n_eval_split", 3),
-            # )
-            # from datasets import WaveTrainCollater
+            eval_collater = WaveEvalCollater(
+                sr=config.get("sr", 48000),
+                sec=config.get("sec", 10.0),
+                n_split=config.get("n_eval_split", 6),
+                is_label=True,
+            )
+            from datasets import WaveTrainCollater
 
-            # train_collater = WaveTrainCollater(
-            #     sf=config["sampling_rate"],
-            #     sec=config.get("sec", 10),
-            # )
-            pass
+            train_collater = WaveTrainCollater(
+                sr=config.get("sr", 48000),
+                sec=config.get("sec", 10.0),
+                l_target=config.get("l_target", 32),
+                mode=config.get("mode", "binary"),
+                random=config.get("random", False),
+                use_dializer=config.get("use_dializer", False),
+            )
         else:
             from datasets import FeatEvalCollater
 

@@ -196,14 +196,14 @@ def main():
         )
         # get data loader
         if config["model_params"].get("require_prep", False):
-            # from datasets import WaveEvalCollater
+            from datasets import WaveEvalCollater
 
-            # dev_collater = WaveEvalCollater(
-            #     sf=config["sampling_rate"],
-            #     sec=config.get("sec", 10),
-            #     n_split=config.get("n_eval_split", 3),
-            # )
-            pass
+            dev_collater = WaveEvalCollater(
+                sr=config.get("sr", 48000),
+                sec=config.get("sec", 10.0),
+                n_split=config.get("n_eval_split", 6),
+                is_label=True,
+            )
         else:
             from datasets import FeatEvalCollater
 
@@ -310,17 +310,13 @@ def main():
             )
             logging.info(f"The number of test files = {len(test_dataset)}.")
             if config["model_params"].get("require_prep", False):
-                # from datasets import WaveEvalCollater
-
-                # eval_collater = WaveEvalCollater(
-                #     sf=config["sampling_rate"],
-                #     sec=config.get("sec", 10),
-                #     n_split=config.get("n_eval_split", 3),
-                # )
-                pass
+                eval_collater = WaveEvalCollater(
+                    sr=config.get("sr", 48000),
+                    sec=config.get("sec", 10.0),
+                    n_split=config.get("n_eval_split", 6),
+                    is_label=False,
+                )
             else:
-                from datasets import FeatEvalCollater
-
                 eval_collater = FeatEvalCollater(
                     max_frames=config.get("max_frames", 512),
                     n_split=config.get("n_eval_split", 20),

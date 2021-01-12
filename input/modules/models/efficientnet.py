@@ -2,12 +2,14 @@
 
 # Created by Ibuki Kuroyanagi
 
-"""Conformer algorithm."""
+"""EfficientNet."""
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchlibrosa.augmentation import SpecAugmentation
+from torchlibrosa.stft import LogmelFilterBank
+from torchlibrosa.stft import Spectrogram
 from efficientnet_pytorch import EfficientNet
 
 from .cnn import AttBlock
@@ -17,15 +19,51 @@ from .utils import init_layer
 class EfficientNet_b(nn.Module):
     def __init__(
         self,
+        sample_rate=48000,
+        window_size=2048,
+        hop_size=512,
+        mel_bins=128,
+        fmin=30,
+        fmax=16000,
         classes_num=24,
         efficient_net_name="efficientnet-b0",
         feat_dim=1280,
+        require_prep=False,
         training=False,
         is_spec_augmenter=False,
         use_dializer=False,
     ):
-
         super(self.__class__, self).__init__()
+        # Spectrogram extractor
+        window = "hann"
+        center = True
+        pad_mode = "reflect"
+        ref = 1.0
+        amin = 1e-6
+        top_db = None
+        if require_prep:
+            self.spectrogram_extractor = Spectrogram(
+                n_fft=window_size,
+                hop_length=hop_size,
+                win_length=window_size,
+                window=window,
+                center=center,
+                pad_mode=pad_mode,
+                freeze_parameters=True,
+            )
+
+            # Logmel feature extractor
+            self.logmel_extractor = LogmelFilterBank(
+                sr=sample_rate,
+                n_fft=window_size,
+                n_mels=mel_bins,
+                fmin=fmin,
+                fmax=fmax,
+                ref=ref,
+                amin=amin,
+                top_db=top_db,
+                freeze_parameters=True,
+            )
         self.conv0 = nn.Conv2d(1, 3, 1, 1)
         self.efficientnet = EfficientNet.from_pretrained(efficient_net_name)
         self.dropout1 = nn.Dropout(p=0.2)
@@ -35,6 +73,7 @@ class EfficientNet_b(nn.Module):
 
         self.init_weight()
         self.training = training
+        self.require_prep = require_prep
         self.use_dializer = use_dializer
         self.is_spec_augmenter = is_spec_augmenter
         if is_spec_augmenter:
@@ -52,9 +91,15 @@ class EfficientNet_b(nn.Module):
         init_layer(self.fc1)
 
     def forward(self, input):
-        """Input: (batch_size, mels, T')"""
-
-        x = input.unsqueeze(3)
+        """Input: (batch_size, data_length) or (batch_size, mels, T')"""
+        if self.require_prep:
+            x = self.spectrogram_extractor(
+                input
+            )  # (batch_size, 1, time_steps, freq_bins)
+            x = self.logmel_extractor(x)  # (batch_size, 1, time_steps, mel_bins)
+            x = x.transpose(1, 3)
+        else:
+            x = input.unsqueeze(3)
         x = x.transpose(1, 3)  # (B, 1, T', mels)
         if self.training and self.is_spec_augmenter:
             x = self.spec_augmenter(x)

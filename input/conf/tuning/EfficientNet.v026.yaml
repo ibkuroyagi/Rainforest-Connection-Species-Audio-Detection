@@ -26,20 +26,27 @@ fmax: 16000
 ###########################################################
 model_type: "EfficientNet_b"
 model_params:
+  sample_rate: 48000
+  window_size: 2048
+  hop_size: 512
+  mel_bins: 128
+  fmin: 50
+  fmax: 16000
   classes_num: 24
   efficient_net_name: efficientnet-b0
   feat_dim: 1280
+  require_prep: true
   is_spec_augmenter: false
   use_dializer: true
 ###########################################################
 #                    TRAINING SETTING                     #
 ###########################################################
 # augmentation
-mixup_alpha: 0.2
-augmentation_params:
-  PinkNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
-  GaussianNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
-  VolumeControl: { always_apply: False, p: 0.5, db_limit: 10, mode: cosine }
+# mixup_alpha: 0.2
+# augmentation_params:
+#   PinkNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
+#   GaussianNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
+#   VolumeControl: { always_apply: False, p: 0.5, db_limit: 10, mode: cosine }
 
 # dataset
 train_dataset_mode: tp
@@ -47,7 +54,6 @@ allow_cache: false # Whether to allow cache in dataset. If true, it requires cpu
 is_normalize: false
 use_on_the_fly: true
 # collater_fc
-max_frames: 938
 l_target: 30
 collater_mode: binary
 random: false

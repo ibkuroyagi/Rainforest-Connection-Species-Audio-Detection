@@ -19,8 +19,8 @@ fft_size: 2048
 hop_size: 512
 window: hann
 num_mels: 128
-fmin: 50
-fmax: 16000
+fmin: 0
+fmax: 24000
 ###########################################################
 #                     NETWORK SETTING                     #
 ###########################################################
@@ -35,20 +35,17 @@ model_params:
 #                    TRAINING SETTING                     #
 ###########################################################
 # augmentation
+wave_mode: false
 mixup_alpha: 0.2
-augmentation_params:
-  PinkNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
-  GaussianNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
-  VolumeControl: { always_apply: False, p: 0.5, db_limit: 10, mode: cosine }
 
 # dataset
 train_dataset_mode: tp
-allow_cache: false # Whether to allow cache in dataset. If true, it requires cpu memory.
+allow_cache: true # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: false
-use_on_the_fly: true
+use_on_the_fly: false
 # collater_fc
-max_frames: 938
-l_target: 30
+max_frames: 1024
+l_target: 32
 collater_mode: binary
 random: false
 # dataloader
