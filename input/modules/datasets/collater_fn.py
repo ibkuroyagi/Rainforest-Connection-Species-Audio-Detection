@@ -214,7 +214,7 @@ class FeatEvalCollater(object):
             clip_batch = []
             for time_list in all_time_list:
                 y_clip = np.zeros(self.n_class)
-                y_clip[time_list[:, 2]] = 1.0
+                y_clip[time_list[:, 2].astype(int)] = 1.0
                 clip_batch.append(y_clip.astype(np.float32))
             items["y_clip"] = torch.tensor(clip_batch, dtype=torch.float)
         return items
