@@ -117,13 +117,15 @@ def main():
         yaml.dump(config, f, Dumper=yaml.Dumper)
     for key, value in config.items():
         logging.info(f"{key} = {value}")
-    if (config["model_params"].get("require_prep", False)) or (
-        config.get("use_on_the_fly", False)
+    if config["model_params"].get("require_prep", False) or config.get(
+        "use_on_the_fly", False
     ):
         train_keys = ["wave"]
+        eval_keys = ["wave"]
     else:
         train_keys = ["feats"]
-    eval_keys = ["feats"]
+        eval_keys = ["feats"]
+    logging.info(f"train key:{train_keys}, eval key: {eval_keys}")
     train_tp = pd.read_csv(os.path.join(args.datadir, "train_tp.csv"))
     if config.get("train_dataset_mode", "tp") == "all":
         train_fp = pd.read_csv(os.path.join(args.datadir, "train_fp.csv"))
@@ -276,6 +278,29 @@ def main():
             logging.info(f"Successfully load weight from {args.cache_path}")
             model.bn0 = nn.BatchNorm2d(config["num_mels"])
             model.att_block = models.AttBlock(**config["att_block"])
+            if config["model_params"].get("require_prep", False):
+                from torchlibrosa.stft import LogmelFilterBank
+                from torchlibrosa.stft import Spectrogram
+
+                model.spectrogram_extractor = Spectrogram(
+                    n_fft=config["fft_size"],
+                    hop_length=config["hop_size"],
+                    win_length=config["fft_size"],
+                    window=config["window"],
+                    center=True,
+                    pad_mode="reflect",
+                )
+                model.logmel_extractor = LogmelFilterBank(
+                    sr=config["sr"],
+                    n_fft=config["fft_size"],
+                    n_mels=config["num_mels"],
+                    fmin=config["fmin"],
+                    fmax=config["fmax"],
+                    ref=1.0,
+                    amin=1e-6,
+                    top_db=None,
+                    freeze_parameters=True,
+                )
             conv_params = []
             fc_param = []
             for name, param in model.named_parameters():

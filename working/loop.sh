@@ -3,9 +3,9 @@
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
 
-# model=Cnn14_DecisionLevelAtt
+model=Cnn14_DecisionLevelAtt
 # model=conformer
-model=EfficientNet
+# model=EfficientNet
 
 type=wave
 # type=raw
@@ -14,9 +14,9 @@ type=wave
 stage=2
 stop_stage=100
 verbose=1
-No=v026
+No=v014
 # for model in conformer transformer; do
-# for No in v021 v020; do
+# for No in v028 v027; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
 # checkpoints="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl exp/${type}/${model}/${No}/best_score/best_scorefold1.pkl no_model  no_model no_model"
 resume=""

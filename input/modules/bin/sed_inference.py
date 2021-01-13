@@ -168,6 +168,9 @@ def main():
             config["n_class"],
         )
     )
+    eval_key = (
+        ["feats"] if config["model_params"].get("require_prep", False) else ["wave"]
+    )
     for fold, (train_idx, valid_idx) in enumerate(kfold.split(y, y)):
         logging.info(f"Start training fold {fold}.")
         # define models and optimizers
@@ -185,6 +188,29 @@ def main():
 
             model.bn0 = nn.BatchNorm2d(config["num_mels"])
             model.att_block = AttBlock(**config["att_block"])
+            if config["model_params"].get("require_prep", False):
+                from torchlibrosa.stft import LogmelFilterBank
+                from torchlibrosa.stft import Spectrogram
+
+                model.spectrogram_extractor = Spectrogram(
+                    n_fft=config["fft_size"],
+                    hop_length=config["hop_size"],
+                    win_length=config["fft_size"],
+                    window=config["window"],
+                    center=True,
+                    pad_mode="reflect",
+                )
+                model.logmel_extractor = LogmelFilterBank(
+                    sr=config["sr"],
+                    n_fft=config["fft_size"],
+                    n_mels=config["num_mels"],
+                    fmin=config["fmin"],
+                    fmax=config["fmax"],
+                    ref=1.0,
+                    amin=1e-6,
+                    top_db=None,
+                    freeze_parameters=True,
+                )
             logging.info("Successfully initialize custom weight.")
 
         if fold == 0:
@@ -254,7 +280,7 @@ def main():
                     os.path.join(dumpdir, "train", f"{recording_id}.h5")
                     for recording_id in tp_list[valid_idx]
                 ],
-                keys=["feats"],
+                keys=eval_key,
                 train_tp=train_tp[~train_tp["use_train"]],
                 mode="valid",
                 is_normalize=config.get("is_normalize", False),
@@ -302,7 +328,7 @@ def main():
             # initialize test data
             test_dataset = RainForestDataset(
                 root_dirs=[os.path.join(dumpdir, "test")],
-                keys=["feats"],
+                keys=eval_key,
                 mode="test",
                 is_normalize=config.get("is_normalize", False),
                 allow_cache=False,

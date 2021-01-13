@@ -37,16 +37,16 @@ model_params:
   feat_dim: 1280
   require_prep: true
   is_spec_augmenter: false
-  use_dializer: true
+  use_dializer: false
 ###########################################################
 #                    TRAINING SETTING                     #
 ###########################################################
 # augmentation
-# mixup_alpha: 0.2
-# augmentation_params:
-#   PinkNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
-#   GaussianNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
-#   VolumeControl: { always_apply: False, p: 0.5, db_limit: 10, mode: cosine }
+mixup_alpha: 0.2
+augmentation_params:
+  PinkNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
+  GaussianNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
+  VolumeControl: { always_apply: False, p: 0.5, db_limit: 10, mode: cosine }
 
 # dataset
 train_dataset_mode: tp
@@ -59,7 +59,7 @@ collater_mode: binary
 random: false
 # dataloader
 accum_grads: 2
-batch_size: 32 # Batch size.
+batch_size: 64 # Batch size.
 pin_memory: false # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
 # trainer

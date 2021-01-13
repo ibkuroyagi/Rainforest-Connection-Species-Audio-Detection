@@ -1,10 +1,4 @@
-# intrepolate shumamura0 stgategy by efficent net b0, update lr=0.001, fix collater_fc and model(sa same as v010)
-# PANNs SED architecture
-# ClipFrame Loss
-# Random 10sec clip
-# Using only tp file
-# MixUp
-# The base model is EfficientNet_simple
+# ps0.9,1.1, frame=2048
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -24,20 +18,22 @@ fmax: 16000
 ###########################################################
 #                     NETWORK SETTING                     #
 ###########################################################
-model_type: "EfficientNet_b"
+model_type: "Cnn14_DecisionLevelAtt" # pretrained model's type.
+att_block:
+  n_in: 2048
+  n_out: 24
+  activation: linear
+
 model_params:
-  sample_rate: 48000
-  window_size: 2048
-  hop_size: 512
-  mel_bins: 128
+  sample_rate: 16000
+  window_size: 1024
+  hop_size: 256
+  mel_bins: 64
   fmin: 50
-  fmax: 16000
-  classes_num: 24
-  efficient_net_name: efficientnet-b0
-  feat_dim: 1280
+  fmax: 8000
+  classes_num: 527
   require_prep: true
   is_spec_augmenter: false
-  use_dializer: true
 ###########################################################
 #                    TRAINING SETTING                     #
 ###########################################################
@@ -54,7 +50,8 @@ allow_cache: false # Whether to allow cache in dataset. If true, it requires cpu
 is_normalize: false
 use_on_the_fly: false
 # collater_fc
-l_target: 30
+max_frames: 1024
+l_target: 32
 collater_mode: binary
 random: false
 # dataloader
@@ -71,13 +68,13 @@ use_dializer: false
 loss_type: BCEWithLogitsLoss
 loss_params:
   reduction: mean
-
 ###########################################################
 #              OPTIMIZER & SCHEDULER SETTING              #
 ###########################################################
 optimizer_type: "Adam"
 optimizer_params:
-  lr: 0.0008
+  conv_lr: 0.0002 # convolution layer's learning rate.
+  fc_lr: 0.001 # full connection layer's learning rate.
 scheduler_type: "StepLR"
 scheduler_params:
   step_size: 1000 # scheduler step size.
