@@ -1,10 +1,10 @@
 # intrepolate shumamura0 stgategy by efficent net b0, update lr=0.001, fix collater_fc and model(sa same as v010)
 # PANNs SED architecture
-# ClipFrame Loss
+# BCEWithLogitsLoss+DializerLoss
 # Random 10sec clip
 # Using only tp file
 # MixUp
-# The base model is EfficientNet_simple
+# The base model is EfficientNet_b
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -30,13 +30,13 @@ model_params:
   efficient_net_name: efficientnet-b0
   feat_dim: 1280
   is_spec_augmenter: false
+  require_prep: false
   use_dializer: true
 ###########################################################
 #                    TRAINING SETTING                     #
 ###########################################################
 # augmentation
-wave_mode: false
-mixup_alpha: 0.2
+mixup_alpha: 0.1
 
 # dataset
 train_dataset_mode: tp
@@ -55,14 +55,17 @@ pin_memory: false # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
 # trainer
 use_center_loss: false
-use_dializer: false
+use_dializer: true
 ###########################################################
 #                       LOSS SETTING                      #
 ###########################################################
 loss_type: BCEWithLogitsLoss
 loss_params:
   reduction: mean
-
+dializer_loss_alpha: 0.5
+dializer_loss_type: BCEWithLogitsLoss
+dializer_loss_params:
+  reduction: mean
 ###########################################################
 #              OPTIMIZER & SCHEDULER SETTING              #
 ###########################################################

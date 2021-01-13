@@ -5,17 +5,17 @@
 
 # model=Cnn14_DecisionLevelAtt
 # model=conformer
-model=transformer
-# model=EfficientNet
+# model=transformer
+model=EfficientNet
 
-type=wave
-# type=raw
+# type=wave
+type=raw
 # type=mel128hop1024
 
 stage=2
 stop_stage=100
 verbose=1
-No=v003
+No=v025
 # for No in v028 v027; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
 # checkpoints="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl exp/${type}/${model}/${No}/best_score/best_scorefold1.pkl no_model  no_model no_model"

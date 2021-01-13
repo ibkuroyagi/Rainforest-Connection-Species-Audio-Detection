@@ -1,6 +1,6 @@
 # intrepolate shumamura0 stgategy by efficent net b0, update lr=0.001, fix collater_fc and model(sa same as v010)
 # PANNs SED architecture
-# ClipFrame Loss
+# BCEWithLogitsLoss
 # Random 10sec clip
 # Using only tp file
 # MixUp

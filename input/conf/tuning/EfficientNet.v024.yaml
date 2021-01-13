@@ -4,7 +4,7 @@
 # Random 10sec clip
 # Using only tp file
 # MixUp
-# The base model is EfficientNet_simple
+# The base model is EfficientNet_b
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################

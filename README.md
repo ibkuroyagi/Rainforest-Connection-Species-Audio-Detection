@@ -140,6 +140,18 @@ EOF
 - ~~eff/v017(fix collater_fc as same as on the fly) FrameClipLoss->中断~~
 - ~~eff/v018(fix collater_fc as same as on the fly) BCE+MixUP(v015とまったく同じ~~
 - ~~eff/v019(preprocess fix)捨てた周波数に重要な情報が乗っている説->inferenceのデータもon the flyにする必要あり~~
+- ~~eff/v020(att,shinmuraさんの手法をコピーmixupなし)PL:0.791
+- ~~eff/v021(att,shinmuraさんの手法をコピーmixup0.2)PL:0.762
+- ~~eff/v022(att,dializer_loss,mixupなし)PL:0.797
+- ~~eff/v023(att,dializer_loss,mixup0.1)PL:0.818
+- eff/v024(att,mixup0.1,augmentation)
+- eff/v025(att,dializer_loss,mixup0.1,raw)
+- eff/v026(att,mixupなし,torchでfeat作る)
+- eff/v027(att,mixup0.2,torchでfeat作る)
+- eff/v028(att,mixup0.2,augmentation,torchでfeat作る)
+- tra/v003(mixupなし,dializer_loss)
+- cnn/v014(att,mixupなし,torchでfeat作る)
+- cnn/v015(att,mixup0.2,augmentation,torchでfeat作る)
 ### 今の課題は何?
 - v002の時代はCV,PLともに0.80のオーダーだったが、sp0.9,1,1に変更orモデルのクラスを25に変更にしたことでPLのスコアが下がった
 - 原因を探るために、
@@ -383,4 +395,27 @@ EOF
     - 次回やること
         - eff/v013~v018, cnn/v002-clip065回収
         - もし、上記のスコアが悪い場合は、本質的に重藤な情報を捨ててしまっている可能性があるので、preprocessのパラメータを考察する
+- 1/11(月)
+    - 今日やったこと
+        - eff/v013~v018, cnn/v002-clip065回収
+        - もし、上記のスコアが悪い場合は、本質的に重藤な情報を捨ててしまっている可能性があるので、preprocessのパラメータを考察する
+    - 次回やること
+        - dializer_lossをattで適応
+        - preprocess stage0実行
+- 1/12(火)
+    - 今日やったこと
+        - dializer_lossをattで適応
+        - preprocess stage0実行
+        - on the flyをモデルでできるように実装
+    - 次回やること
+        - on the flyをモデルでできるように実装
+        - 各種mixup,augなどの関連を調べる
+- 1/13(水)
+    - 今日やったこと
+        - transformerでの実装見直し
+        - cnnでdializer_lossについて確認
+    - 次回やること
+        - 実験結果を回収
+        - 推論部を実装
+        - スプレッドシートに実験を記録開始する
 </div></details>
