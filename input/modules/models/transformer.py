@@ -142,6 +142,7 @@ class TransformerEncoderDecoder(nn.Module):
                 dropout=dropout,
                 maxlen=max_position_encode_length,
             )
+        self.norm = nn.LayerNorm((sequence_length + 1, num_hidden_units))
         transformer_encoder_layer = nn.TransformerEncoderLayer(
             d_model=num_hidden_units,
             nhead=num_heads,
@@ -173,15 +174,15 @@ class TransformerEncoderDecoder(nn.Module):
         else:
             decoder_input_units = num_latent_units
         self.decoder_projection = nn.Linear(decoder_input_units, num_hidden_units)
-        transformer_decoder_layer = nn.TransformerEncoderLayer(
+        transformer_decoder_layer = nn.TransformerDecoderLayer(
             d_model=num_hidden_units,
             nhead=num_heads,
             dim_feedforward=num_feedforward_units,
             dropout=dropout,
             activation=activation,
         )
-        self.decoder_transformer = nn.TransformerEncoder(
-            encoder_layer=transformer_decoder_layer,
+        self.decoder_transformer = nn.TransformerDecoder(
+            decoder_layer=transformer_decoder_layer,
             num_layers=num_blocks,
         )
         self.frame_layer = nn.Linear(num_hidden_units, num_classes)
@@ -210,6 +211,7 @@ class TransformerEncoderDecoder(nn.Module):
             x[:, :, 1:, :] = self.spec_augmenter(x[:, :, 1:, :])  # (B, 1, T', mels)
             x = x.squeeze(1)  # (B, T', mels)
         enc = self.input_layer(x)
+        enc = self.norm(enc)
         if self.use_position_encode:
             enc = self.position_encode(enc)
         enc = self.encoder_transformer(
@@ -225,16 +227,13 @@ class TransformerEncoderDecoder(nn.Module):
                 enc = enc + id_emb
         dec = self.decoder_projection(enc)
         dec = self.decoder_transformer(
-            dec.transpose(0, 1),
-            src_key_padding_mask=~mask if mask is not None else None,
+            tgt=dec.transpose(0, 1), memory=dec.transpose(0, 1)
         )
         out = self.frame_layer(dec.transpose(0, 1))
         y_ = {}
         if self.use_dializer:
-            frame_mask = self.dialize_layer(dec.transpose(0, 1))[:, 1:, :]
-            out[:, 1:, :] = out[:, 1:, :] * torch.sigmoid(frame_mask)
-            out[:, 0, :] = out[:, 0, :] + out[:, 1:, :].max(dim=1)[0]
-            y_["frame_mask"] = frame_mask
+            frame_mask = self.dialize_layer(dec.transpose(0, 1))
+            y_["frame_mask"] = frame_mask[:, 1:]
         y_["y_clip"] = out[:, 0, :]
         y_["y_frame"] = out[:, 1:, :]
         if self.use_reconstruct:

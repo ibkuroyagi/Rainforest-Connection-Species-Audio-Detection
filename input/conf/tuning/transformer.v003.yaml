@@ -1,4 +1,10 @@
-# ps0.9,1.1, frame=2048
+# intrepolate shumamura0 stgategy by efficent net b0, update lr=0.001, fix collater_fc and model(sa same as v010)
+# PANNs SED architecture
+# ClipFrame Loss
+# Random 10sec clip
+# Using only tp file
+# MixUp
+# The base model is EfficientNet_simple
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -18,75 +24,69 @@ fmax: 16000
 ###########################################################
 #                     NETWORK SETTING                     #
 ###########################################################
-model_type: "Cnn14_DecisionLevelAtt" # pretrained model's type.
-att_block:
-  n_in: 2048
-  n_out: 24
-  activation: linear
-
+model_type: "TransformerEncoderDecoder" 
 model_params:
-  sample_rate: 16000
-  window_size: 1024
-  hop_size: 256
-  mel_bins: 64
-  fmin: 50
-  fmax: 8000
-  classes_num: 527
-  require_prep: true
+  num_features: 128
+  num_classes: 24
+  sequence_length: 1024
+  num_blocks: 4
+  num_hidden_units: 128
+  num_feedforward_units: 256
+  num_heads: 4
+  num_latent_units: 32
+  dropout: 0.1
+  use_position_encode: false
+  use_reconstruct: false
+  use_dializer: true
   is_spec_augmenter: false
 ###########################################################
 #                    TRAINING SETTING                     #
 ###########################################################
 # augmentation
-# mixup_alpha: 0.2
-# augmentation_params:
-#   PinkNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
-#   GaussianNoiseSNR: { always_apply: False, p: 0.5, min_snr: 5.0, max_snr: 40.0 }
-#   VolumeControl: { always_apply: False, p: 0.5, db_limit: 10, mode: cosine }
-
+mixup_alpha: 0.1
 # dataset
 train_dataset_mode: tp
-allow_cache: false # Whether to allow cache in dataset. If true, it requires cpu memory.
+allow_cache: true # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: false
-use_on_the_fly: false
 # collater_fc
 max_frames: 1024
-l_target: 29
+l_target: 1024
 collater_mode: binary
-random: false
+random: False
 # dataloader
-accum_grads: 2
-batch_size: 32 # Batch size.
+accum_grads: 32
+batch_size: 16 # Batch size.
 pin_memory: false # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
 # trainer
-use_center_loss: false
-use_dializer: false
+use_center_loss: False
+use_dializer: true
 ###########################################################
 #                       LOSS SETTING                      #
 ###########################################################
 loss_type: BCEWithLogitsLoss
 loss_params:
   reduction: mean
+
+dializer_loss_alpha: 0.5
+dializer_loss_type: BCEWithLogitsLoss
+dializer_loss_params:
+  reduction: mean
 ###########################################################
 #              OPTIMIZER & SCHEDULER SETTING              #
 ###########################################################
-optimizer_type: "Adam"
+optimizer_type: Noam
 optimizer_params:
-  conv_lr: 0.0002 # convolution layer's learning rate.
-  fc_lr: 0.001 # full connection layer's learning rate.
-scheduler_type: "StepLR"
-scheduler_params:
-  step_size: 1000 # scheduler step size.
-  gamma: 0.5
+  model_size: 128
+  factor: 1.0
+  warmup: 4000
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
-train_max_steps: 3000 # Number of training steps.
-save_interval_steps: 3000 # Interval steps to save checkpoint.
+train_max_steps: 5000 # Number of training steps.
+save_interval_steps: 5000 # Interval steps to save checkpoint.
 eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
 #                     OTHER SETTING                       #
 ###########################################################
-sec: 10
 n_eval_split: 7
