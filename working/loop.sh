@@ -12,7 +12,7 @@ model=EfficientNet
 type=raw
 # type=mel128hop1024
 
-stage=2
+stage=3
 stop_stage=100
 verbose=1
 No=v025

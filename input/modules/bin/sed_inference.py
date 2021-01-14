@@ -169,7 +169,7 @@ def main():
         )
     )
     eval_key = (
-        ["feats"] if config["model_params"].get("require_prep", False) else ["wave"]
+        ["wave"] if config["model_params"].get("require_prep", False) else ["feats"]
     )
     for fold, (train_idx, valid_idx) in enumerate(kfold.split(y, y)):
         logging.info(f"Start training fold {fold}.")

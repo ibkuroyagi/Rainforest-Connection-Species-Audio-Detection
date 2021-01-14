@@ -140,12 +140,12 @@ EOF
 - ~~eff/v017(fix collater_fc as same as on the fly) FrameClipLoss->中断~~
 - ~~eff/v018(fix collater_fc as same as on the fly) BCE+MixUP(v015とまったく同じ~~
 - ~~eff/v019(preprocess fix)捨てた周波数に重要な情報が乗っている説->inferenceのデータもon the flyにする必要あり~~
-- ~~eff/v020(att,shinmuraさんの手法をコピーmixupなし)PL:0.791
-- ~~eff/v021(att,shinmuraさんの手法をコピーmixup0.2)PL:0.762
-- ~~eff/v022(att,dializer_loss,mixupなし)PL:0.797
-- ~~eff/v023(att,dializer_loss,mixup0.1)PL:0.818
+- ~~eff/v020(att,shinmuraさんの手法をコピーmixupなし)~~ PL:0.791
+- ~~eff/v021(att,shinmuraさんの手法をコピーmixup0.2)~~ PL:0.762
+- ~~eff/v022(att,dializer_loss,mixupなし)~~ PL:0.797
+- ~~eff/v023(att,dializer_loss,mixup0.1)~~ PL:0.818
 - eff/v024(att,mixup0.1,augmentation)
-- eff/v025(att,dializer_loss,mixup0.1,raw)
+- ~~eff/v025(att,dializer_loss,mixup0.1,raw)~~:PL0.801
 - eff/v026(att,mixupなし,torchでfeat作る)
 - eff/v027(att,mixup0.2,torchでfeat作る)
 - eff/v028(att,mixup0.2,augmentation,torchでfeat作る)
