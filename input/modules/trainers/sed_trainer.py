@@ -519,6 +519,7 @@ class SEDTrainer(object):
         """Evaluate model one epoch."""
         logging.info(f"(Steps: {self.steps}) Start dev data's evaluation.")
         # change mode
+        self.model.training = False
         self.model.eval()
 
         # calculate loss for each batch
@@ -649,6 +650,7 @@ class SEDTrainer(object):
                 (0, self.config["l_target"], 1)
             ).to(self.device)
         # restore mode
+        self.model.training = True
         self.model.train()
 
     def inference(self, mode="test"):

@@ -149,6 +149,8 @@ EOF
 - eff/v026(att,mixupなし,torchでfeat作る)
 - eff/v027(att,mixup0.2,torchでfeat作る)
 - eff/v028(att,mixup0.2,augmentation,torchでfeat作る)
+- eff/v029(att,dializer_loss,mixup0.1,specaug)
+- eff/v030(att,dializer_loss,mixup0.1,center)
 - tra/v003(mixupなし,dializer_loss)
 - cnn/v014(att,mixupなし,torchでfeat作る)
 - cnn/v015(att,mixup0.2,augmentation,torchでfeat作る)
@@ -418,4 +420,16 @@ EOF
         - 実験結果を回収
         - 推論部を実装
         - スプレッドシートに実験を記録開始する
+- 1/14(木)
+    - 今日やったこと
+        - v024回収
+    - 次回やること
+        - v025提出
+- 1/15(木)
+    - 今日やったこと
+        - v025提出
+    - 次回やること
+        - v025提出
+        - validのaccの割合をクラス単位で可視化(バランシングが効果ありそうなら実装)
+        - 
 </div></details>
