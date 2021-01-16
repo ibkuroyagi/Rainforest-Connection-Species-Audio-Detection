@@ -68,7 +68,7 @@ dializer_loss_params:
 center_loss_alpha: 5.0e-5
 center_loss_params:
   num_classes: 24
-  feat_dim: 2048
+  feat_dim: 1280
 
 tsne_params:
   n_components: 2
@@ -81,6 +81,8 @@ tsne_params:
 optimizer_type: "Adam"
 optimizer_params:
   lr: 0.0008
+center_loss_optimizer_params:
+  lr: 0.0001
 scheduler_type: "StepLR"
 scheduler_params:
   step_size: 1000 # scheduler step size.

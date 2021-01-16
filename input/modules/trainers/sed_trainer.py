@@ -223,6 +223,7 @@ class SEDTrainer(object):
             )
         if self.use_center_loss:
             center_loss_label = self._get_center_loss_label(y_clip[:, : self.n_target])
+            logging.debug(f"center_loss_label:{center_loss_label}")
             center_loss = (
                 self.center_loss(y_["embedding"], center_loss_label)
                 * self.config["center_loss_alpha"]
