@@ -269,15 +269,16 @@ def main():
             config.get("model_type", "Cnn14_DecisionLevelAtt"),
         )
 
-        if (len(args.cache_path) != 0) and (
-            config["model_type"] == "Cnn14_DecisionLevelAtt"
-        ):
+        if config["model_type"] == "Cnn14_DecisionLevelAtt":
             model = model_class(training=True, **config["model_params"]).to(device)
-            weights = torch.load(args.cache_path)
-            model.load_state_dict(weights["model"])
-            logging.info(f"Successfully load weight from {args.cache_path}")
+            if len(args.cache_path) != 0:
+                weights = torch.load(args.cache_path)
+                model.load_state_dict(weights["model"])
+                logging.info(f"Successfully load weight from {args.cache_path}")
             model.bn0 = nn.BatchNorm2d(config["num_mels"])
             model.att_block = models.AttBlock(**config["att_block"])
+            if config["model_params"].get("use_dializer", False):
+                model.dialize_layer = nn.Linear(config["n_class"], 1, bias=True)
             if config["model_params"].get("require_prep", False):
                 from torchlibrosa.stft import LogmelFilterBank
                 from torchlibrosa.stft import Spectrogram

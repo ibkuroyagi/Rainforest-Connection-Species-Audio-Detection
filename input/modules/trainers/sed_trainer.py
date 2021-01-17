@@ -295,10 +295,16 @@ class SEDTrainer(object):
             )
         if self.use_center_loss:
             self.train_label_epoch = np.concatenate(
-                [self.train_label_epoch, center_loss_label.detach().cpu().numpy()],
+                [
+                    self.train_label_epoch,
+                    center_loss_label.detach().cpu().numpy().astype(np.float32),
+                ],
             )
             self.train_embedding_epoch = np.concatenate(
-                [self.train_embedding_epoch, y_["embedding"].detach().cpu().numpy()]
+                [
+                    self.train_embedding_epoch,
+                    y_["embedding"].detach().cpu().numpy().astype(np.float32),
+                ]
             )
         if self.use_dializer:
             # logging.info(
@@ -351,8 +357,10 @@ class SEDTrainer(object):
             if self.use_center_loss:
                 self.epoch_train_loss["train/epoch_center_loss"] = (
                     self.center_loss(
-                        torch.tensor(self.train_embedding_epoch).to(self.device),
-                        torch.tensor(self.train_label_epoch).to(self.device),
+                        torch.tensor(self.train_embedding_epoch)
+                        .float()
+                        .to(self.device),
+                        torch.tensor(self.train_label_epoch).float().to(self.device),
                     ).item()
                     * self.config["center_loss_alpha"]
                 )
@@ -491,12 +499,23 @@ class SEDTrainer(object):
             self.dev_pred_epoch = np.concatenate(
                 [
                     self.dev_pred_epoch,
-                    y_["y_clip"][:, : self.n_target].detach().cpu().numpy(),
+                    y_["y_clip"][:, : self.n_target]
+                    .detach()
+                    .cpu()
+                    .numpy()
+                    .astype(np.float32),
                 ],
                 axis=0,
             )
             self.dev_y_epoch = np.concatenate(
-                [self.dev_y_epoch, y_clip[:, : self.n_target].detach().cpu().numpy()],
+                [
+                    self.dev_y_epoch,
+                    y_clip[:, : self.n_target]
+                    .detach()
+                    .cpu()
+                    .numpy()
+                    .astype(np.float32),
+                ],
                 axis=0,
             )
         if self.use_center_loss:
@@ -554,8 +573,8 @@ class SEDTrainer(object):
             if self.use_center_loss:
                 self.epoch_eval_loss["dev/epoch_center_loss"] = (
                     self.center_loss(
-                        torch.tensor(self.dev_embedding_epoch).to(self.device),
-                        torch.tensor(self.dev_label_epoch).to(self.device),
+                        torch.tensor(self.dev_embedding_epoch).float().to(self.device),
+                        torch.tensor(self.dev_label_epoch).float().to(self.device),
                     ).item()
                     * self.config["center_loss_alpha"]
                 )

@@ -165,6 +165,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         training=False,
         require_prep=False,
         is_spec_augmenter=False,
+        use_dializer=False,
     ):
 
         super(self.__class__, self).__init__()
@@ -209,7 +210,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
             freq_stripes_num=2,
         )
 
-        self.bn0 = nn.BatchNorm2d(64)
+        self.bn0 = nn.BatchNorm2d(mel_bins)
         self.dropout = nn.Dropout(p=0.2)
         self.conv_block1 = ConvBlock(in_channels=1, out_channels=64)
         self.conv_block2 = ConvBlock(in_channels=64, out_channels=128)
@@ -226,6 +227,9 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         self.training = training
         self.require_prep = require_prep
         self.is_spec_augmenter = is_spec_augmenter
+        self.use_dializer = use_dializer
+        if use_dializer:
+            self.dialize_layer = nn.Linear(classes_num, 1, bias=True)
 
     def init_weight(self):
         init_bn(self.bn0)
@@ -272,5 +276,8 @@ class Cnn14_DecisionLevelAtt(nn.Module):
             "y_clip": clipwise_output,  # (B, n_class)
             "embedding": embedding,  # (B, feat_dim)
         }
+        if self.use_dializer:
+            # (B, T', 1)
+            output_dict["frame_mask"] = self.dialize_layer(segmentwise_output)
 
         return output_dict

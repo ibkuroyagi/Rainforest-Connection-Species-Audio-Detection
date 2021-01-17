@@ -3,10 +3,10 @@
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
 
-# model=Cnn14_DecisionLevelAtt
+model=Cnn14_DecisionLevelAtt
 # model=conformer
 # model=transformer
-model=EfficientNet
+# model=EfficientNet
 
 type=wave
 # type=raw
@@ -15,7 +15,7 @@ type=wave
 stage=2
 stop_stage=100
 verbose=1
-No=v030
+No=v016
 # for No in v029 v030; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
 # checkpoints="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl exp/${type}/${model}/${No}/best_score/best_scorefold1.pkl no_model  no_model no_model"
@@ -32,7 +32,8 @@ sbatch -J "${type}/${No}" ./run.sh \
     --cal_type "0" \
     --resume "${resume}" \
     --speed_facters "0.9 1.1" \
-    --verbose "${verbose}"
+    --verbose "${verbose}" \
+    --cache_path ""
 # --checkpoints "${checkpoints}"
 # done
 # done
