@@ -14,19 +14,23 @@ class MobileNetV2(nn.Module):
         feat_dim=1280,
         training=False,
         is_spec_augmenter=False,
+        require_prep=False,
+        use_dializer=False,
     ):
 
         super(self.__class__, self).__init__()
         self.conv0 = nn.Conv2d(1, 3, 1, 1)
         self.mobilenetv2 = torchvision.models.mobilenet_v2(pretrained=True)
-        self.dropout1 = nn.Dropout(p=0.2)
+        self.dropout1 = nn.Dropout(p=0.5)
         self.fc1 = nn.Linear(feat_dim, feat_dim, bias=True)
-        self.dropout2 = nn.Dropout(p=0.2)
+        self.dropout2 = nn.Dropout(p=0.5)
         self.att_block = AttBlock(feat_dim, classes_num, activation="linear")
 
         self.init_weight()
         self.training = training
         self.is_spec_augmenter = is_spec_augmenter
+        self.require_prep = require_prep
+        self.use_dializer = use_dializer
         if is_spec_augmenter:
             # Spec augmenter
             self.spec_augmenter = SpecAugmentation(
@@ -35,6 +39,8 @@ class MobileNetV2(nn.Module):
                 freq_drop_width=20,
                 freq_stripes_num=2,
             )
+        if use_dializer:
+            self.dialize_layer = nn.Linear(classes_num, 1, bias=True)
 
     def init_weight(self):
         init_layer(self.fc1)
@@ -48,25 +54,24 @@ class MobileNetV2(nn.Module):
             x = self.spec_augmenter(x)
         x = self.conv0(x)
         x = self.mobilenetv2.features(x)
-        # print(f"feature_map:{x.shape}")
-        x = torch.mean(x, dim=3)  # + torch.max(x, dim=3)[0]
+        x = torch.mean(x, dim=3)
         embedding = torch.mean(x, dim=2)
-        # print(f"feature_map: mean-dim3{x.shape}")
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
         x = x1 + x2
         x = x.transpose(1, 2)
         x = F.relu_(self.fc1(self.dropout1(x)))
         x = x.transpose(1, 2)
-        # print(f"pool1d_map: mean-dim3{x.shape}")
         (clipwise_output, _, segmentwise_output) = self.att_block(self.dropout2(x))
         segmentwise_output = segmentwise_output.transpose(1, 2)
-
         output_dict = {
             "y_frame": segmentwise_output,  # (B, T', n_class)
             "y_clip": clipwise_output,  # (B, n_class)
             "embedding": embedding,  # (B, feat_dim)
         }
+        if self.use_dializer:
+            # (B, T', 1)
+            output_dict["frame_mask"] = self.dialize_layer(segmentwise_output)
 
         return output_dict
 
@@ -78,19 +83,22 @@ class MobileNetV2_simple(nn.Module):
         feat_dim=1280,
         training=False,
         is_spec_augmenter=False,
+        require_prep=False,
+        use_dializer=False,
     ):
 
         super(self.__class__, self).__init__()
         self.conv0 = nn.Conv2d(1, 3, 1, 1)
         self.mobilenetv2 = torchvision.models.mobilenet_v2(pretrained=True)
-        self.dropout1 = nn.Dropout(p=0.2)
+        self.dropout1 = nn.Dropout(p=0.5)
         self.fc1 = nn.Linear(feat_dim, feat_dim, bias=True)
-        self.dropout2 = nn.Dropout(p=0.2)
+        self.dropout2 = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(feat_dim, classes_num, bias=True)
 
         self.init_weight()
         self.training = training
         self.is_spec_augmenter = is_spec_augmenter
+        self.use_dializer = use_dializer
         if is_spec_augmenter:
             # Spec augmenter
             self.spec_augmenter = SpecAugmentation(
@@ -99,6 +107,8 @@ class MobileNetV2_simple(nn.Module):
                 freq_drop_width=20,
                 freq_stripes_num=2,
             )
+        if use_dializer:
+            self.dialize_layer = nn.Linear(classes_num, 1, bias=True)
 
     def init_weight(self):
         init_layer(self.fc1)
@@ -113,7 +123,7 @@ class MobileNetV2_simple(nn.Module):
             x = self.spec_augmenter(x)
         x = self.conv0(x)
         x = self.mobilenetv2.features(x)
-        x = torch.mean(x, dim=3)  # + torch.max(x, dim=3)[0]
+        x = torch.mean(x, dim=3)
         embedding = torch.mean(x, dim=2)
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
@@ -122,11 +132,13 @@ class MobileNetV2_simple(nn.Module):
         x = F.relu_(self.fc1(self.dropout1(x)))
         segmentwise_output = self.fc2(self.dropout2(x))
         clipwise_output = segmentwise_output.max(dim=1)[0]
-
         output_dict = {
             "y_frame": segmentwise_output,  # (B, T', n_class)
             "y_clip": clipwise_output,  # (B, n_class)
             "embedding": embedding,  # (B, feat_dim)
         }
+        if self.use_dializer:
+            # (B, T', 1)
+            output_dict["frame_mask"] = self.dialize_layer(segmentwise_output)
 
         return output_dict

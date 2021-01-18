@@ -138,19 +138,21 @@ class EfficientNet_simple(nn.Module):
         feat_dim=1280,
         training=False,
         is_spec_augmenter=False,
+        use_dializer=False,
     ):
 
         super(self.__class__, self).__init__()
         self.conv0 = nn.Conv2d(1, 3, 1, 1)
         self.efficientnet = EfficientNet.from_pretrained(efficient_net_name)
-        self.dropout1 = nn.Dropout(p=0.2)
+        self.dropout1 = nn.Dropout(p=0.5)
         self.fc1 = nn.Linear(feat_dim, feat_dim, bias=True)
-        self.dropout2 = nn.Dropout(p=0.2)
+        self.dropout2 = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(feat_dim, classes_num, bias=True)
 
         self.init_weight()
         self.training = training
         self.is_spec_augmenter = is_spec_augmenter
+        self.use_dializer = use_dializer
         if is_spec_augmenter:
             # Spec augmenter
             self.spec_augmenter = SpecAugmentation(
@@ -159,6 +161,8 @@ class EfficientNet_simple(nn.Module):
                 freq_drop_width=20,
                 freq_stripes_num=2,
             )
+        if use_dializer:
+            self.dialize_layer = nn.Linear(classes_num, 1, bias=True)
 
     def init_weight(self):
         init_layer(self.fc1)
@@ -191,5 +195,8 @@ class EfficientNet_simple(nn.Module):
             "y_clip": clipwise_output,  # (B, n_class)
             "embedding": embedding,  # (B, feat_dim)
         }
+        if self.use_dializer:
+            # (B, T', 1)
+            output_dict["frame_mask"] = self.dialize_layer(segmentwise_output)
 
         return output_dict
