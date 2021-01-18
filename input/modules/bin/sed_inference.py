@@ -188,6 +188,8 @@ def main():
 
             model.bn0 = nn.BatchNorm2d(config["num_mels"])
             model.att_block = AttBlock(**config["att_block"])
+            if config["model_params"].get("use_dializer", False):
+                model.dialize_layer = nn.Linear(config["n_class"], 1, bias=True)
             if config["model_params"].get("require_prep", False):
                 from torchlibrosa.stft import LogmelFilterBank
                 from torchlibrosa.stft import Spectrogram
