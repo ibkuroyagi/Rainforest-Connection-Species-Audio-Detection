@@ -4,9 +4,9 @@
 # Created by Ibuki Kuroyanagi
 
 # model=Cnn14_DecisionLevelAtt
-# model=EfficientNet
+model=EfficientNet
 # model=MobileNetV2
-model=ResNext50
+# model=ResNext50
 # model=conformer
 # model=transformer
 
@@ -17,14 +17,14 @@ type=wave
 stage=2
 stop_stage=100
 verbose=1
-No=v004
-# for No in v029 v030; do
+No=v026
+# for No in v015 v016 v017; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
 # checkpoints="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl exp/${type}/${model}/${No}/best_score/best_scorefold1.pkl no_model  no_model no_model"
 resume=""
-# for fold in {0..4}; do
-#     resume+="exp/${type}/${model}/${No}/checkpoint-2000/checkpoint-2000fold${fold}.pkl "
-# done
+for fold in {0..4}; do
+    resume+="exp/${type}/${model}/${No}/checkpoint-5000/checkpoint-5000fold${fold}.pkl "
+done
 sbatch -J "${type}/${No}" ./run.sh \
     --conf "conf/tuning/${model}.${No}.yaml" \
     --tag "${type}/${model}/${No}" \

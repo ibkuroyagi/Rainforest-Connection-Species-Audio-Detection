@@ -9,15 +9,28 @@ import torch
 
 class Noam(object):
     """Noam optimizer, a.k.a., Adam + Warmup learning rate.
+
     This code is modified from https://github.com/espnet/espnet.
+
     """
 
-    def __init__(self, params, model_size, factor, warmup, betas=(0.9, 0.98), eps=1e-9):
+    def __init__(
+        self,
+        params,
+        model_size,
+        base_lr,
+        warmup,
+        betas=(0.9, 0.999),
+        eps=1e-8,
+        weight_decay=0.0,
+    ):
         """Construct an NoamOpt object."""
-        self.optimizer = torch.optim.Adam(params, lr=0, betas=betas, eps=eps)
+        self.optimizer = torch.optim.Adam(
+            params, lr=0, betas=betas, eps=eps, weight_decay=weight_decay
+        )
         self._step = 0
         self.warmup = warmup
-        self.factor = factor
+        self.base_lr = base_lr
         self.model_size = model_size
         self._rate = 0
 
@@ -39,7 +52,7 @@ class Noam(object):
         if step is None:
             step = self._step
         return (
-            self.factor
+            self.base_lr
             * self.model_size ** (-0.5)
             * min(step ** (-0.5), step * self.warmup ** (-1.5))
         )
@@ -53,16 +66,11 @@ class Noam(object):
         return {
             "_step": self._step,
             "warmup": self.warmup,
-            "factor": self.factor,
+            "base_lr": self.base_lr,
             "model_size": self.model_size,
             "_rate": self._rate,
             "optimizer": self.optimizer.state_dict(),
         }
-
-    @property
-    def state(self):
-        """Return state."""
-        return self.optimizer.state
 
     def load_state_dict(self, state_dict):
         """Load state dict."""

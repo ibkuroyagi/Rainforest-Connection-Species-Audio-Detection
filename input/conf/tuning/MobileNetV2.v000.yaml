@@ -47,7 +47,7 @@ collater_mode: binary
 random: false
 # dataloader
 accum_grads: 2
-batch_size: 32 # Batch size.
+batch_size: 64 # Batch size.
 pin_memory: false # Whether to pin memory in Pytorch DataLoader.
 num_workers: 2 # Number of workers in Pytorch DataLoader.
 # trainer
@@ -80,7 +80,7 @@ tsne_params:
 ###########################################################
 optimizer_type: "Adam"
 optimizer_params:
-  lr: 0.0008 # convolution layer's learning rate.
+  lr: 0.001 # convolution layer's learning rate.
 center_loss_optimizer_params:
   lr: 0.0001
 scheduler_type: "StepLR"
@@ -90,7 +90,7 @@ scheduler_params:
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
-train_max_steps: 3000 # Number of training steps.
+train_max_steps: 6000 # Number of training steps.
 save_interval_steps: 3000 # Interval steps to save checkpoint.
 eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################

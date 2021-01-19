@@ -24,7 +24,7 @@ fmax: 16000
 ###########################################################
 #                     NETWORK SETTING                     #
 ###########################################################
-model_type: "TransformerEncoderDecoder" 
+model_type: "TransformerEncoderDecoder"
 model_params:
   num_features: 128
   num_classes: 24
@@ -34,7 +34,7 @@ model_params:
   num_feedforward_units: 256
   num_heads: 4
   num_latent_units: 32
-  dropout: 0.1
+  dropout: 0.2
   use_position_encode: false
   use_reconstruct: false
   use_dializer: true
@@ -57,9 +57,9 @@ random: False
 accum_grads: 32
 batch_size: 16 # Batch size.
 pin_memory: false # Whether to pin memory in Pytorch DataLoader.
-num_workers: 2 # Number of workers in Pytorch DataLoader.
+num_workers: 4 # Number of workers in Pytorch DataLoader.
 # trainer
-use_center_loss: False
+use_center_loss: false
 use_dializer: true
 ###########################################################
 #                       LOSS SETTING                      #
@@ -77,13 +77,16 @@ dializer_loss_params:
 ###########################################################
 optimizer_type: Noam
 optimizer_params:
+  base_lr: 0.1
   model_size: 128
-  factor: 1.0
-  warmup: 4000
+  warmup: 8000
+  betas: [0.9, 0.999]
+
+scheduler_type: null
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
-train_max_steps: 5000 # Number of training steps.
+train_max_steps: 10000 # Number of training steps.
 save_interval_steps: 5000 # Interval steps to save checkpoint.
 eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
