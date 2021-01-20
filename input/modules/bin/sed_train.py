@@ -191,6 +191,18 @@ def main():
             seed=None,
         )
         logging.info(f"The number of evaluation files = {len(eval_dataset)}.")
+        # get batch sampler
+        if config.get("batch_sampler_type", None) == "MultiLabelBalancedBatchSampler":
+            from datasets import MultiLabelBalancedBatchSampler
+
+            train_batch_sampler = MultiLabelBalancedBatchSampler(
+                train_dataset,
+                batch_size=config["batch_size"],
+                shuffle=True,
+                n_class=config["n_class"],
+            )
+        else:
+            train_batch_sampler = None
         # get data loader
         if config["model_params"].get("require_prep", False):
             from datasets import WaveEvalCollater
@@ -237,6 +249,7 @@ def main():
                 dataset=train_dataset,
                 collate_fn=train_collater,
                 batch_size=config["batch_size"],
+                batch_sampler=train_batch_sampler,
                 shuffle=True,
                 drop_last=True,
                 num_workers=config["num_workers"],
