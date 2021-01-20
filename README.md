@@ -155,9 +155,9 @@ EOF
 - tra/v003(mixupなし,dializer_loss)
 - ~~cnn/v014(att,mixupなし,torchでfeat作る)~~CV:0.799761, PL:0.793
 - cnn/v015(att,mixup0.2,augmentation,torchでfeat作る)
-- cnn/v016(att,dializer_loss,mixup0.1)
-- cnn/v017
-- res/v004
+- ~~cnn/v016(att,dializer_loss,mixup0.1)~~CV:0.775324,PL:0.776
+- ~~cnn/v017(att,dializer_loss,center,mixup0.1)~~CV:0.761139,PL:0.804
+- ~~res/v004~~CV:0.775717,PL:0.723
 - mob/v000
 ### 今の課題は何?
 - v002の時代はCV,PLともに0.80のオーダーだったが、sp0.9,1,1に変更orモデルのクラスを25に変更にしたことでPLのスコアが下がった

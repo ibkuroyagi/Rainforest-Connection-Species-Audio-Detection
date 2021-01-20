@@ -317,7 +317,7 @@ def main():
                 use_dializer=config.get("use_dializer", False),
                 save_name=f"fold{fold}",
             )
-            trainer.load_checkpoint(args.checkpoints[fold])
+            trainer.load_checkpoint(args.checkpoints[fold], load_only_params=False)
             logging.info(
                 f"Successfully resumed from {args.checkpoints[fold]}.(Epochs:{trainer.epochs}, Steps:{trainer.steps})"
             )
@@ -376,7 +376,7 @@ def main():
                 use_dializer=config.get("use_dializer", False),
                 save_name=f"fold{fold}",
             )
-            trainer.load_checkpoint(args.checkpoints[fold])
+            trainer.load_checkpoint(args.checkpoints[fold], load_only_params=False)
             logging.info(
                 f"Successfully resumed from {args.checkpoints[fold]}.(Epochs:{trainer.epochs}, Steps:{trainer.steps})"
             )

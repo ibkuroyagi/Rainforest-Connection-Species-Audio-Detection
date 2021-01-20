@@ -154,18 +154,22 @@ class SEDTrainer(object):
         self.tqdm.close()
         logging.info("Finished training.")
 
-    def save_checkpoint(self, checkpoint_path):
+    def save_checkpoint(self, checkpoint_path, save_model_only=True):
         """Save checkpoint.
 
         Args:
             checkpoint_path (str): Checkpoint path to be saved.
-
+            save_model_only (bool): Whether to save model parameters only.
         """
         state_dict = {
             "steps": self.steps,
             "epochs": self.epochs,
         }
         state_dict["model"] = self.model.state_dict()
+        if not save_model_only:
+            state_dict["optimizer"] = self.optimizer.state_dict()
+            if self.scheduler is not None:
+                state_dict["scheduler"] = self.scheduler.state_dict()
 
         if not os.path.exists(os.path.dirname(checkpoint_path)):
             os.makedirs(os.path.dirname(checkpoint_path))
@@ -184,6 +188,14 @@ class SEDTrainer(object):
         if not load_only_params:
             self.steps = state_dict["steps"]
             self.epochs = state_dict["epochs"]
+            if (self.optimizer is not None) and (
+                state_dict.get("optimizer", None) is not None
+            ):
+                self.optimizer.load_state_dict(state_dict["optimizer"])
+            if (self.scheduler is not None) and (
+                state_dict.get("scheduler", None) is not None
+            ):
+                self.scheduler.load_state_dict(state_dict["scheduler"])
 
     def _train_step(self, batch):
         """Train model one step."""
@@ -625,7 +637,7 @@ class SEDTrainer(object):
                 "best_score",
                 f"best_score{self.save_name}.pkl",
             )
-            self.save_checkpoint(save_path)
+            self.save_checkpoint(save_path, save_model_only=False)
             logging.info(
                 f"Best model was updated @ {self.steps} steps." f"Saved at {save_path}"
             )
@@ -801,7 +813,8 @@ class SEDTrainer(object):
                     self.config["outdir"],
                     f"checkpoint-{self.steps}",
                     f"checkpoint-{self.steps}{self.save_name}.pkl",
-                )
+                ),
+                save_model_only=False,
             )
             logging.info(f"Successfully saved checkpoint @ {self.steps} steps.")
 
