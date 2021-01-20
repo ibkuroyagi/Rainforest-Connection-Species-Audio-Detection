@@ -14,8 +14,8 @@ type=wave
 # type=raw
 # type=mel128hop1024
 
-stage=2
-stop_stage=100
+stage=1
+stop_stage=1
 verbose=1
 No=v026
 # for No in v015 v016 v017; do
@@ -23,7 +23,7 @@ No=v026
 # checkpoints="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl exp/${type}/${model}/${No}/best_score/best_scorefold1.pkl no_model  no_model no_model"
 resume=""
 for fold in {0..4}; do
-    resume+="exp/${type}/${model}/${No}/checkpoint-5000/checkpoint-5000fold${fold}.pkl "
+    resume+="exp/${type}/${model}/${No}/checkpoint-3000/checkpoint-3000fold${fold}.pkl "
 done
 sbatch -J "${type}/${No}" ./run.sh \
     --conf "conf/tuning/${model}.${No}.yaml" \
@@ -33,7 +33,7 @@ sbatch -J "${type}/${No}" ./run.sh \
     --type "${type}" \
     --cal_type "0" \
     --resume "${resume}" \
-    --speed_facters "0.9 1.1" \
+    --speed_facters "0.8 1.2" \
     --verbose "${verbose}" \
     --cache_path ""
 # --checkpoints "${checkpoints}"

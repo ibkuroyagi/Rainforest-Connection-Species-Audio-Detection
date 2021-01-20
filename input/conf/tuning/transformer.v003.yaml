@@ -52,7 +52,7 @@ is_normalize: false
 max_frames: 1024
 l_target: 1024
 collater_mode: binary
-random: False
+random: false
 # dataloader
 accum_grads: 32
 batch_size: 16 # Batch size.
