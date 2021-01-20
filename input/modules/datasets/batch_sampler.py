@@ -15,8 +15,8 @@ class MultiLabelBalancedBatchSampler(BatchSampler):
         self.label_to_indices = {label: [] for label in range(n_class)}
         for i, use_time_df in enumerate(dataset.use_time_list):
             for j in range(len(use_time_df)):
-                self.label_to_indices[use_time_df.loc[j, "species_id"]].append(i)
-        self.used_label_indices_count = {label: 0 for label in n_class}
+                self.label_to_indices[use_time_df[j, 2]].append(i)
+        self.used_label_indices_count = {label: 0 for label in range(n_class)}
         self.count = 0
         self.batch_size = batch_size
         self.n_samples = max(batch_size // n_class, 1)
@@ -51,10 +51,11 @@ class MultiLabelBalancedBatchSampler(BatchSampler):
                         label_to_indices[class_], len(label_to_indices[class_])
                     )
                     self.used_label_indices_count[class_] = 0
-                if self.batch_size >= len(indices):
+                if self.batch_size <= len(indices):
                     break
             if self.shuffle:
                 random.shuffle(indices)
+            logging.debug(f"indices:{indices}")
             yield indices
             self.count += self.n_class * self.n_samples
 

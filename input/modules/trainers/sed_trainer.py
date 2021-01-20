@@ -218,10 +218,11 @@ class SEDTrainer(object):
                 ],
                 axis=2,
             ).transpose(2, 1)
-        y_ = self.model(x)  # {y_frame: (B, T', n_class), y_clip: (B, n_class)}
         logging.debug(
-            f"y_frame:{y_frame[0]}, y_clip:{y_clip[0]}, y_frame:{y_['y_frame'][0]}, y_clip:{y_['y_clip'][0]}"
+            f"y_frame,{y_frame.shape}:{y_frame[0]}, y_clip,{y_clip.shape}:{y_clip[0]}"
         )
+        y_ = self.model(x)  # {y_frame: (B, T', n_class), y_clip: (B, n_class)}
+        logging.debug(f"y_frame_:{y_['y_frame'][0]}, y_clip_:{y_['y_clip'][0]}")
         if self.config["loss_type"] == "FrameClipLoss":
             loss = self.criterion(
                 y_["y_frame"][:, :, : self.n_target],

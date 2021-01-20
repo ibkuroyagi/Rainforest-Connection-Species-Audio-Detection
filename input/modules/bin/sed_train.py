@@ -245,16 +245,6 @@ def main():
                     hop_size=config.get("hop_size", 512),
                 )
         data_loader = {
-            "train": DataLoader(
-                dataset=train_dataset,
-                collate_fn=train_collater,
-                batch_size=config["batch_size"],
-                batch_sampler=train_batch_sampler,
-                shuffle=True,
-                drop_last=True,
-                num_workers=config["num_workers"],
-                pin_memory=config["pin_memory"],
-            ),
             "dev": DataLoader(
                 dataset=dev_dataset,
                 collate_fn=train_collater,
@@ -272,6 +262,24 @@ def main():
                 pin_memory=config["pin_memory"],
             ),
         }
+        if config.get("batch_sampler_type", None) is not None:
+            data_loader["train"] = DataLoader(
+                dataset=train_dataset,
+                collate_fn=train_collater,
+                batch_sampler=train_batch_sampler,
+                num_workers=config["num_workers"],
+                pin_memory=config["pin_memory"],
+            )
+        else:
+            data_loader["train"] = DataLoader(
+                dataset=train_dataset,
+                collate_fn=train_collater,
+                batch_size=config["batch_size"],
+                shuffle=True,
+                drop_last=True,
+                num_workers=config["num_workers"],
+                pin_memory=config["pin_memory"],
+            )
         # from IPython import embed
 
         # embed()

@@ -118,10 +118,10 @@ class FeatTrainCollater(object):
                 frame_mask_batch.append(
                     y_frame.any(axis=1).reshape(-1, 1).astype(np.float32)
                 )
-            # logging.debug(
-            #     f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
-            # )
-            # logging.debug(f"{clip_batch[-1]}")
+            logging.debug(
+                f"sum:{clip_batch[-1].sum()}:{time_start},{time_end}: {l_spec}: {beginning},{ending}"
+            )
+            logging.debug(f"{clip_batch[-1]}")
             # if matrix_tp.any(axis=0).sum() != 1:
             #     idx = np.where(clip_batch[-1])
             #     plt.figure(figsize=(12, 6))
