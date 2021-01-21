@@ -152,7 +152,12 @@ EOF
 - eff/v028(att,mixup0.2,augmentation,torchでfeat作る)
 - ~~eff/v029(att,dializer_loss,mixup0.1,specaug)~~:PL:0.7696
 - ~~eff/v030(att,dializer_loss,mixup0.1,center)~~CV:0.773921,PL:0.832
-- eff/v031(att,dializer_loss,mixup0.1,center,balance)
+- ~~eff/v031(att,dializer_loss,mixup0.1,center,balance,09,1.1)~~CV:0.780437,PL:0.853
+- eff/v031(att,dializer_loss,mixup0.1,center,balance,0.8,0.9,1.1,1.2)
+- eff/v032(att,dializer_loss,mixup0.1,center,balance,0.8~1.2,16->32batch,lr:0.0016)
+- eff/v033(att,dializer_loss,mixup0.1,center,balance,specaug)
+- eff/v034(att,dializer_loss,mixup0.1,center,balance,on the fly (0.8,0.9,1.1,1.2))
+- eff/v035(att,dializer_loss,mixup0.1,center,balance, weight_decay1e-5)
 - tra/v003(mixupなし,dializer_loss)
 - ~~cnn/v014(att,mixupなし,torchでfeat作る)~~CV:0.799761, PL:0.793
 - cnn/v015(att,mixup0.2,augmentation,torchでfeat作る)

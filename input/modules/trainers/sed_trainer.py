@@ -46,8 +46,8 @@ class SEDTrainer(object):
             data_loader (dict): Dict of data loaders. It must contrain "train" and "dev" loaders.
             model (dict): Dict of models. It must contrain "generator" and "discriminator" models.
             criterion (torch.nn): It must contrain "stft" and "mse" criterions.
-            optimizer (dict): Dict of optimizers. It must contrain "generator" and "discriminator" optimizers.
-            scheduler (dict): Dict of schedulers. It must contrain "generator" and "discriminator" schedulers.
+            optimizer (object): Optimizers.
+            scheduler (object): Schedulers.
             config (dict): Config dict loaded from yaml format configuration file.
             device (torch.deive): Pytorch device instance.
             train (bool): Select mode of trainer.
