@@ -117,11 +117,12 @@ def main():
         yaml.dump(config, f, Dumper=yaml.Dumper)
     for key, value in config.items():
         logging.info(f"{key} = {value}")
-    if config["model_params"].get("require_prep", False) or config.get(
-        "use_on_the_fly", False
-    ):
+    if config["model_params"].get("require_prep", False):
         train_keys = ["wave"]
         eval_keys = ["wave"]
+    elif config.get("use_on_the_fly", False):
+        train_keys = ["wave"]
+        eval_keys = ["feats"]
     else:
         train_keys = ["feats"]
         eval_keys = ["feats"]

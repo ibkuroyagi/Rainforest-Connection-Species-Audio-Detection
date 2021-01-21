@@ -153,18 +153,18 @@ EOF
 - ~~eff/v029(att,dializer_loss,mixup0.1,specaug)~~:PL:0.7696
 - ~~eff/v030(att,dializer_loss,mixup0.1,center)~~CV:0.773921,PL:0.832
 - ~~eff/v031(att,dializer_loss,mixup0.1,center,balance,09,1.1)~~CV:0.780437,PL:0.853
-- eff/v031(att,dializer_loss,mixup0.1,center,balance,0.8,0.9,1.1,1.2)
+- eff/v031_sp(att,dializer_loss,mixup0.1,center,balance,0.8,0.9,1.1,1.2)
 - eff/v032(att,dializer_loss,mixup0.1,center,balance,0.8~1.2,16->32batch,lr:0.0016)
-- eff/v033(att,dializer_loss,mixup0.1,center,balance,specaug)
+- ~~eff/v033(att,dializer_loss,mixup0.1,center,balance,specaug)~~
 - eff/v034(att,dializer_loss,mixup0.1,center,balance,on the fly (0.8,0.9,1.1,1.2))
-- eff/v035(att,dializer_loss,mixup0.1,center,balance, weight_decay1e-5)
+- ~~eff/v035(att,dializer_loss,mixup0.1,center,balance, weight_decay1e-5)~~PL:0.807
 - tra/v003(mixupなし,dializer_loss)
 - ~~cnn/v014(att,mixupなし,torchでfeat作る)~~CV:0.799761, PL:0.793
 - cnn/v015(att,mixup0.2,augmentation,torchでfeat作る)
 - ~~cnn/v016(att,dializer_loss,mixup0.1)~~CV:0.775324,PL:0.776
 - ~~cnn/v017(att,dializer_loss,center,mixup0.1)~~CV:0.761139,PL:0.804
 - ~~res/v004~~CV:0.775717,PL:0.723
-- mob/v000
+- ~~mob/v000~~
 ### 今の課題は何?
 - v002の時代はCV,PLともに0.80のオーダーだったが、sp0.9,1,1に変更orモデルのクラスを25に変更にしたことでPLのスコアが下がった
 - 原因を探るために、
