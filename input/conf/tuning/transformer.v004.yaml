@@ -1,10 +1,10 @@
-# intrepolate shumamura0 stgategy by efficent net b0, update lr=0.001, fix collater_fc and model(balanced)
+# intrepolate shumamura0 stgategy by efficent net b0, update lr=0.001, fix collater_fc and model(sa same as v010)
 # PANNs SED architecture
-# BCEWithLogitsLoss + Dializerloss + center
+# ClipFrame Loss
 # Random 10sec clip
 # Using only tp file
 # MixUp
-# The base model is EfficientNet_b
+# The base model is EfficientNet_simple
 ###########################################################
 #                      GLOBAL SETTING                     #
 ###########################################################
@@ -24,13 +24,21 @@ fmax: 16000
 ###########################################################
 #                     NETWORK SETTING                     #
 ###########################################################
-model_type: "EfficientNet_b"
+model_type: "TransformerEncoderDecoder"
 model_params:
-  classes_num: 24
-  efficient_net_name: efficientnet-b0
-  feat_dim: 1280
-  is_spec_augmenter: false
+  num_features: 128
+  num_classes: 24
+  sequence_length: 938
+  num_blocks: 4
+  num_hidden_units: 128
+  num_feedforward_units: 256
+  num_heads: 4
+  num_latent_units: 32
+  dropout: 0.2
+  use_position_encode: false
+  use_reconstruct: false
   use_dializer: true
+  is_spec_augmenter: false
 ###########################################################
 #                    TRAINING SETTING                     #
 ###########################################################
@@ -45,20 +53,18 @@ train_dataset_mode: tp
 allow_cache: false # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: false
 use_on_the_fly: true
-# batch sampler
-batch_sampler_type: MultiLabelBalancedBatchSampler
 # collater_fc
 max_frames: 938
-l_target: 30
+l_target: 938
 collater_mode: binary
 random: false
 # dataloader
-accum_grads: 4
-batch_size: 64 # Batch size.
+accum_grads: 32
+batch_size: 32 # Batch size.
 pin_memory: false # Whether to pin memory in Pytorch DataLoader.
 num_workers: 8 # Number of workers in Pytorch DataLoader.
 # trainer
-use_center_loss: true
+use_center_loss: false
 use_dializer: true
 ###########################################################
 #                       LOSS SETTING                      #
@@ -67,38 +73,26 @@ loss_type: BCEWithLogitsLoss
 loss_params:
   reduction: mean
 
-dializer_loss_alpha: 0.5
+dializer_loss_alpha: 0.9
 dializer_loss_type: BCEWithLogitsLoss
 dializer_loss_params:
   reduction: mean
-
-center_loss_alpha: 5.0e-5
-center_loss_params:
-  num_classes: 24
-  feat_dim: 1280
-
-tsne_params:
-  n_components: 2
-  random_state: 0
-  perplexity: 30
-  n_iter: 1000
 ###########################################################
 #              OPTIMIZER & SCHEDULER SETTING              #
 ###########################################################
-optimizer_type: "Adam"
+optimizer_type: Noam
 optimizer_params:
-  lr: 0.0024
-center_loss_optimizer_params:
-  lr: 0.0001
-scheduler_type: "StepLR"
-scheduler_params:
-  step_size: 1000 # scheduler step size.
-  gamma: 0.5
+  base_lr: 0.1
+  model_size: 128
+  warmup: 8000
+  betas: [0.9, 0.999]
+
+scheduler_type: null
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
-train_max_steps: 3000 # Number of training steps.
-save_interval_steps: 3000 # Interval steps to save checkpoint.
+train_max_steps: 10000 # Number of training steps.
+save_interval_steps: 5000 # Interval steps to save checkpoint.
 eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
 #                     OTHER SETTING                       #

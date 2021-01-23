@@ -114,7 +114,7 @@ class SEDTrainer(object):
 
         self.finish_train = False
         self.best_score = 0
-        self.n_target = 24 + int(config.get("random", False))
+        self.n_target = 24
         self.epoch_train_loss = defaultdict(float)
         self.epoch_eval_loss = defaultdict(float)
         self.eval_metric = defaultdict(float)
