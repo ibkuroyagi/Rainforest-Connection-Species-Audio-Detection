@@ -158,6 +158,7 @@ EOF
 - ~~eff/v033(att,dializer_loss,mixup0.1,center,balance,specaug)~~
 - eff/v034(att,dializer_loss,mixup0.1,center,balance,on the fly (0.8,0.9,1.1,1.2))
 - ~~eff/v035(att,dializer_loss,mixup0.1,center,balance, weight_decay1e-5)~~PL:0.807
+- eff/v032(att,dializer_loss,mixup0.1,center,balance,0.8~1.2,16->32batch,lr:0.0016,anoaug500)
 - ~~tra/v003(mixupなし,dializer_loss)~~
 - ~~cnn/v014(att,mixupなし,torchでfeat作る)~~CV:0.799761, PL:0.793
 - cnn/v015(att,mixup0.2,augmentation,torchでfeat作る)

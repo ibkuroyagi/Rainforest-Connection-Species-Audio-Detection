@@ -67,15 +67,13 @@ def plot_distribution(ground_truth, pred_df, save_path="dist.png", mode="oof"):
             )
         else:
             prob = pred_df.loc[:, f"s{i}"].values
-            weight = np.ones(len(prob)) / sum(prob >= 0.5)
             plt.hist(
                 prob,
                 alpha=0.5,
                 label="test",
                 bins=50,
-                weights=weight,
             )
-            plt.title(f"TEST: s{i} ratio:{1/sum(prob>=0.5):.4f}")
+            plt.title(f"TEST: s{i} ratio:{sum(prob>=0.5)/len(prob):.4f}")
         plt.legend()
         plt.xlim([0, 1])
         plt.xlabel("Probability")

@@ -135,6 +135,7 @@ class SEDTrainer(object):
             (0, config["l_target"], config["n_class"])
         ).to(device)
         self.n_eval_split = config["n_eval_split"]
+        self.last_checkpoint = ""
         self.forward_count = 0
 
     def run(self):
@@ -174,6 +175,7 @@ class SEDTrainer(object):
         if not os.path.exists(os.path.dirname(checkpoint_path)):
             os.makedirs(os.path.dirname(checkpoint_path))
         torch.save(state_dict, checkpoint_path)
+        self.last_checkpoint = checkpoint_path
 
     def load_checkpoint(self, checkpoint_path, load_only_params=False):
         """Load checkpoint.

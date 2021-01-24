@@ -281,9 +281,6 @@ def main():
                 num_workers=config["num_workers"],
                 pin_memory=config["pin_memory"],
             )
-        # from IPython import embed
-
-        # embed()
         # define models and optimizers
         model_class = getattr(
             models,
@@ -407,6 +404,161 @@ def main():
             if args.resume[fold] != "no_model":
                 trainer.load_checkpoint(args.resume[fold], load_only_params=False)
                 logging.info(f"Successfully resumed from {args.resume[fold]}.")
+        # run training loop
+        try:
+            trainer.run()
+        except KeyboardInterrupt:
+            trainer.save_checkpoint(
+                os.path.join(
+                    config["outdir"], f"checkpoint-{trainer.steps}stepsfold{fold}.pkl"
+                )
+            )
+            logging.info(f"Successfully saved checkpoint @ {trainer.steps}steps.")
+        ##############################################
+        #   Add no augmentation process 500 steps.   #
+        ##############################################
+        last_checkpoint = trainer.last_checkpoint
+        config["train_max_steps"] += 500
+        config["augmentation_params"] = None
+        if config.get("mixup_alpha", None) is not None:
+            config["batch_size"] //= 2
+            config["mixup_alpha"] = None
+        train_dataset = RainForestDataset(
+            root_dirs=[os.path.join(args.dumpdirs[0], "train")],
+            train_tp=train_tp[train_tp["use_train"]],
+            train_fp=train_fp,
+            keys=train_keys,
+            mode=config.get("train_dataset_mode", "tp"),
+            is_normalize=config.get("is_normalize", False),
+            allow_cache=config.get("allow_cache", False),
+            seed=None,
+            config=config,
+            use_on_the_fly=config.get("use_on_the_fly", False),
+        )
+        logging.info(f"The number of training files = {len(train_dataset)}.")
+        dev_dataset = RainForestDataset(
+            root_dirs=[os.path.join(args.dumpdirs[0], "train")],
+            train_tp=train_tp[~train_tp["use_train"]],
+            train_fp=train_fp,
+            keys=train_keys,
+            mode=config.get("train_dataset_mode", "tp"),
+            is_normalize=config.get("is_normalize", False),
+            allow_cache=not config.get("use_on_the_fly", False),
+            seed=None,
+            config=config,
+            use_on_the_fly=config.get("use_on_the_fly", False),
+        )
+        logging.info(f"The number of development files = {len(dev_dataset)}.")
+        eval_dataset = RainForestDataset(
+            files=[
+                os.path.join(args.dumpdirs[0], "train", f"{recording_id}.h5")
+                for recording_id in tp_list[valid_idx]
+            ],
+            keys=eval_keys,
+            train_tp=train_tp[~train_tp["use_train"]],
+            mode="valid",
+            is_normalize=config.get("is_normalize", False),
+            allow_cache=True,  # keep compatibility
+            seed=None,
+        )
+        logging.info(f"The number of evaluation files = {len(eval_dataset)}.")
+        # get batch sampler
+        if config.get("batch_sampler_type", None) == "MultiLabelBalancedBatchSampler":
+            train_batch_sampler = MultiLabelBalancedBatchSampler(
+                train_dataset,
+                batch_size=config["batch_size"],
+                shuffle=True,
+                n_class=config["n_class"],
+            )
+        else:
+            train_batch_sampler = None
+        # get data loader
+        if config["model_params"].get("require_prep", False):
+            eval_collater = WaveEvalCollater(
+                sr=config.get("sr", 48000),
+                sec=config.get("sec", 10.0),
+                n_split=config.get("n_eval_split", 6),
+                is_label=True,
+            )
+            train_collater = WaveTrainCollater(
+                sr=config.get("sr", 48000),
+                sec=config.get("sec", 10.0),
+                l_target=config.get("l_target", 32),
+                mode=config.get("mode", "binary"),
+                random=config.get("random", False),
+                use_dializer=config.get("use_dializer", False),
+            )
+        else:
+            eval_collater = FeatEvalCollater(
+                max_frames=config.get("max_frames", 512),
+                n_split=config.get("n_eval_split", 20),
+                is_label=True,
+            )
+            if config.get("use_on_the_fly", False):
+                train_collater = None
+            else:
+                train_collater = FeatTrainCollater(
+                    max_frames=config.get("max_frames", 512),
+                    l_target=config.get("l_target", 16),
+                    mode=config.get("collater_mode", "sum"),
+                    random=config.get("random", False),
+                    use_dializer=config.get("use_dializer", False),
+                    hop_size=config.get("hop_size", 512),
+                )
+        data_loader = {
+            "dev": DataLoader(
+                dataset=dev_dataset,
+                collate_fn=train_collater,
+                shuffle=False,
+                batch_size=config["batch_size"],
+                num_workers=config["num_workers"],
+                pin_memory=config["pin_memory"],
+            ),
+            "eval": DataLoader(
+                eval_dataset,
+                batch_size=config["batch_size"],
+                shuffle=False,
+                collate_fn=eval_collater,
+                num_workers=config["num_workers"],
+                pin_memory=config["pin_memory"],
+            ),
+        }
+        if config.get("batch_sampler_type", None) is not None:
+            data_loader["train"] = DataLoader(
+                dataset=train_dataset,
+                collate_fn=train_collater,
+                batch_sampler=train_batch_sampler,
+                num_workers=config["num_workers"],
+                pin_memory=config["pin_memory"],
+            )
+        else:
+            data_loader["train"] = DataLoader(
+                dataset=train_dataset,
+                collate_fn=train_collater,
+                batch_size=config["batch_size"],
+                shuffle=True,
+                drop_last=True,
+                num_workers=config["num_workers"],
+                pin_memory=config["pin_memory"],
+            )
+        trainer = SEDTrainer(
+            steps=0,
+            epochs=0,
+            data_loader=data_loader,
+            model=model.to(device),
+            criterion=criterion,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            config=config,
+            device=device,
+            train=fold == 0,
+            use_center_loss=config.get("use_center_loss", False),
+            use_dializer=config.get("use_dializer", False),
+            save_name=f"fold{fold}",
+        )
+        # resume from checkpoint
+        trainer.load_checkpoint(last_checkpoint, load_only_params=False)
+        logging.info(f"Successfully resumed from {last_checkpoint}.")
         # run training loop
         try:
             trainer.run()
