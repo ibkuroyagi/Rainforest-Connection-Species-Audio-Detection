@@ -108,15 +108,18 @@ if [ "${stage}" -le 3 ] && [ "${stop_stage}" -ge 3 ]; then
     outdir=${expdir}/${tag}/${checkpoint}
     if [ -z "${checkpoints}" ]; then
         for fold in {0..4}; do
-            checkpoints+="${outdir}/${checkpoint}fold${fold}.pkl "
+            checkpoints+="${expdir}/${tag}/${checkpoint}/${checkpoint}fold${fold}.pkl "
         done
     fi
     dumpdirs="${dumpdir}/${type} "
     if [ -n "${speed_facters}" ]; then
+        outdir+="/sp"
         for facter in ${speed_facters}; do
             dumpdirs+="${dumpdir}/${type}_sp${facter} "
+            outdir+="_${facter}"
         done
     fi
+    [ ! -e "${outdir}" ] && mkdir -p "${outdir}"
     log "Inference start. See the progress via ${outdir}/sed_inference.log"
     # shellcheck disable=SC2086
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_inference.log" \

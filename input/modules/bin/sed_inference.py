@@ -422,19 +422,29 @@ def main():
     # modify submission shape
     oof_sub = ground_truth.copy()
     oof_sub.iloc[:, 1:] = oof_clip.max(axis=1)
-    oof_sub.to_csv(os.path.join(args.outdir, "oof.csv"), index=False)
-    logging.info(f"Successfully saved oof at {os.path.join(args.outdir, 'oof.csv')}.")
+    clip_oof_path = os.path.join(args.outdir, "clip", "oof.csv")
+    oof_sub.to_csv(clip_oof_path, index=False)
+    logging.info(f"Successfully saved oof at {clip_oof_path}.")
     oof_score = lwlrap(ground_truth.iloc[:, 1:].values, oof_sub.iloc[:, 1:].values)
     for i, score in enumerate(scores):
         logging.info(f"Fold:{i} oof score is {score:.6f}")
     logging.info(f"Average oof score is {np.array(scores).mean():.6f}")
-    logging.info(f"All oof score is {oof_score:.6f}")
+    logging.info(f"All clip oof score is {oof_score:.6f}")
+    oof_sub.iloc[:, 1:] = oof_frame.max(axis=1).max(axis=1)
+    frame_oof_path = os.path.join(args.outdir, "frame", "oof.csv")
+    oof_sub.to_csv(frame_oof_path, index=False)
+    logging.info(f"Successfully saved oof at {frame_oof_path}.")
+    oof_score = lwlrap(ground_truth.iloc[:, 1:].values, oof_sub.iloc[:, 1:].values)
+    logging.info(f"All frame oof score is {oof_score:.6f}")
 
     sub.iloc[:, 1:] = pred_clip_mean.max(axis=1)
-    sub.to_csv(os.path.join(args.outdir, "submission.csv"), index=False)
-    logging.info(
-        f"Successfully saved submission at {os.path.join(args.outdir, 'submission.csv')}."
-    )
+    clip_sub_path = os.path.join(args.outdir, "clip" "submission.csv")
+    sub.to_csv(clip_sub_path, index=False)
+    logging.info(f"Successfully saved clip submission at {clip_sub_path}.")
+    sub.iloc[:, 1:] = pred_frame_mean.max(axis=1).max(axis=1)
+    frame_sub_path = os.path.join(args.outdir, "frame" "submission.csv")
+    sub.to_csv(frame_sub_path, index=False)
+    logging.info(f"Successfully saved frame submission at {frame_sub_path}.")
 
 
 if __name__ == "__main__":
