@@ -11,12 +11,13 @@ import os
 import sys
 
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 import yaml
-
+from sklearn.metrics import log_loss
 from torch.utils.data import DataLoader
 
 sys.path.append("../../")
@@ -32,6 +33,57 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedKFold  # noqa: E402
 
 # set to avoid matplotlib error in CLI environment
 matplotlib.use("Agg")
+
+
+def plot_distribution(ground_truth, pred_df, save_path="dist.png", mode="oof"):
+    n_col = 3
+    n_raw = 24 // n_col
+    plt.figure(figsize=(16, 24))
+    for i in range(24):
+        plt.subplot(n_raw, n_col, i + 1)
+        if mode == "oof":
+            label_idx = ground_truth[f"s{i}"] == 1
+            weight = np.ones(int(label_idx.sum())) / label_idx.sum()
+            plt.hist(
+                pred_df.loc[label_idx, f"s{i}"].values,
+                alpha=0.5,
+                label="pos",
+                bins=50,
+                weights=weight,
+            )
+            weight = np.ones(int((~label_idx).sum())) / (~label_idx).sum()
+            plt.hist(
+                pred_df.loc[~label_idx, f"s{i}"].values,
+                alpha=0.5,
+                label="neg",
+                bins=50,
+                weights=weight,
+            )
+            logloss = log_loss(
+                ground_truth.loc[:, f"s{i}"].values, pred_df.loc[:, f"s{i}"].values
+            )
+            plt.title(
+                f"s{i}, BCE:{logloss:.4f} ratio:{label_idx.sum()/len(label_idx):.4f}, count:{label_idx.sum()}"
+            )
+        else:
+            prob = pred_df.loc[:, f"s{i}"].values
+            weight = np.ones(len(prob)) / sum(prob >= 0.5)
+            plt.hist(
+                prob,
+                alpha=0.5,
+                label="test",
+                bins=50,
+                weights=weight,
+            )
+            plt.title(f"TEST: s{i} ratio:{1/sum(prob>=0.5):.4f}")
+        plt.legend()
+        plt.xlim([0, 1])
+        plt.xlabel("Probability")
+        plt.ylim([0, 1])
+        plt.ylabel("count")
+        plt.grid()
+    plt.tight_layout()
+    plt.savefig(save_path)
 
 
 def main():
@@ -430,21 +482,44 @@ def main():
         logging.info(f"Fold:{i} oof score is {score:.6f}")
     logging.info(f"Average oof score is {np.array(scores).mean():.6f}")
     logging.info(f"All clip oof score is {oof_score:.6f}")
+    plot_distribution(
+        ground_truth,
+        oof_sub,
+        save_path=os.path.join(args.outdir, "clip", "oof_dist.png"),
+    )
     oof_sub.iloc[:, 1:] = oof_frame.max(axis=1).max(axis=1)
     frame_oof_path = os.path.join(args.outdir, "frame", "oof.csv")
     oof_sub.to_csv(frame_oof_path, index=False)
     logging.info(f"Successfully saved oof at {frame_oof_path}.")
     oof_score = lwlrap(ground_truth.iloc[:, 1:].values, oof_sub.iloc[:, 1:].values)
     logging.info(f"All frame oof score is {oof_score:.6f}")
+    plot_distribution(
+        ground_truth,
+        oof_sub,
+        save_path=os.path.join(args.outdir, "frame", "oof_dist.png"),
+    )
 
+    # test inference
     sub.iloc[:, 1:] = pred_clip_mean.max(axis=1)
     clip_sub_path = os.path.join(args.outdir, "clip" "submission.csv")
     sub.to_csv(clip_sub_path, index=False)
     logging.info(f"Successfully saved clip submission at {clip_sub_path}.")
+    plot_distribution(
+        ground_truth,
+        sub,
+        save_path=os.path.join(args.outdir, "clip", "dist.png"),
+        mode="test",
+    )
     sub.iloc[:, 1:] = pred_frame_mean.max(axis=1).max(axis=1)
     frame_sub_path = os.path.join(args.outdir, "frame" "submission.csv")
     sub.to_csv(frame_sub_path, index=False)
     logging.info(f"Successfully saved frame submission at {frame_sub_path}.")
+    plot_distribution(
+        ground_truth,
+        sub,
+        save_path=os.path.join(args.outdir, "frame", "dist.png"),
+        mode="test",
+    )
 
 
 if __name__ == "__main__":
