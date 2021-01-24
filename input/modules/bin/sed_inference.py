@@ -470,6 +470,10 @@ def main():
     logging.info(f"Successfully saved pred at {os.path.join(args.outdir, 'pred.h5')}.")
 
     # modify submission shape
+    if not os.path.exists(os.path.join(args.outdir, "clip")):
+        os.makedirs(os.path.join(args.outdir, "clip"))
+    if not os.path.exists(os.path.join(args.outdir, "frame")):
+        os.makedirs(os.path.join(args.outdir, "frame"))
     oof_sub = ground_truth.copy()
     oof_sub.iloc[:, 1:] = oof_clip.max(axis=1)
     clip_oof_path = os.path.join(args.outdir, "clip", "oof.csv")
