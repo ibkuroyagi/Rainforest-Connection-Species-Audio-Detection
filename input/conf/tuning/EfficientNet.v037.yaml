@@ -58,11 +58,8 @@ use_dializer: true
 ###########################################################
 #                       LOSS SETTING                      #
 ###########################################################
-loss_type: BCEWithLogitsLoss
+loss_type: FocalLoss
 loss_params:
-  reduction: none
-
-focal_loss_params:
   alpha: 1.0
   gamma: 1.5
   reduction: mean

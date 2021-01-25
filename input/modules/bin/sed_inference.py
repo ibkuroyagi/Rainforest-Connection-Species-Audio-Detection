@@ -67,11 +67,13 @@ def plot_distribution(ground_truth, pred_df, save_path="dist.png", mode="oof"):
             )
         else:
             prob = pred_df.loc[:, f"s{i}"].values
+            weight = np.ones(len(prob)) / len(prob)
             plt.hist(
                 prob,
                 alpha=0.5,
                 label="test",
                 bins=50,
+                weights=weight,
             )
             plt.title(f"TEST: s{i} ratio:{sum(prob>=0.5)/len(prob):.4f}")
         plt.legend()
@@ -503,7 +505,7 @@ def main():
 
     # test inference
     sub.iloc[:, 1:] = pred_clip_mean.max(axis=1)
-    clip_sub_path = os.path.join(args.outdir, "clip" "submission.csv")
+    clip_sub_path = os.path.join(args.outdir, "clip", "submission.csv")
     sub.to_csv(clip_sub_path, index=False)
     logging.info(f"Successfully saved clip submission at {clip_sub_path}.")
     plot_distribution(
@@ -513,7 +515,7 @@ def main():
         mode="test",
     )
     sub.iloc[:, 1:] = pred_frame_mean.max(axis=1).max(axis=1)
-    frame_sub_path = os.path.join(args.outdir, "frame" "submission.csv")
+    frame_sub_path = os.path.join(args.outdir, "frame", "submission.csv")
     sub.to_csv(frame_sub_path, index=False)
     logging.info(f"Successfully saved frame submission at {frame_sub_path}.")
     plot_distribution(

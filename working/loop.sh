@@ -14,10 +14,10 @@ type=wave
 # type=raw
 # type=mel128hop1024
 
-stage=3
+stage=2
 stop_stage=3
 verbose=1
-No=v032
+No=v038
 # for No in v015 v016 v017; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
 # checkpoints="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl exp/${type}/${model}/${No}/best_score/best_scorefold1.pkl no_model  no_model no_model"

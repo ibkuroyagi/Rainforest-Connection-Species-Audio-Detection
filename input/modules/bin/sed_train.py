@@ -349,6 +349,11 @@ def main():
             # keep compatibility
             config.get("loss_type", "BCEWithLogitsLoss"),
         )
+        if config["loss_type"].get("pos_weight", None) is not None:
+            pos_weight = config["loss_type"]["pos_weight"]
+            config["loss_params"]["pos_weight"] = torch.tensor(
+                pos_weight, dtype=torch.float
+            ).to(device)
         criterion = loss_class(**config["loss_params"]).to(device)
         optimizer_class = getattr(
             optimizers,

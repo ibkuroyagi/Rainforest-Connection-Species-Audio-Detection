@@ -236,19 +236,10 @@ class SEDTrainer(object):
             loss = self.criterion(
                 y_["y_clip"][:, : self.n_target], y_clip[:, : self.n_target]
             )
-            if self.config.get("focal_loss_params", None) is not None:
-                probas = torch.sigmoid(y_clip[:, : self.n_target])
-                loss = torch.where(
-                    y_["y_clip"][:, : self.n_target] >= 0.5,
-                    self.config["focal_loss_params"]["alpha"]
-                    * (1.0 - probas) ** self.config["focal_loss_params"]["gamma"]
-                    * loss,
-                    probas ** self.config["focal_loss_params"]["gamma"] * loss,
-                )
-                if self.config["focal_loss_params"]["reduction"] == "sum":
-                    loss = loss.sum()
-                else:
-                    loss = loss.mean()
+        elif self.config["loss_type"] == "FocalLoss":
+            loss = self.criterion(
+                y_["y_clip"][:, : self.n_target], y_clip[:, : self.n_target]
+            )
         if self.use_center_loss:
             center_loss_label = self._get_center_loss_label(y_clip[:, : self.n_target])
             logging.debug(f"center_loss_label:{center_loss_label}")
