@@ -232,14 +232,11 @@ class SEDTrainer(object):
                 y_["y_clip"][:, : self.n_target],
                 y_clip[:, : self.n_target],
             )
-        elif self.config["loss_type"] == "BCEWithLogitsLoss":
+        elif self.config["loss_type"] in ["BCEWithLogitsLoss", "FocalLoss"]:
             loss = self.criterion(
                 y_["y_clip"][:, : self.n_target], y_clip[:, : self.n_target]
             )
-        elif self.config["loss_type"] == "FocalLoss":
-            loss = self.criterion(
-                y_["y_clip"][:, : self.n_target], y_clip[:, : self.n_target]
-            )
+
         if self.use_center_loss:
             center_loss_label = self._get_center_loss_label(y_clip[:, : self.n_target])
             logging.debug(f"center_loss_label:{center_loss_label}")
@@ -365,7 +362,7 @@ class SEDTrainer(object):
                     torch.tensor(self.train_pred_epoch).to(self.device),
                     torch.tensor(self.train_y_epoch).to(self.device),
                 ).item()
-            elif self.config["loss_type"] == "BCEWithLogitsLoss":
+            elif self.config["loss_type"] in ["BCEWithLogitsLoss", "FocalLoss"]:
                 self.epoch_train_loss["train/epoch_main_loss"] = self.criterion(
                     torch.tensor(self.train_pred_epoch).to(self.device),
                     torch.tensor(self.train_y_epoch).to(self.device),
@@ -482,7 +479,7 @@ class SEDTrainer(object):
                 y_["y_clip"][:, : self.n_target],
                 y_clip[:, : self.n_target],
             )
-        elif self.config["loss_type"] == "BCEWithLogitsLoss":
+        elif self.config["loss_type"] in ["BCEWithLogitsLoss", "FocalLoss"]:
             loss = self.criterion(
                 y_["y_clip"][:, : self.n_target], y_clip[:, : self.n_target]
             )
@@ -581,7 +578,7 @@ class SEDTrainer(object):
                     torch.tensor(self.dev_pred_epoch).to(self.device),
                     torch.tensor(self.dev_y_epoch).to(self.device),
                 ).item()
-            elif self.config["loss_type"] == "BCEWithLogitsLoss":
+            elif self.config["loss_type"] in ["BCEWithLogitsLoss", "FocalLoss"]:
                 self.epoch_eval_loss["dev/epoch_main_loss"] = self.criterion(
                     torch.tensor(self.dev_pred_epoch).to(self.device),
                     torch.tensor(self.dev_y_epoch).to(self.device),

@@ -349,8 +349,8 @@ def main():
             # keep compatibility
             config.get("loss_type", "BCEWithLogitsLoss"),
         )
-        if config["loss_type"].get("pos_weight", None) is not None:
-            pos_weight = config["loss_type"]["pos_weight"]
+        if config["loss_params"].get("pos_weight", None) is not None:
+            pos_weight = config["loss_params"]["pos_weight"]
             config["loss_params"]["pos_weight"] = torch.tensor(
                 pos_weight, dtype=torch.float
             ).to(device)
@@ -574,6 +574,7 @@ def main():
                 )
             )
             logging.info(f"Successfully saved checkpoint @ {trainer.steps}steps.")
+        config["train_max_steps"] -= 500
 
 
 if __name__ == "__main__":
