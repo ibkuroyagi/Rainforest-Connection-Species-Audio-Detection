@@ -33,6 +33,7 @@ input/iterative-stratification-master/
 input/pretrained/
 # venv
 tools/venv/
+tools/apex/
 tools/*.out
 # results
 working/dump*/
