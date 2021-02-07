@@ -77,11 +77,30 @@ def main():
         default=1,
         help="logging level. higher is more logging. (default=1)",
     )
+    parser.add_argument(
+        "--rank",
+        "--local_rank",
+        default=0,
+        type=int,
+        help="rank for distributed training. no need to explictly specify.",
+    )
     args = parser.parse_args()
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-    else:
+    # check distributed training
+    args.distributed = False
+    if not torch.cuda.is_available():
         device = torch.device("cpu")
+    else:
+        device = torch.device("cuda")
+        torch.cuda.set_device(args.rank)
+        if "WORLD_SIZE" in os.environ:
+            args.world_size = int(os.environ["WORLD_SIZE"])
+            args.distributed = args.world_size > 1
+        if args.distributed:
+            torch.distributed.init_process_group(backend="nccl", init_method="env://")
+
+    # suppress logging for distributed training
+    if args.rank != 0:
+        sys.stdout = open(os.devnull, "w")
 
     # set logger
     if args.verbose > 1:
@@ -192,10 +211,43 @@ def main():
             seed=None,
         )
         logging.info(f"The number of evaluation files = {len(eval_dataset)}.")
+        train_sampler, dev_sampler, eval_sampler = None, None, None
+        sampler = {}
+        if args.distributed:
+            # setup sampler for distributed training
+            from torch.utils.data.distributed import DistributedSampler
+
+            train_sampler = DistributedSampler(
+                dataset=train_dataset,
+                num_replicas=args.world_size,
+                rank=args.rank,
+                shuffle=True,
+            )
+            dev_sampler = DistributedSampler(
+                dataset=dev_dataset,
+                num_replicas=args.world_size,
+                rank=args.rank,
+                shuffle=False,
+            )
+            eval_sampler = DistributedSampler(
+                dataset=eval_dataset,
+                num_replicas=args.world_size,
+                rank=args.rank,
+                shuffle=False,
+            )
+            sampler = {
+                "train": train_sampler,
+                "dev": dev_sampler,
+                "eval": eval_sampler,
+            }
         # get batch sampler
         if config.get("batch_sampler_type", None) == "MultiLabelBalancedBatchSampler":
             from datasets import MultiLabelBalancedBatchSampler
 
+            if args.distributed:
+                raise NotImplementedError(
+                    "If you use BERTSUMDynamicBatchSampler, you can use single gpu only."
+                )
             train_batch_sampler = MultiLabelBalancedBatchSampler(
                 train_dataset,
                 batch_size=config["batch_size"],
@@ -249,6 +301,7 @@ def main():
             "dev": DataLoader(
                 dataset=dev_dataset,
                 collate_fn=train_collater,
+                sampler=dev_sampler,
                 shuffle=False,
                 batch_size=config["batch_size"],
                 num_workers=config["num_workers"],
@@ -258,6 +311,7 @@ def main():
                 eval_dataset,
                 batch_size=config["batch_size"],
                 shuffle=False,
+                sampler=eval_sampler,
                 collate_fn=eval_collater,
                 num_workers=config["num_workers"],
                 pin_memory=config["pin_memory"],
@@ -276,7 +330,8 @@ def main():
                 dataset=train_dataset,
                 collate_fn=train_collater,
                 batch_size=config["batch_size"],
-                shuffle=True,
+                shuffle=False if args.distributed else True,
+                sampler=train_sampler,
                 drop_last=True,
                 num_workers=config["num_workers"],
                 pin_memory=config["pin_memory"],
@@ -287,7 +342,6 @@ def main():
             # keep compatibility
             config.get("model_type", "Cnn14_DecisionLevelAtt"),
         )
-
         if config["model_type"] == "Cnn14_DecisionLevelAtt":
             model = model_class(training=True, **config["model_params"]).to(device)
             if len(args.cache_path) != 0:
@@ -344,6 +398,16 @@ def main():
                     conv_params.append(param)
         else:
             model = model_class(training=True, **config["model_params"]).to(device)
+        # wrap model for distributed training
+        if args.distributed:
+            try:
+                from apex.parallel import DistributedDataParallel
+            except ImportError:
+                raise ImportError(
+                    "Apex is not installed. Please check https://github.com/NVIDIA/apex."
+                )
+            # NOTE(ibkuroyagi): Needed to place the model on GPU
+            model = DistributedDataParallel(model.to(device))
         loss_class = getattr(
             losses,
             # keep compatibility
@@ -393,6 +457,7 @@ def main():
             steps=0,
             epochs=0,
             data_loader=data_loader,
+            sampler=sampler,
             model=model.to(device),
             criterion=criterion,
             optimizer=optimizer,
@@ -467,6 +532,31 @@ def main():
             seed=None,
         )
         logging.info(f"The number of evaluation files = {len(eval_dataset)}.")
+        if args.distributed:
+            # setup sampler for distributed training
+            train_sampler = DistributedSampler(
+                dataset=train_dataset,
+                num_replicas=args.world_size,
+                rank=args.rank,
+                shuffle=True,
+            )
+            dev_sampler = DistributedSampler(
+                dataset=dev_dataset,
+                num_replicas=args.world_size,
+                rank=args.rank,
+                shuffle=False,
+            )
+            eval_sampler = DistributedSampler(
+                dataset=eval_dataset,
+                num_replicas=args.world_size,
+                rank=args.rank,
+                shuffle=False,
+            )
+            sampler = {
+                "train": train_sampler,
+                "dev": dev_sampler,
+                "eval": eval_sampler,
+            }
         # get batch sampler
         if config.get("batch_sampler_type", None) == "MultiLabelBalancedBatchSampler":
             train_batch_sampler = MultiLabelBalancedBatchSampler(
@@ -515,6 +605,7 @@ def main():
                 dataset=dev_dataset,
                 collate_fn=train_collater,
                 shuffle=False,
+                sampler=dev_sampler,
                 batch_size=config["batch_size"],
                 num_workers=config["num_workers"],
                 pin_memory=config["pin_memory"],
@@ -523,6 +614,7 @@ def main():
                 eval_dataset,
                 batch_size=config["batch_size"],
                 shuffle=False,
+                sampler=eval_sampler,
                 collate_fn=eval_collater,
                 num_workers=config["num_workers"],
                 pin_memory=config["pin_memory"],
@@ -541,7 +633,8 @@ def main():
                 dataset=train_dataset,
                 collate_fn=train_collater,
                 batch_size=config["batch_size"],
-                shuffle=True,
+                sampler=train_sampler,
+                shuffle=False if args.distributed else True,
                 drop_last=True,
                 num_workers=config["num_workers"],
                 pin_memory=config["pin_memory"],
@@ -550,6 +643,7 @@ def main():
             steps=0,
             epochs=0,
             data_loader=data_loader,
+            sampler=sampler,
             model=model.to(device),
             criterion=criterion,
             optimizer=optimizer,

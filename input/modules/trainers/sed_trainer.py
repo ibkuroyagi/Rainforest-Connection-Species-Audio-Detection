@@ -27,6 +27,7 @@ class SEDTrainer(object):
         steps,
         epochs,
         data_loader,
+        sampler,
         model,
         criterion,
         optimizer,
@@ -44,6 +45,7 @@ class SEDTrainer(object):
             steps (int): Initial global steps.
             epochs (int): Initial global epochs.
             data_loader (dict): Dict of data loaders. It must contrain "train" and "dev" loaders.
+            sampler (dict): Dict of samplers. If you use multi-gpu you need to define.
             model (dict): Dict of models. It must contrain "generator" and "discriminator" models.
             criterion (torch.nn): It must contrain "stft" and "mse" criterions.
             optimizer (object): Optimizers.
@@ -57,6 +59,7 @@ class SEDTrainer(object):
         self.steps = steps
         self.epochs = epochs
         self.data_loader = data_loader
+        self.sampler = sampler
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
@@ -428,6 +431,9 @@ class SEDTrainer(object):
         # update
         self.train_steps_per_epoch = train_steps_per_epoch
         self.epochs += 1
+        # needed for shuffle in distributed training
+        if self.config["distributed"]:
+            self.sampler["train"].set_epoch(self.epochs)
         # reset
         self.train_pred_frame_epoch = torch.empty(
             (0, self.config["l_target"], self.config["n_class"])

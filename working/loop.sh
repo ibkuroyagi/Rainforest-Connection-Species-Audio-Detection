@@ -3,8 +3,8 @@
 # Copyright 2020 Ibuki Kuroyanagi.
 # Created by Ibuki Kuroyanagi
 
-model=Cnn14_DecisionLevelAtt
-# model=EfficientNet
+# model=Cnn14_DecisionLevelAtt
+model=EfficientNet
 # model=MobileNetV2
 # model=ResNext50
 # model=conformer
@@ -14,10 +14,11 @@ type=wave
 # type=raw
 # type=mel128hop1024
 n_jobs=8
+n_gpus=1
 stage=2
 stop_stage=3
 verbose=1
-No=v015
+No=v040
 # for No in v027 v028; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
 # checkpoints="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl exp/${type}/${model}/${No}/best_score/best_scorefold1.pkl no_model  no_model no_model"
@@ -36,6 +37,7 @@ sbatch -J "${type}/${No}" ./run.sh \
     --resume "${resume}" \
     --speed_facters "0.9 1.1" \
     --verbose "${verbose}" \
+    --n_gpus "${n_gpus}" \
     --cache_path ""
 # --checkpoints "${checkpoints}"
 # done

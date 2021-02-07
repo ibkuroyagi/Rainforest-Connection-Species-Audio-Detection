@@ -124,11 +124,30 @@ def main():
         default=1,
         help="logging level. higher is more logging. (default=1)",
     )
+    parser.add_argument(
+        "--rank",
+        "--local_rank",
+        default=0,
+        type=int,
+        help="rank for distributed training. no need to explictly specify.",
+    )
     args = parser.parse_args()
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-    else:
+    # check distributed training
+    args.distributed = False
+    if not torch.cuda.is_available():
         device = torch.device("cpu")
+    else:
+        device = torch.device("cuda")
+        torch.cuda.set_device(args.rank)
+        if "WORLD_SIZE" in os.environ:
+            args.world_size = int(os.environ["WORLD_SIZE"])
+            args.distributed = args.world_size > 1
+        if args.distributed:
+            torch.distributed.init_process_group(backend="nccl", init_method="env://")
+
+    # suppress logging for distributed training
+    if args.rank != 0:
+        sys.stdout = open(os.devnull, "w")
 
     # set logger
     if args.verbose > 1:

@@ -89,9 +89,14 @@ if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
         done
     fi
     log "Training start. See the progress via ${outdir}/sed_train.log"
+    if [ "${n_gpus}" -gt 1 ]; then
+        train="python -m ../input/modules/distributed/launch.py --nproc_per_node ${n_gpus} ../input/modules/bin/sed_train.py"
+    else
+        train="python ../input/modules/bin/sed_train.py"
+    fi
     # shellcheck disable=SC2086,SC2154
     ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_train.log" \
-        python ../input/modules/bin/sed_train.py \
+        ${train} \
         --datadir "${datadir}" \
         --dumpdirs ${dumpdirs} \
         --outdir "${outdir}" \
@@ -100,7 +105,7 @@ if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
         --resume ${resume} \
         --verbose "${verbose}"
 
-    log "Successfully finished training."
+    log "Successfully finished the training."
 fi
 
 if [ "${stage}" -le 3 ] && [ "${stop_stage}" -ge 3 ]; then
@@ -122,7 +127,7 @@ if [ "${stage}" -le 3 ] && [ "${stop_stage}" -ge 3 ]; then
     [ ! -e "${outdir}" ] && mkdir -p "${outdir}"
     log "Inference start. See the progress via ${outdir}/sed_inference.log"
     # shellcheck disable=SC2086
-    ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_inference.log" \
+    ${cuda_cmd} --num_threads "${n_jobs}" --gpu "1" "${outdir}/sed_inference.log" \
         python ../input/modules/bin/sed_inference.py \
         --datadir "${datadir}" \
         --dumpdirs ${dumpdirs} \
