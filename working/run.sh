@@ -90,7 +90,7 @@ if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
     fi
     log "Training start. See the progress via ${outdir}/sed_train.log"
     if [ "${n_gpus}" -gt 1 ]; then
-        train="python -m ../input/modules/distributed/launch.py --nproc_per_node ${n_gpus} ../input/modules/bin/sed_train.py"
+        train="python ../input/modules/distributed/launch.py --nproc_per_node ${n_gpus} ../input/modules/bin/sed_train.py"
     else
         train="python ../input/modules/bin/sed_train.py"
     fi

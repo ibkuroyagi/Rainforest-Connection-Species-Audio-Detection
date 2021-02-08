@@ -169,7 +169,10 @@ class SEDTrainer(object):
             "steps": self.steps,
             "epochs": self.epochs,
         }
-        state_dict["model"] = self.model.state_dict()
+        if self.config["distributed"]:
+            state_dict["model"] = self.model.module.state_dict()
+        else:
+            state_dict["model"] = self.model.state_dict()
         if not save_model_only:
             state_dict["optimizer"] = self.optimizer.state_dict()
             if self.scheduler is not None:
@@ -189,7 +192,10 @@ class SEDTrainer(object):
 
         """
         state_dict = torch.load(checkpoint_path, map_location="cpu")
-        self.model.load_state_dict(state_dict["model"])
+        if self.config["distributed"]:
+            self.model.module.load_state_dict(state_dict["model"])
+        else:
+            self.model.load_state_dict(state_dict["model"])
         if not load_only_params:
             self.steps = state_dict["steps"]
             self.epochs = state_dict["epochs"]

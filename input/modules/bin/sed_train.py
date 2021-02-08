@@ -214,6 +214,7 @@ def main():
         train_sampler, dev_sampler, eval_sampler = None, None, None
         sampler = {}
         if args.distributed:
+            logging.info("Use multi gpu.")
             # setup sampler for distributed training
             from torch.utils.data.distributed import DistributedSampler
 
