@@ -10,16 +10,16 @@ model=EfficientNet
 # model=conformer
 # model=transformer
 
-# type=wave
+type=wave
 # type=raw
 # type=mel128hop1024
-type=mel256wave
+# type=mel256wave
 n_jobs=16
-n_gpus=1
-stage=0
+n_gpus=2
+stage=2
 stop_stage=3
 verbose=1
-No=v041
+No=v040
 step=100
 # for No in v027 v028; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
