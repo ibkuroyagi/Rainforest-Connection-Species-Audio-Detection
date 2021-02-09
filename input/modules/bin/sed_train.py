@@ -85,7 +85,6 @@ def main():
         help="rank for distributed training. no need to explictly specify.",
     )
     args = parser.parse_args()
-    # check distributed training
     args.distributed = False
     if not torch.cuda.is_available():
         device = torch.device("cpu")
@@ -97,10 +96,6 @@ def main():
             args.distributed = args.world_size > 1
         if args.distributed:
             torch.distributed.init_process_group(backend="nccl", init_method="env://")
-
-    # suppress logging for distributed training
-    if args.rank != 0:
-        sys.stdout = open(os.devnull, "w")
 
     # set logger
     if args.verbose > 1:
@@ -124,6 +119,16 @@ def main():
         )
         logging.warning("Skip DEBUG/INFO messages")
 
+    # suppress logging for distributed training
+    if args.rank != 0:
+        sys.stdout = open(os.devnull, "w")
+        logging.info("Suppress logging for distributed training.")
+    # check distributed training
+    logging.info(f"device:{device}")
+    logging.info(f"args.rank:{args.rank}")
+    logging.info(f"os.environ:{os.environ}")
+    logging.info(f"args.world_size:{args.world_size}")
+    logging.info(f"args.distributed:{args.distributed}")
     # check directory existence
     if not os.path.exists(args.outdir):
         os.makedirs(args.outdir)
@@ -212,7 +217,6 @@ def main():
         )
         logging.info(f"The number of evaluation files = {len(eval_dataset)}.")
         train_sampler, dev_sampler, eval_sampler = None, None, None
-        sampler = {}
         if args.distributed:
             logging.info("Use multi gpu.")
             # setup sampler for distributed training
@@ -236,11 +240,6 @@ def main():
                 rank=args.rank,
                 shuffle=False,
             )
-            sampler = {
-                "train": train_sampler,
-                "dev": dev_sampler,
-                "eval": eval_sampler,
-            }
         # get batch sampler
         if config.get("batch_sampler_type", None) == "MultiLabelBalancedBatchSampler":
             from datasets import MultiLabelBalancedBatchSampler
@@ -458,7 +457,7 @@ def main():
             steps=0,
             epochs=0,
             data_loader=data_loader,
-            sampler=sampler,
+            train_sampler=train_sampler,
             model=model.to(device),
             criterion=criterion,
             optimizer=optimizer,
@@ -553,11 +552,6 @@ def main():
                 rank=args.rank,
                 shuffle=False,
             )
-            sampler = {
-                "train": train_sampler,
-                "dev": dev_sampler,
-                "eval": eval_sampler,
-            }
         # get batch sampler
         if config.get("batch_sampler_type", None) == "MultiLabelBalancedBatchSampler":
             train_batch_sampler = MultiLabelBalancedBatchSampler(
@@ -644,7 +638,7 @@ def main():
             steps=0,
             epochs=0,
             data_loader=data_loader,
-            sampler=sampler,
+            train_sampler=train_sampler,
             model=model.to(device),
             criterion=criterion,
             optimizer=optimizer,

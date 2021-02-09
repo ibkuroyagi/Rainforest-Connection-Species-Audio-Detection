@@ -10,15 +10,16 @@ model=EfficientNet
 # model=conformer
 # model=transformer
 
-type=wave
+# type=wave
 # type=raw
 # type=mel128hop1024
-n_jobs=8
-n_gpus=2
-stage=2
+type=mel256wave
+n_jobs=16
+n_gpus=1
+stage=0
 stop_stage=3
 verbose=1
-No=v040
+No=v041
 step=100
 # for No in v027 v028; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
@@ -36,9 +37,9 @@ sbatch -J "${type}/${No}" ./run.sh \
     --stage "${stage}" \
     --stop_stage "${stop_stage}" \
     --type "${type}" \
-    --cal_type "0" \
+    --cal_type 1 \
     --resume "${resume}" \
-    --speed_facters "" \
+    --speed_facters "0.9 1.1" \
     --verbose "${verbose}" \
     --cache_path ""
 # --checkpoints "${checkpoints}"

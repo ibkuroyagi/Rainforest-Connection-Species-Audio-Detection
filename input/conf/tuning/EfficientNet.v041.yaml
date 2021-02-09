@@ -18,9 +18,9 @@ sr: 48000
 fft_size: 2048
 hop_size: 512
 window: hann
-num_mels: 128
-fmin: 0
-fmax: 16000
+num_mels: 256
+fmin: 40
+fmax: 24000
 ###########################################################
 #                     NETWORK SETTING                     #
 ###########################################################
@@ -41,17 +41,17 @@ train_dataset_mode: tp
 allow_cache: true # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: false
 # batch sampler
-# batch_sampler_type: MultiLabelBalancedBatchSampler
+batch_sampler_type: MultiLabelBalancedBatchSampler
 # collater_fc
 max_frames: 1024
 l_target: 32
 collater_mode: binary
 random: false
 # dataloader
-accum_grads: 1
+accum_grads: 2
 batch_size: 32 # Batch size.
-pin_memory: true # Whether to pin memory in Pytorch DataLoader.
-num_workers: 2 # Number of workers in Pytorch DataLoader.
+pin_memory: false # Whether to pin memory in Pytorch DataLoader.
+num_workers: 4 # Number of workers in Pytorch DataLoader.
 # trainer
 use_center_loss: true
 use_dializer: true
@@ -61,7 +61,6 @@ use_dializer: true
 loss_type: BCEWithLogitsLoss
 loss_params:
   reduction: mean
-  pos_weight: [1.8000, 1.8000, 3.0000, 2.5951, 1.8000, 1.8000, 1.8367, 2.9926, 1.8000, 2.7273, 1.8367, 1.8000, 1.8000, 1.8000, 1.8000, 3.1075, 2.0930, 1.8000, 1.8000, 2.1951, 2.5714, 1.8000, 2.0455, 1.0000]
 
 dializer_loss_alpha: 0.5
 dializer_loss_type: BCEWithLogitsLoss
@@ -95,8 +94,8 @@ scheduler_params:
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
-train_max_steps: 200 # Number of training steps.
-save_interval_steps: 100 # Interval steps to save checkpoint.
+train_max_steps: 3000 # Number of training steps.
+save_interval_steps: 3000 # Interval steps to save checkpoint.
 eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
 #                     OTHER SETTING                       #

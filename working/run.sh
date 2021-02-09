@@ -90,12 +90,13 @@ if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
     fi
     log "Training start. See the progress via ${outdir}/sed_train.log"
     if [ "${n_gpus}" -gt 1 ]; then
+        chmod 755 ../input/modules/bin/sed_train.py
         train="python ../input/modules/distributed/launch.py --nproc_per_node ${n_gpus} ../input/modules/bin/sed_train.py"
     else
         train="python ../input/modules/bin/sed_train.py"
     fi
     # shellcheck disable=SC2086,SC2154
-    ${cuda_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_train.log" \
+    ${train_cmd} --gpu "${n_gpus}" "${outdir}/sed_train.log" \
         ${train} \
         --datadir "${datadir}" \
         --dumpdirs ${dumpdirs} \
