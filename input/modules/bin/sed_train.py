@@ -633,6 +633,45 @@ def main():
                 num_workers=config["num_workers"],
                 pin_memory=config["pin_memory"],
             )
+        if args.distributed:
+            model_class = getattr(
+                models,
+                # keep compatibility
+                config.get("model_type", "Cnn14_DecisionLevelAtt"),
+            )
+            if config["model_type"] == "Cnn14_DecisionLevelAtt":
+                model = model_class(training=True, **config["model_params"])
+                model.bn0 = nn.BatchNorm2d(config["num_mels"])
+                model.att_block = models.AttBlock(**config["att_block"])
+                if config["model_params"].get("use_dializer", False):
+                    model.dialize_layer = nn.Linear(config["n_class"], 1, bias=True)
+                if config["model_params"].get("require_prep", False):
+                    model.spectrogram_extractor = Spectrogram(
+                        n_fft=config["fft_size"],
+                        hop_length=config["hop_size"],
+                        win_length=config["fft_size"],
+                        window=config["window"],
+                        center=True,
+                        pad_mode="reflect",
+                    )
+                    model.logmel_extractor = LogmelFilterBank(
+                        sr=config["sr"],
+                        n_fft=config["fft_size"],
+                        n_mels=config["num_mels"],
+                        fmin=config["fmin"],
+                        fmax=config["fmax"],
+                        ref=1.0,
+                        amin=1e-6,
+                        top_db=None,
+                        freeze_parameters=True,
+                    )
+            elif config["model_type"] == "ResNext50":
+                model = model_class(training=True, **config["model_params"]).to(device)
+                model.bn0 = nn.BatchNorm2d(config["num_mels"])
+                model.att_block = models.AttBlock(**config["att_block"])
+            else:
+                model = model_class(training=True, **config["model_params"]).to(device)
+            model = DistributedDataParallel(model.to(device))
         trainer = SEDTrainer(
             steps=0,
             epochs=0,

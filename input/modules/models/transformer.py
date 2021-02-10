@@ -10,6 +10,7 @@ import math
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 import torch.nn as nn
 from torchlibrosa.augmentation import SpecAugmentation
 from torchlibrosa.stft import LogmelFilterBank
@@ -133,6 +134,7 @@ class TransformerEncoderDecoder(nn.Module):
         self.training = training
         self.is_spec_augmenter = is_spec_augmenter
         self.require_prep = require_prep
+        print(f"sequence_length:{sequence_length + int(not require_prep)}")
         window = "hann"
         center = True
         pad_mode = "reflect"
@@ -181,7 +183,9 @@ class TransformerEncoderDecoder(nn.Module):
                 dropout=dropout,
                 maxlen=max_position_encode_length,
             )
-        self.norm = nn.LayerNorm((sequence_length + 1, num_hidden_units))
+        self.norm = nn.LayerNorm(
+            (sequence_length + int(not require_prep), num_hidden_units)
+        )
         transformer_encoder_layer = nn.TransformerEncoderLayer(
             d_model=num_hidden_units,
             nhead=num_heads,
@@ -245,25 +249,15 @@ class TransformerEncoderDecoder(nn.Module):
         if self.require_prep:
             if len(x.shape) < 2:
                 x = x.unsqueeze(0)
-            x = self.spectrogram_extractor(x)  # (batch_size, 1, time_steps, freq_bins)
-            x = self.logmel_extractor(x)  # (batch_size, 1, time_steps, mel_bins)
-            # x = x.transpose(1, 3)
-            x = x.squeeze(1)
-            x = torch.cat(
-                [
-                    torch.ones(
-                        (x.shape[0], 1, self.num_features), dtype=torch.float32
-                    ).to(next(self.parameters()).device),
-                    x,
-                ],
-                axis=1,
-            )
+            x = self.spectrogram_extractor(x)  # (batch_size, 1, T, mel_bins)
+            x = self.logmel_extractor(x)  # (batch_size, 1, T, mel_bins)
+            x = x.squeeze(1)  # (B, T, mels)
         if self.use_embedding:
             id_ = x[:, :, -1].long()
             x = x[:, :, :-1]
         if self.training and self.is_spec_augmenter:
             x = x.unsqueeze(1)
-            x[:, :, 1:, :] = self.spec_augmenter(x[:, :, 1:, :])  # (B, 1, T', mels)
+            x[:, :, 1:, :] = self.spec_augmenter(x[:, :, 1:, :])  # (B, 1, T', mel_bins)
             x = x.squeeze(1)  # (B, T', mels)
         enc = self.input_layer(x)
         enc = self.norm(enc)
@@ -286,11 +280,17 @@ class TransformerEncoderDecoder(nn.Module):
         )
         out = self.frame_layer(dec.transpose(0, 1))
         y_ = {}
-        if self.use_dializer:
-            frame_mask = self.dialize_layer(dec.transpose(0, 1))
-            y_["frame_mask"] = frame_mask[:, 1:]
-        y_["y_clip"] = out[:, 0, :]
-        y_["y_frame"] = out[:, 1:, :]
+        if self.require_prep:
+            if self.use_dializer:
+                y_["frame_mask"] = self.dialize_layer(dec.transpose(0, 1))
+            y_["y_clip"] = F.max_pool2d(out, kernel_size=out.size()[2:])
+            y_["y_frame"] = out
+        else:
+            if self.use_dializer:
+                frame_mask = self.dialize_layer(dec.transpose(0, 1))
+                y_["frame_mask"] = frame_mask[:, 1:]
+            y_["y_clip"] = out[:, 0, :]
+            y_["y_frame"] = out[:, 1:, :]
         if self.use_reconstruct:
             y_["reconstructed"] = self.reconstruct_layer(dec.transpose(0, 1))
         return y_
