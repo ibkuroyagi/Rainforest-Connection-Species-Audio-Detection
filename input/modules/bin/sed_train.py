@@ -96,7 +96,9 @@ def main():
             args.distributed = args.world_size > 1
         if args.distributed:
             torch.distributed.init_process_group(backend="nccl", init_method="env://")
-
+    # suppress logging for distributed training
+    if args.rank != 0:
+        sys.stdout = open(os.devnull, "w")
     # set logger
     if args.verbose > 1:
         logging.basicConfig(
@@ -119,16 +121,13 @@ def main():
         )
         logging.warning("Skip DEBUG/INFO messages")
 
-    # suppress logging for distributed training
-    if args.rank != 0:
-        sys.stdout = open(os.devnull, "w")
-        logging.info("Suppress logging for distributed training.")
     # check distributed training
-    logging.info(f"device:{device}")
-    logging.info(f"args.rank:{args.rank}")
-    logging.info(f"os.environ:{os.environ}")
-    logging.info(f"args.world_size:{args.world_size}")
-    logging.info(f"args.distributed:{args.distributed}")
+    if args.distributed:
+        logging.info(f"device:{device}")
+        logging.info(f"args.rank:{args.rank}")
+        logging.info(f"os.environ:{os.environ}")
+        logging.info(f"args.world_size:{args.world_size}")
+        logging.info(f"args.distributed:{args.distributed}")
     # check directory existence
     if not os.path.exists(args.outdir):
         os.makedirs(args.outdir)

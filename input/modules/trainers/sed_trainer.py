@@ -27,12 +27,12 @@ class SEDTrainer(object):
         steps,
         epochs,
         data_loader,
-        train_sampler,
         model,
         criterion,
         optimizer,
         scheduler,
         config,
+        train_sampler=None,
         device=torch.device("cpu"),
         train=False,
         use_center_loss=False,
@@ -179,7 +179,7 @@ class SEDTrainer(object):
                 state_dict["scheduler"] = self.scheduler.state_dict()
 
         if not os.path.exists(os.path.dirname(checkpoint_path)):
-            os.makedirs(os.path.dirname(checkpoint_path))
+            os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
         torch.save(state_dict, checkpoint_path)
         self.last_checkpoint = checkpoint_path
 

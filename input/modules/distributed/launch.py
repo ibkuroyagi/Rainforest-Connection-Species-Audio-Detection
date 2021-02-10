@@ -151,11 +151,8 @@ def main():
             cmd.append("--local_rank={}".format(local_rank))
 
         cmd.extend(args.training_script_args)
-        print(f"cmd:{local_rank}:{cmd}")
-        print(f"current_env:{local_rank}:{current_env}")
         process = subprocess.Popen(cmd, env=current_env)
         processes.append(process)
-    print(f"append:{len(processes)} process")
     for process in processes:
         process.wait()
         if process.returncode != 0:

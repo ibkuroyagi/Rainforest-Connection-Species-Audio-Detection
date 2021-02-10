@@ -112,6 +112,7 @@ class RainForestDataset(Dataset):
         self.use_file_keys = use_file_keys
         self.use_file_list = use_file_list
         self.use_time_list = use_time_list
+        self.keys = keys
         self.mode = mode
         self.allow_cache = allow_cache
         self.use_on_the_fly = use_on_the_fly
@@ -131,11 +132,12 @@ class RainForestDataset(Dataset):
                 )
                 logging.debug(f"{key}")
             self.transform = datasets.Compose(compose_list)
-        if allow_cache:
-            # NOTE(ibuki): Manager is need to share memory in dataloader with num_workers > 0
-            self.manager = Manager()
-            self.caches = self.manager.list()
-            self.caches += [() for _ in range(len(use_file_list))]
+        # NOTE(ibuki): Manager is need to share memory in dataloader with num_workers > 0
+        self.manager = Manager()
+        self.caches = self.manager.list()
+        self.caches += [() for _ in range(len(use_file_list))]
+        self.wave_caches = self.manager.list()
+        self.wave_caches += [() for _ in range(len(use_file_list))]
 
     def __getitem__(self, idx):
         """Get specified idx items.
@@ -150,14 +152,22 @@ class RainForestDataset(Dataset):
                 matrix_tp: (ndrray) Matrix of ground truth.
                 time_list: (ndrray) (n_recoding_id, t_max, t_min).
         """
-        if self.allow_cache and (len(self.caches[idx]) != 0):
+        if (
+            self.allow_cache
+            and (len(self.caches[idx]) != 0)
+            and ("wave" not in self.keys)
+        ):
             return self.caches[idx]
-        hdf5_file = h5py.File(self.use_file_list[idx], "r")
+
         items = {}
-        # feats is dumped files
-        for key in self.use_file_keys[idx]:
-            items[key] = hdf5_file[key][()]
-        hdf5_file.close()
+        if len(self.wave_caches[idx]) == 0:
+            # feats is dumped files
+            hdf5_file = h5py.File(self.use_file_list[idx], "r")
+            for key in self.use_file_keys[idx]:
+                items[key] = hdf5_file[key][()]
+            hdf5_file.close()
+        else:
+            items = self.wave_caches[idx]
         if self.use_on_the_fly:
             # Make specrorgram on Dataset.
             return self._on_the_fly(items["wave"], self.use_time_list[idx], split=8)
@@ -167,7 +177,10 @@ class RainForestDataset(Dataset):
         if (self.mode == "all") or (self.mode == "tp") or (self.mode == "valid"):
             items["time_list"] = self.use_time_list[idx]
         if self.allow_cache:
-            self.caches[idx] = items
+            if ("wave" in self.keys) and (len(self.wave_caches[idx]) == 0):
+                self.wave_caches[idx] = items
+            else:
+                self.caches[idx] = items
         return items
 
     def __len__(self):
