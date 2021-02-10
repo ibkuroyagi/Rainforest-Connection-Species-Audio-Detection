@@ -8,6 +8,7 @@ if [ -e "${PWD}/../tools/venv/bin/activate" ]; then
     # shellcheck disable=SC1090
     . "${PWD}/../tools/venv/bin/activate"
 fi
+nvcc -V
 
 # python related
 export OMP_NUM_THREADS=1

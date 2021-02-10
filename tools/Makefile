@@ -20,11 +20,11 @@ virtualenv:
 	cd ../input/; unzip iterative-stratification.zip; rm iterative-stratification.zip
 		
 apex:
-	rm -fr apex
 	export CUDA_HOME=/usr/local/cuda-$(CUDA_VERSION)/
 	git clone https://github.com/NVIDIA/apex.git
 	. venv/bin/activate; cd apex; \
-		pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+		pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+		# pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 
 clean:
 	rm -fr venv apex

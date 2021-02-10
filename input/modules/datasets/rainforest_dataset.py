@@ -165,6 +165,8 @@ class RainForestDataset(Dataset):
             hdf5_file = h5py.File(self.use_file_list[idx], "r")
             for key in self.use_file_keys[idx]:
                 items[key] = hdf5_file[key][()]
+                if key == "wave":
+                    original_wave = items[key]
             hdf5_file.close()
         else:
             items = self.wave_caches[idx]
@@ -179,6 +181,7 @@ class RainForestDataset(Dataset):
         if self.allow_cache:
             if ("wave" in self.keys) and (len(self.wave_caches[idx]) == 0):
                 self.wave_caches[idx] = items
+                self.wave_caches[idx]["wave"] = original_wave
             else:
                 self.caches[idx] = items
         return items

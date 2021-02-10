@@ -219,16 +219,17 @@ class SEDTrainer(object):
             "TransformerEncoderDecoder",
             "ConformerEncoderDecoder",
         ]:
-            # Add waek label frame and transpose (B, mel, T') to (B, 1+T', mel).
-            x = torch.cat(
-                [
-                    torch.ones((x.shape[0], x.shape[1], 1), dtype=torch.float32).to(
-                        self.device
-                    ),
-                    x,
-                ],
-                axis=2,
-            ).transpose(2, 1)
+            if not self.config["model_params"].get("require_prep", False):
+                # Add waek label frame and transpose (B, mel, T') to (B, 1+T', mel).
+                x = torch.cat(
+                    [
+                        torch.ones((x.shape[0], x.shape[1], 1), dtype=torch.float32).to(
+                            self.device
+                        ),
+                        x,
+                    ],
+                    axis=2,
+                ).transpose(2, 1)
         logging.debug(
             f"y_frame,{y_frame.shape}:{y_frame[0]}, y_clip,{y_clip.shape}:{y_clip[0]}"
         )

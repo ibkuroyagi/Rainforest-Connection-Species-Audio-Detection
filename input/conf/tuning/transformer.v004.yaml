@@ -51,7 +51,7 @@ augmentation_params:
   VolumeControl: { always_apply: False, p: 0.8, db_limit: 10, mode: cosine }
 # dataset
 train_dataset_mode: tp
-allow_cache: false # Whether to allow cache in dataset. If true, it requires cpu memory.
+allow_cache: true # Whether to allow cache in dataset. If true, it requires cpu memory.
 is_normalize: false
 use_on_the_fly: true
 # collater_fc
@@ -85,15 +85,15 @@ optimizer_type: Noam
 optimizer_params:
   base_lr: 0.1
   model_size: 128
-  warmup: 8000
+  warmup: 6000
   betas: [0.9, 0.999]
 
 scheduler_type: null
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################
-train_max_steps: 10000 # Number of training steps.
-save_interval_steps: 5000 # Interval steps to save checkpoint.
+train_max_steps: 6000 # Number of training steps.
+save_interval_steps: 6000 # Interval steps to save checkpoint.
 eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 ###########################################################
 #                     OTHER SETTING                       #

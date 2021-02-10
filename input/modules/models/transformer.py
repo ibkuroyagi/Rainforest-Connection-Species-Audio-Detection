@@ -12,6 +12,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torchlibrosa.augmentation import SpecAugmentation
+from torchlibrosa.stft import LogmelFilterBank
+from torchlibrosa.stft import Spectrogram
 
 
 class RandomCutCollater(object):
@@ -111,10 +113,17 @@ class TransformerEncoderDecoder(nn.Module):
         use_dializer=False,
         is_spec_augmenter=False,
         training=False,
+        require_prep=False,
+        sample_rate=48000,
+        window_size=2048,
+        hop_size=512,
+        fmin=30,
+        fmax=16000,
     ):
         super().__init__()
         self.use_embedding = embedding_dim > 0
         num_features = num_features - 1 if self.use_embedding else num_features
+        self.num_features = num_features
         self.concat_embedding = concat_embedding
 
         self.use_position_encode = use_position_encode
@@ -123,11 +132,41 @@ class TransformerEncoderDecoder(nn.Module):
         self.use_dializer = use_dializer
         self.training = training
         self.is_spec_augmenter = is_spec_augmenter
+        self.require_prep = require_prep
+        window = "hann"
+        center = True
+        pad_mode = "reflect"
+        ref = 1.0
+        amin = 1e-6
+        top_db = None
+        if require_prep:
+            self.spectrogram_extractor = Spectrogram(
+                n_fft=window_size,
+                hop_length=hop_size,
+                win_length=window_size,
+                window=window,
+                center=center,
+                pad_mode=pad_mode,
+                freeze_parameters=True,
+            )
+
+            # Logmel feature extractor
+            self.logmel_extractor = LogmelFilterBank(
+                sr=sample_rate,
+                n_fft=window_size,
+                n_mels=num_features,
+                fmin=fmin,
+                fmax=fmax,
+                ref=ref,
+                amin=amin,
+                top_db=top_db,
+                freeze_parameters=True,
+            )
         if is_spec_augmenter:
             self.spec_augmenter = SpecAugmentation(
-                time_drop_width=80,
+                time_drop_width=40,
                 time_stripes_num=2,
-                freq_drop_width=20,
+                freq_drop_width=10,
                 freq_stripes_num=2,
             )
 
@@ -203,6 +242,22 @@ class TransformerEncoderDecoder(nn.Module):
             Tensor: frame_mask (batch_size, sequence_length, 1).
             Tensor: reconstructed inputs (batch_size, sequence_length, num_features).
         """
+        if self.require_prep:
+            if len(x.shape) < 2:
+                x = x.unsqueeze(0)
+            x = self.spectrogram_extractor(x)  # (batch_size, 1, time_steps, freq_bins)
+            x = self.logmel_extractor(x)  # (batch_size, 1, time_steps, mel_bins)
+            # x = x.transpose(1, 3)
+            x = x.squeeze(1)
+            x = torch.cat(
+                [
+                    torch.ones(
+                        (x.shape[0], 1, self.num_features), dtype=torch.float32
+                    ).to(next(self.parameters()).device),
+                    x,
+                ],
+                axis=1,
+            )
         if self.use_embedding:
             id_ = x[:, :, -1].long()
             x = x[:, :, :-1]

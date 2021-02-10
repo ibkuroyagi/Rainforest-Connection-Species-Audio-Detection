@@ -4,22 +4,22 @@
 # Created by Ibuki Kuroyanagi
 
 # model=Cnn14_DecisionLevelAtt
-model=EfficientNet
+# model=EfficientNet
 # model=MobileNetV2
 # model=ResNext50
 # model=conformer
-# model=transformer
+model=transformer
 
 type=wave
 # type=raw
 # type=mel128hop1024
 # type=mel256wave
 n_jobs=16
-n_gpus=1
-stage=3
+n_gpus=2
+stage=2
 stop_stage=3
 verbose=1
-No=v040
+No=v005
 # step=100
 # for No in v027 v028; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
@@ -40,7 +40,7 @@ sbatch -J "${type}/${No}" ./run.sh \
     --type "${type}" \
     --cal_type 0 \
     --resume "${resume}" \
-    --speed_facters "0.9 1.1" \
+    --speed_facters "0.9 1.1 0.8 1.2" \
     --verbose "${verbose}" \
     --cache_path ""
 # --checkpoints "${checkpoints}"
