@@ -11,11 +11,9 @@ model=EfficientNet
 # model=transformer
 
 type=wave
-# type=raw
-# type=mel128hop1024
 # type=mel256wave
 n_jobs=16
-n_gpus=2
+n_gpus=1
 stage=2
 stop_stage=3
 verbose=1
@@ -25,7 +23,7 @@ step=5000
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
 resume="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl no_model no_model  no_model no_model"
 # resume="exp/${type}/${model}/${No}/checkpoint-${step}/checkpoint-${step}fold0.pkl no_model no_model no_model no_model"
-# resume=""
+resume=""
 # for fold in {0..4}; do
 #     # resume+="exp/${type}/${model}/${No}/checkpoint-${step}/checkpoint-${step}fold${fold}.pkl "
 #     resume+="exp/${type}/${model}/${No}/best_score/best_scorefold${fold}.pkl "

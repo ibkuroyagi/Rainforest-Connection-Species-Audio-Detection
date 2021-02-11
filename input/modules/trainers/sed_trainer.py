@@ -168,6 +168,7 @@ class SEDTrainer(object):
         state_dict = {
             "steps": self.steps,
             "epochs": self.epochs,
+            "best_score": self.best_score,
         }
         if self.config["distributed"]:
             state_dict["model"] = self.model.module.state_dict()
@@ -199,6 +200,7 @@ class SEDTrainer(object):
         if not load_only_params:
             self.steps = state_dict["steps"]
             self.epochs = state_dict["epochs"]
+            self.best_score = state_dict.get("best_score", 0)
             if (self.optimizer is not None) and (
                 state_dict.get("optimizer", None) is not None
             ):
@@ -472,16 +474,17 @@ class SEDTrainer(object):
             "TransformerEncoderDecoder",
             "ConformerEncoderDecoder",
         ]:
-            # Add waek label frame and transpose (B, mel, T') to (B, 1+T', mel).
-            x = torch.cat(
-                [
-                    torch.ones((x.shape[0], x.shape[1], 1), dtype=torch.float32).to(
-                        self.device
-                    ),
-                    x,
-                ],
-                axis=2,
-            ).transpose(2, 1)
+            if not self.config["model_params"].get("require_prep", False):
+                # Add waek label frame and transpose (B, mel, T') to (B, 1+T', mel).
+                x = torch.cat(
+                    [
+                        torch.ones((x.shape[0], x.shape[1], 1), dtype=torch.float32).to(
+                            self.device
+                        ),
+                        x,
+                    ],
+                    axis=2,
+                ).transpose(2, 1)
         y_frame = batch["y_frame"].to(self.device)
         y_clip = batch["y_clip"].to(self.device)
         y_ = self.model(x)
@@ -729,17 +732,18 @@ class SEDTrainer(object):
                         "TransformerEncoderDecoder",
                         "ConformerEncoderDecoder",
                     ]:
-                        # Add waek label frame and transpose (B, mel, T') to (B, 1+T', mel).
-                        x_batchs[i] = torch.cat(
-                            [
-                                torch.ones(
-                                    (x_batchs[i].shape[0], x_batchs[i].shape[1], 1),
-                                    dtype=torch.float32,
-                                ).to(self.device),
-                                x_batchs[i],
-                            ],
-                            axis=2,
-                        ).transpose(2, 1)
+                        if not self.config["model_params"].get("require_prep", False):
+                            # Add waek label frame and transpose (B, mel, T') to (B, 1+T', mel).
+                            x_batchs[i] = torch.cat(
+                                [
+                                    torch.ones(
+                                        (x_batchs[i].shape[0], x_batchs[i].shape[1], 1),
+                                        dtype=torch.float32,
+                                    ).to(self.device),
+                                    x_batchs[i],
+                                ],
+                                axis=2,
+                            ).transpose(2, 1)
                     y_batch_ = self.model(x_batchs[i])
                     y_clip[i] = torch.cat(
                         [y_clip[i], y_batch_["y_clip"][:, :24]], dim=0

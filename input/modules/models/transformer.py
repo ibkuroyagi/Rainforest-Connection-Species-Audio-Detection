@@ -134,7 +134,6 @@ class TransformerEncoderDecoder(nn.Module):
         self.training = training
         self.is_spec_augmenter = is_spec_augmenter
         self.require_prep = require_prep
-        print(f"sequence_length:{sequence_length + int(not require_prep)}")
         window = "hann"
         center = True
         pad_mode = "reflect"
@@ -283,7 +282,7 @@ class TransformerEncoderDecoder(nn.Module):
         if self.require_prep:
             if self.use_dializer:
                 y_["frame_mask"] = self.dialize_layer(dec.transpose(0, 1))
-            y_["y_clip"] = F.max_pool2d(out, kernel_size=out.size()[2:])
+            y_["y_clip"] = F.max_pool2d(out, kernel_size=out.size()[2:]).squeeze(2)
             y_["y_frame"] = out
         else:
             if self.use_dializer:

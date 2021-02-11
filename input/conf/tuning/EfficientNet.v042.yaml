@@ -61,7 +61,7 @@ collater_mode: binary
 random: false
 # dataloader
 accum_grads: 1
-batch_size: 64 # Batch size.
+batch_size: 48 # Batch size.
 pin_memory: true # Whether to pin memory in Pytorch DataLoader.
 num_workers: 4 # Number of workers in Pytorch DataLoader.
 # trainer
@@ -92,17 +92,18 @@ tsne_params:
 ###########################################################
 #              OPTIMIZER & SCHEDULER SETTING              #
 ###########################################################
-optimizer_type: "Adam"
-optimizer_params:
-  lr: 0.0016
-  weight_decay: 1.0e-4
 center_loss_optimizer_params:
   lr: 0.0001
   weight_decay: 1.0e-4
-scheduler_type: "StepLR"
-scheduler_params:
-  step_size: 1000 # scheduler step size.
-  gamma: 0.5
+
+optimizer_type: Noam
+optimizer_params:
+  base_lr: 0.01
+  model_size: 128
+  warmup: 3000
+  betas: [0.9, 0.999]
+
+scheduler_type: null
 ###########################################################
 #                    INTERVAL SETTING                     #
 ###########################################################

@@ -96,7 +96,7 @@ if [ "${stage}" -le 2 ] && [ "${stop_stage}" -ge 2 ]; then
         train="python ../input/modules/bin/sed_train.py"
     fi
     # shellcheck disable=SC2086,SC2154
-    ${train_cmd} --gpu "${n_gpus}" "${outdir}/sed_train.log" \
+    ${train_cmd} --num_threads "${n_jobs}" --gpu "${n_gpus}" "${outdir}/sed_train.log" \
         ${train} \
         --datadir "${datadir}" \
         --dumpdirs ${dumpdirs} \
