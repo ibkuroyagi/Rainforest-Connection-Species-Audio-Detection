@@ -310,6 +310,7 @@ def main():
                 max_frames=config.get("max_frames", 512),
                 n_split=config.get("n_eval_split", 20),
                 is_label=True,
+                use_song_type=config.get("use_song_type", False),
             )
         tta_oof_clip = np.zeros(
             (

@@ -27,6 +27,7 @@ class FeatTrainCollater(object):
         mode="sum",
         random=False,
         use_dializer=False,
+        use_song_type=False,
         split=8,
         hop_size=512,
     ):
@@ -46,9 +47,10 @@ class FeatTrainCollater(object):
         self.l_target = l_target
         self.random = random
         self.use_dializer = use_dializer
+        self.use_song_type = use_song_type
         self.split = split
         self.sec = max_frames * (60 / (2880000 / hop_size + 1))
-        self.n_class = 24
+        self.n_class = 26 if use_song_type else 24
 
     def __call__(self, batch):
         """Convert into batch tensors.
@@ -106,10 +108,36 @@ class FeatTrainCollater(object):
             y_frame = np.zeros((self.l_target, self.n_class))
             for i in range(len(time_list)):
                 if time_list[i][0] - self.sec <= t_begging <= time_list[i][1]:
-                    y_clip[int(time_list[i][2])] = 1.0
-                    checker = np.linspace(t_begging, t_ending, self.l_target)
-                    call_idx = (checker > time_list[i][0]) & (checker < time_list[i][1])
-                    y_frame[call_idx, int(time_list[i][2])] = 1.0
+                    select_idx = int(time_list[i][2])
+                    if self.use_song_type:
+                        if (select_idx == 17) and (int(time_list[i][3]) == 4):
+                            y_clip[24] = 1.0
+                            checker = np.linspace(t_begging, t_ending, self.l_target)
+                            call_idx = (checker > time_list[i][0]) & (
+                                checker < time_list[i][1]
+                            )
+                            y_frame[call_idx, 24] = 1.0
+                        elif (select_idx == 23) and (int(time_list[i][3]) == 4):
+                            y_clip[25] = 1.0
+                            checker = np.linspace(t_begging, t_ending, self.l_target)
+                            call_idx = (checker > time_list[i][0]) & (
+                                checker < time_list[i][1]
+                            )
+                            y_frame[call_idx, 25] = 1.0
+                        else:
+                            y_clip[select_idx] = 1.0
+                            checker = np.linspace(t_begging, t_ending, self.l_target)
+                            call_idx = (checker > time_list[i][0]) & (
+                                checker < time_list[i][1]
+                            )
+                            y_frame[call_idx, select_idx] = 1.0
+                    else:
+                        y_clip[select_idx] = 1.0
+                        checker = np.linspace(t_begging, t_ending, self.l_target)
+                        call_idx = (checker > time_list[i][0]) & (
+                            checker < time_list[i][1]
+                        )
+                        y_frame[call_idx, select_idx] = 1.0
             frame_batch.append(y_frame.astype(np.float32))
             clip_batch.append(y_clip.astype(np.float32))
             if self.random:
@@ -163,7 +191,7 @@ class FeatTrainCollater(object):
 class FeatEvalCollater(object):
     """Customized collater for Pytorch DataLoader for feat form data in evaluation."""
 
-    def __init__(self, max_frames=512, n_split=20, is_label=False):
+    def __init__(self, max_frames=512, n_split=20, is_label=False, use_song_type=False):
         """Initialize customized collater for PyTorch DataLoader.
 
         Args:
@@ -174,7 +202,8 @@ class FeatEvalCollater(object):
         self.max_frames = max_frames
         self.n_split = n_split
         self.is_label = is_label
-        self.n_class = 24
+        self.n_class = 26 if use_song_type else 24
+        self.use_song_type = use_song_type
 
     def __call__(self, batch):
         """Convert into batch tensors.
@@ -214,7 +243,15 @@ class FeatEvalCollater(object):
             clip_batch = []
             for time_list in all_time_list:
                 y_clip = np.zeros(self.n_class)
-                y_clip[time_list[:, 2].astype(int)] = 1.0
+                if self.use_song_type:
+                    if (time_list[:, 2] == 17) and (time_list[:, 3] == 4):
+                        y_clip[time_list[:, 24].astype(int)] = 1.0
+                    elif (time_list[:, 2] == 23) and (time_list[:, 3] == 4):
+                        y_clip[time_list[:, 24].astype(int)] = 1.0
+                    else:
+                        y_clip[time_list[:, 2].astype(int)] = 1.0
+                else:
+                    y_clip[time_list[:, 2].astype(int)] = 1.0
                 clip_batch.append(y_clip.astype(np.float32))
             items["y_clip"] = torch.tensor(clip_batch, dtype=torch.float)
         return items

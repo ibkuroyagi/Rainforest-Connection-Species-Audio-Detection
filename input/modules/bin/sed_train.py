@@ -282,6 +282,7 @@ def main():
                 max_frames=config.get("max_frames", 512),
                 n_split=config.get("n_eval_split", 20),
                 is_label=True,
+                use_song_type=config.get("use_song_type", False),
             )
             from datasets import FeatTrainCollater
 
@@ -295,6 +296,7 @@ def main():
                     random=config.get("random", False),
                     use_dializer=config.get("use_dializer", False),
                     hop_size=config.get("hop_size", 512),
+                    use_song_type=config.get("use_song_type", False),
                 )
         data_loader = {
             "dev": DataLoader(
@@ -582,6 +584,7 @@ def main():
                 max_frames=config.get("max_frames", 512),
                 n_split=config.get("n_eval_split", 20),
                 is_label=True,
+                use_song_type=config.get("use_song_type", False),
             )
             if config.get("use_on_the_fly", False):
                 train_collater = None
@@ -593,6 +596,7 @@ def main():
                     random=config.get("random", False),
                     use_dializer=config.get("use_dializer", False),
                     hop_size=config.get("hop_size", 512),
+                    use_song_type=config.get("use_song_type", False),
                 )
         data_loader = {
             "dev": DataLoader(

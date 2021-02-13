@@ -68,7 +68,7 @@ class RainForestDataset(Dataset):
                     # logging.debug(f"{facter}: {file}")
                     use_time_list.append(
                         train_tp[train_tp["recording_id"] == recording_id]
-                        .loc[:, ["t_min", "t_max", "species_id"]]
+                        .loc[:, ["t_min", "t_max", "species_id", "songtype_id"]]
                         .values
                     )
         elif mode == "all":
@@ -82,7 +82,7 @@ class RainForestDataset(Dataset):
                     # logging.debug(f"{facter}: {file}")
                     use_time_list.append(
                         train_tp[train_tp["recording_id"] == recording_id]
-                        .loc[:, ["t_min", "t_max", "species_id"]]
+                        .loc[:, ["t_min", "t_max", "species_id", "songtype_id"]]
                         .values
                     )
                 if recording_id in fp_list:
@@ -90,7 +90,7 @@ class RainForestDataset(Dataset):
                     use_file_list.append(file)
                     use_time_list.append(
                         train_fp[train_fp["recording_id"] == recording_id]
-                        .loc[:, ["t_min", "t_max", "species_id"]]
+                        .loc[:, ["t_min", "t_max", "species_id", "songtype_id"]]
                         .values
                     )
         elif mode == "valid":
@@ -102,7 +102,7 @@ class RainForestDataset(Dataset):
                     use_file_list.append(file)
                     use_time_list.append(
                         train_tp[train_tp["recording_id"] == recording_id]
-                        .loc[:, ["t_min", "t_max", "species_id"]]
+                        .loc[:, ["t_min", "t_max", "species_id", "songtype_id"]]
                         .values
                     )
         elif mode == "test":

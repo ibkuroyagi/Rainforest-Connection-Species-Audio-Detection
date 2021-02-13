@@ -79,9 +79,9 @@ class EfficientNet_b(nn.Module):
         if is_spec_augmenter:
             # Spec augmenter
             self.spec_augmenter = SpecAugmentation(
-                time_drop_width=80,
+                time_drop_width=40,
                 time_stripes_num=2,
-                freq_drop_width=20,
+                freq_drop_width=10,
                 freq_stripes_num=2,
             )
         if use_dializer:

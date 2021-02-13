@@ -117,7 +117,7 @@ class SEDTrainer(object):
 
         self.finish_train = False
         self.best_score = 0
-        self.n_target = 24
+        self.n_target = 26 if config.get("use_song_type", False) else 24
         self.epoch_train_loss = defaultdict(float)
         self.epoch_eval_loss = defaultdict(float)
         self.eval_metric = defaultdict(float)
@@ -408,6 +408,16 @@ class SEDTrainer(object):
                 self.train_pred_frame_epoch *= torch.sigmoid(
                     self.train_y_frame_mask_epoch
                 )
+            if self.config.get("use_song_type", False):
+                self.train_pred_epoch = self._fix_class_data(
+                    self.train_pred_epoch, mode="np_clip"
+                )
+                self.train_y_epoch = self._fix_class_data(
+                    self.train_y_epoch, mode="np_clip"
+                )
+                self.train_pred_frame_epoch = self._fix_class_data(
+                    self.train_pred_frame_epoch, mode="frame"
+                )
             self.epoch_train_loss["train/epoch_lwlrap_clip"] = lwlrap(
                 self.train_y_epoch[:, :24], self.train_pred_epoch[:, :24]
             )
@@ -624,6 +634,16 @@ class SEDTrainer(object):
                     "dev/epoch_dializer_loss"
                 ]
                 self.dev_pred_frame_epoch *= torch.sigmoid(self.dev_y_frame_mask_epoch)
+            if self.config.get("use_song_type", False):
+                self.dev_pred_epoch = self._fix_class_data(
+                    self.dev_pred_epoch, mode="np_clip"
+                )
+                self.dev_y_epoch = self._fix_class_data(
+                    self.dev_y_epoch, mode="np_clip"
+                )
+                self.dev_pred_frame_epoch = self._fix_class_data(
+                    self.dev_pred_frame_epoch, mode="frame"
+                )
             self.epoch_eval_loss["dev/epoch_lwlrap_clip"] = lwlrap(
                 self.dev_y_epoch[:, :24], self.dev_pred_epoch[:, :24]
             )
@@ -723,6 +743,10 @@ class SEDTrainer(object):
         with torch.no_grad():
             for batch in tqdm(self.data_loader["eval"]):
                 if mode == "valid":
+                    if self.config.get("use_song_type", False):
+                        batch["y_clip"] = self._fix_class_data(
+                            batch["y_clip"], mode="clip"
+                        )
                     y_clip_true = torch.cat(
                         [y_clip_true, batch["y_clip"][:, :24]], dim=0
                     )
@@ -745,6 +769,13 @@ class SEDTrainer(object):
                                 axis=2,
                             ).transpose(2, 1)
                     y_batch_ = self.model(x_batchs[i])
+                    if self.config.get("use_song_type", False):
+                        y_batch_["y_clip"] = self._fix_class_data(
+                            y_batch_["y_clip"], mode="clip"
+                        )
+                        y_batch_["y_frame"] = self._fix_class_data(
+                            y_batch_["y_frame"], mode="frame"
+                        )
                     y_clip[i] = torch.cat(
                         [y_clip[i], y_batch_["y_clip"][:, :24]], dim=0
                     )
@@ -820,6 +851,21 @@ class SEDTrainer(object):
             else:
                 label[i] = called_idx[random.randint(0, len(called_idx) - 1)]
         return label
+
+    def _fix_class_data(self, class_data, mode="clip"):
+        if mode == "clip":
+            class_data[:, 17] = class_data[:, [17, 24]].max(dim=1)
+            class_data[:, 23] = class_data[:, [23, 25]].max(dim=1)
+        elif mode == "frame":
+            class_data[:, :, 17] = class_data[:, :, [17, 24]].max(dim=1)
+            class_data[:, :, 23] = class_data[:, :, [23, 25]].max(dim=1)
+        elif mode == "np_clip":
+            class_data[:, 17] = class_data[:, [17, 24]].max(axis=1)
+            class_data[:, 23] = class_data[:, [23, 25]].max(axis=1)
+        elif mode == "np_frame":
+            class_data[:, :, 17] = class_data[:, :, [17, 24]].max(axis=1)
+            class_data[:, :, 23] = class_data[:, :, [23, 25]].max(axis=1)
+        return class_data
 
     def _write_to_tensorboard(self, loss):
         """Write to tensorboard."""
