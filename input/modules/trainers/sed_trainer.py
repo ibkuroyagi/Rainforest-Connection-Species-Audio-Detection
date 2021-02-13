@@ -77,7 +77,7 @@ class SEDTrainer(object):
             self.center_loss = CenterLoss(device=device, **config["center_loss_params"])
             optimizer_class = getattr(
                 optimizers,
-                config.get("optimizer_type", "Adam"),
+                config.get("center_optimizer_type", "Adam"),
             )
             self.optimizer_centloss = optimizer_class(
                 [
@@ -854,17 +854,17 @@ class SEDTrainer(object):
 
     def _fix_class_data(self, class_data, mode="clip"):
         if mode == "clip":
-            class_data[:, 17] = class_data[:, [17, 24]].max(dim=1)
-            class_data[:, 23] = class_data[:, [23, 25]].max(dim=1)
+            class_data[:, 17] = class_data[:, [17, 24]].max(dim=1)[0]
+            class_data[:, 23] = class_data[:, [23, 25]].max(dim=1)[0]
         elif mode == "frame":
-            class_data[:, :, 17] = class_data[:, :, [17, 24]].max(dim=1)
-            class_data[:, :, 23] = class_data[:, :, [23, 25]].max(dim=1)
+            class_data[:, :, 17] = class_data[:, :, [17, 24]].max(dim=2)[0]
+            class_data[:, :, 23] = class_data[:, :, [23, 25]].max(dim=2)[0]
         elif mode == "np_clip":
             class_data[:, 17] = class_data[:, [17, 24]].max(axis=1)
             class_data[:, 23] = class_data[:, [23, 25]].max(axis=1)
         elif mode == "np_frame":
-            class_data[:, :, 17] = class_data[:, :, [17, 24]].max(axis=1)
-            class_data[:, :, 23] = class_data[:, :, [23, 25]].max(axis=1)
+            class_data[:, :, 17] = class_data[:, :, [17, 24]].max(axis=2)
+            class_data[:, :, 23] = class_data[:, :, [23, 25]].max(axis=2)
         return class_data
 
     def _write_to_tensorboard(self, loss):

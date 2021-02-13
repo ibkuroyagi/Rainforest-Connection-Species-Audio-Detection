@@ -8,22 +8,22 @@ model=EfficientNet
 # model=MobileNetV2
 # model=ResNext50
 # model=conformer
-# model=transformer
+model=transformer
 
 type=wave
 # type=mel256wave
 n_jobs=16
-n_gpus=1
+n_gpus=8
 stage=2
 stop_stage=3
 verbose=1
-No=v043
+No=v005
 step=6000
 # for No in v027 v028; do
 # for checkpoint in best_score checkpoint-1000 checkpoint-2000 checkpoint-3000 checkpoint-4000; do
-# resume="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl no_model no_model  no_model no_model"
+resume="exp/${type}/${model}/${No}/best_score/best_scorefold0.pkl no_model no_model  no_model no_model"
 # resume="exp/${type}/${model}/${No}/checkpoint-${step}/checkpoint-${step}fold0.pkl no_model no_model no_model no_model"
-resume=""
+# resume=""1
 # for fold in {0..4}; do
 #     # resume+="exp/${type}/${model}/${No}/checkpoint-${step}/checkpoint-${step}fold${fold}.pkl "
 #     resume+="exp/${type}/${model}/${No}/best_score/best_scorefold${fold}.pkl "
