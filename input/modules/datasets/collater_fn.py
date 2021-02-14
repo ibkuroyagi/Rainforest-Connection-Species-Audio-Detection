@@ -244,12 +244,13 @@ class FeatEvalCollater(object):
             for time_list in all_time_list:
                 y_clip = np.zeros(self.n_class)
                 if self.use_song_type:
-                    if (time_list[:, 2] == 17) and (time_list[:, 3] == 4):
-                        y_clip[time_list[:, 24].astype(int)] = 1.0
-                    elif (time_list[:, 2] == 23) and (time_list[:, 3] == 4):
-                        y_clip[time_list[:, 24].astype(int)] = 1.0
-                    else:
-                        y_clip[time_list[:, 2].astype(int)] = 1.0
+                    for j in range(len(time_list)):
+                        if (time_list[j, 2] == 17) and (time_list[j, 3] == 4):
+                            y_clip[24] = 1.0
+                        elif (time_list[j, 2] == 23) and (time_list[j, 3] == 4):
+                            y_clip[25] = 1.0
+                        else:
+                            y_clip[time_list[j, 2].astype(int)] = 1.0
                 else:
                     y_clip[time_list[:, 2].astype(int)] = 1.0
                 clip_batch.append(y_clip.astype(np.float32))

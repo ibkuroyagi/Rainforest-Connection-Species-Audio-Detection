@@ -488,8 +488,11 @@ def main():
         ##############################################
         #   Add no augmentation process 500 steps.   #
         ##############################################
-        last_checkpoint = trainer.last_checkpoint
-        config["train_max_steps"] += 500
+        last_checkpoint = os.path.join(
+            config["outdir"],
+            f"best_score/best_scorefold{fold}.pkl",
+        )
+        config["train_max_steps"] += config.get("additional_steps", 1000)
         config["augmentation_params"] = None
         if config.get("mixup_alpha", None) is not None:
             config["batch_size"] //= 2
@@ -705,7 +708,7 @@ def main():
                 )
             )
             logging.info(f"Successfully saved checkpoint @ {trainer.steps}steps.")
-        config["train_max_steps"] -= 500
+        config["train_max_steps"] -= config.get("additional_steps", 1000)
 
 
 if __name__ == "__main__":

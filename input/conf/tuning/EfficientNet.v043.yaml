@@ -104,3 +104,4 @@ eval_interval_epochs: 5 # Interval epochs to evaluate the network.
 #                     OTHER SETTING                       #
 ###########################################################
 n_eval_split: 7
+additional_steps: 1000

@@ -733,9 +733,7 @@ class SEDTrainer(object):
             torch.empty((0, 24)).to(self.device) for _ in range(self.n_eval_split)
         ]
         y_frame = [
-            torch.empty((0, self.config["l_target"], self.config["n_class"])).to(
-                self.device
-            )
+            torch.empty((0, self.config["l_target"], 24)).to(self.device)
             for _ in range(self.n_eval_split)
         ]
         y_clip_true = torch.empty((0, 24))
@@ -776,12 +774,17 @@ class SEDTrainer(object):
                         y_batch_["y_frame"] = self._fix_class_data(
                             y_batch_["y_frame"], mode="frame"
                         )
+                        # logging.info(
+                        #     f'fix shape:{y_batch_["y_clip"].shape}, {y_batch_["y_frame"].shape}'
+                        # )
                     y_clip[i] = torch.cat(
                         [y_clip[i], y_batch_["y_clip"][:, :24]], dim=0
                     )
                     if self.use_dializer:
                         y_batch_["y_frame"] *= torch.sigmoid(y_batch_["frame_mask"])
-                    y_frame[i] = torch.cat([y_frame[i], y_batch_["y_frame"]], dim=0)
+                    y_frame[i] = torch.cat(
+                        [y_frame[i], y_batch_["y_frame"][:, :, :24]], dim=0
+                    )
         # (B, n_eval_split, n_target)
         y_clip = (
             torch.sigmoid(torch.stack(y_clip, dim=0)).cpu().numpy().transpose(1, 0, 2)

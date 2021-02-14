@@ -216,7 +216,7 @@ def main():
             len(ground_truth),
             config["n_eval_split"],
             config["l_target"],
-            config["n_class"],
+            config["n_target"],
         )
     )
     scores = []
@@ -236,7 +236,7 @@ def main():
             len(sub),
             config["n_eval_split"],
             config["l_target"],
-            config["n_class"],
+            config["n_target"],
         )
     )
     eval_key = (
@@ -326,7 +326,7 @@ def main():
                 len(valid_idx),
                 config["n_eval_split"],
                 config["l_target"],
-                config["n_class"],
+                config["n_target"],
             )
         )
         tta_scores = np.zeros(config["n_TTA"])
@@ -345,7 +345,7 @@ def main():
                 len(sub),
                 config["n_eval_split"],
                 config["l_target"],
-                config["n_class"],
+                config["n_target"],
             )
         )
         for i, dumpdir in enumerate(args.dumpdirs):
