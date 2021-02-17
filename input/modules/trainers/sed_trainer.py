@@ -201,6 +201,9 @@ class SEDTrainer(object):
             self.steps = state_dict["steps"]
             self.epochs = state_dict["epochs"]
             self.best_score = state_dict.get("best_score", 0)
+            logging.info(
+                f"Steps:{self.steps}, Epochs:{self.epochs}, BEST score:{self.best_score}"
+            )
             if (self.optimizer is not None) and (
                 state_dict.get("optimizer", None) is not None
             ):
