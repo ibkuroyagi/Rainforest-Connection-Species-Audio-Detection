@@ -1,1 +1,65 @@
-## コンペの解法まとめ
+# コンペの解法まとめ
+## shinmura0さん
+### このコンペの肝
+- missing-label
+- ラベル長がずれている
+    - ↑に対して、ハンドラベルすると解決
+### 前処理
+- スペクトログラムを850x850にしたものがbest(大きいほど良い)
+    - 0.69 -> 0.81
+### 学習
+- MixUpを確率的0.5に削るといい感じに
+### 後処理
+- 0.01secは認識できないので、超短時間のイベントを消すために、時間方向の移動平均をとる(SED特有で有向)
+    - 0.078 -> 0.840
+### 上位陣の解法
+missing label対策
+- mask loss(正確なラベルだけを学習)
+- mask周波数(がっつり上の部分を消す)
+
+## yukiさん
+- 256x1001のメルスぺ(60/9=6.6sec)
+- Adam -> SGDにして学習安定
+- lr: 0.15 (かなり高い)
+adversarial validation
+AUC:0.81 -> 収音環境、収音機材の違い
+train寄りのtrainを除くと精度微増
+- データがどう作られたかを良く調べなければならなかった
+
+## araiさん
+[https://speakerdeck.com/koukyo1994/niao-wa-konpefan-sheng-hui-zi-liao](https://speakerdeck.com/koukyo1994/niao-wa-konpefan-sheng-hui-zi-liao)
+positive and unlabeled learning
+事前確率シフト
+画像分類アプローチ
+- 出てきた周波数のみを用いて計算
+- 重複する周波数をゆるして確率出力
+- SAM
+- lossのマスクや、入力のマスクによって
+- resizeはpytorchのbootなんちゃら
+
+## きょうへいさん
+[https://speakerdeck.com/kuto5046/niao-wa-konpefan-sheng-hui-birdcall-revengetimu](https://speakerdeck.com/kuto5046/niao-wa-konpefan-sheng-hui-birdcall-revengetimu)
+ラベルの分布の違い
+stage1
+CV:0.81/PL:0.84
+SED
+TPのみを使用
+30epoch
+LSEPLoss (FAT20019 3rd)
+augmenationなし
+
+stage2
+stage1を強化してpseude-labelを今日あ
+CV: 0.734/PL0.896
+TP and FP
+Focal Loss ベースのmask loss
+ラベルを3つに分解
+1:TPラベル(正例)
+0:曖昧なラベル
+-1:FPラベル(負例)
+ただし、クラス数を増加させているだけ(実際は二値分類をしている。その中で、BCEの一部の損失を更新させないようにする)
+stage1では学習効率悪いが、stage2でファインチューニングで少ないepochでスコア改善
+5epoch
+
+stage3
+stage2でのpseudo-labelをしたものを適応
