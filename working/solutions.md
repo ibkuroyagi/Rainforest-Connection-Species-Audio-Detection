@@ -73,3 +73,11 @@ stage1では学習効率悪いが、stage2でファインチューニングで�
 ### stage3
 stage2でのpseudo-labelをしたものを適応
 5epochだけ
+
+
+### 今後結果を残すために
+今抱えている課題をすべて書き出す  
+その後、最小単位ごとに流行りの解決方法を列挙し模索する  
+特に過去解法はかなり参考になる情報があるので、それらを抜け漏れなく収集する必要がある  
+検索ワードのセンス
+- [https://speakerdeck.com/koukyo1994/tuo-deepdepon-haiparatiyuninguyun-ren-wozu-ye-surutameni](https://speakerdeck.com/koukyo1994/tuo-deepdepon-haiparatiyuninguyun-ren-wozu-ye-surutameni)
