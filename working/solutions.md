@@ -81,3 +81,5 @@ stage2でのpseudo-labelをしたものを適応
 特に過去解法はかなり参考になる情報があるので、それらを抜け漏れなく収集する必要がある  
 検索ワードのセンス
 - [https://speakerdeck.com/koukyo1994/tuo-deepdepon-haiparatiyuninguyun-ren-wozu-ye-surutameni](https://speakerdeck.com/koukyo1994/tuo-deepdepon-haiparatiyuninguyun-ren-wozu-ye-surutameni)
+
+
